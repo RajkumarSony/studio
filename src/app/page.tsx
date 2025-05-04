@@ -1,7 +1,7 @@
 // src/app/page.tsx
 'use client';
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import {z} from 'zod';
@@ -20,6 +20,8 @@ import {
   Scale, // Example: Icon for difficulty/serving size?
   Soup, // Example: Icon for recipe type?
   Heart, // Example: Icon for saving/favoriting?
+  BookOpen, // For Ingredients/Instructions titles
+  AlertTriangle, // For Warnings
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -67,12 +69,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-
+import {Switch} from '@/components/ui/switch';
+import {Label} from '@/components/ui/label';
+import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
 
 // Define supported languages and their corresponding CSS font variables
-const supportedLanguages: { value: string; label: string; fontVariable: string }[] = [
+// Moved this structure to translations.ts, import here if needed for UI logic
+const supportedLanguages: { value: LanguageCode; label: string; fontVariable: string }[] = [
   { value: 'en', label: 'English', fontVariable: 'var(--font-noto-sans)' },
   { value: 'hi', label: 'हिन्दी (Hindi)', fontVariable: 'var(--font-noto-sans-devanagari)' },
   { value: 'bn', label: 'বাংলা (Bengali)', fontVariable: 'var(--font-noto-sans-bengali)' },
@@ -86,14 +89,16 @@ const supportedLanguages: { value: string; label: string; fontVariable: string }
   { value: 'fr', label: 'Français (French)', fontVariable: 'var(--font-noto-sans)' }, // Assuming default Noto Sans covers French well
 ];
 
-const formSchema = z.object({
+
+// Define form schema using Zod
+const formSchema = (t: (key: keyof typeof translations.en.form) => string) => z.object({
   ingredients: z.string().min(3, {
-    message: 'Please enter at least a few ingredients.',
+    message: t('ingredientsError'), // Use translation key
   }),
   dietaryRestrictions: z.string().optional(),
   preferences: z.string().optional(),
-  quickMode: z.boolean().optional(), // Added for quick mode
-  servingSize: z.number().int().min(1).optional(), // Added for serving size
+  quickMode: z.boolean().optional(),
+  servingSize: z.number().int().min(1).optional(),
 });
 
 export default function Home() {
@@ -101,15 +106,57 @@ export default function Home() {
   const {toast} = useToast();
   const [recipes, setRecipes] = useState<RecipeItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
   const [isClient, setIsClient] = useState(false);
+
+  // Translation function
+  const t = useCallback((key: string) => {
+     // Split key for nested access, e.g., "form.ingredientsLabel"
+    const keys = key.split('.');
+    let result: any = translations[selectedLanguage] || translations.en; // Fallback to English
+
+    for (const k of keys) {
+      result = result?.[k];
+      if (result === undefined) {
+        // Fallback to English if key not found in selected language
+        let fallbackResult: any = translations.en;
+        for (const fk of keys) {
+            fallbackResult = fallbackResult?.[fk];
+            if (fallbackResult === undefined) return key; // Return key itself if not found anywhere
+        }
+        return fallbackResult || key;
+      }
+    }
+    return typeof result === 'string' ? result : key; // Ensure we return a string
+  }, [selectedLanguage]);
+
+  // Memoize the form schema generation based on the translation function `t`
+  const currentFormSchema = React.useMemo(() => formSchema(t as any), [t]);
+
+
+  // Initialize form with the dynamic schema
+  const form = useForm<z.infer<ReturnType<typeof formSchema>>>({
+      resolver: zodResolver(currentFormSchema),
+      defaultValues: {
+        ingredients: '',
+        dietaryRestrictions: '',
+        preferences: '',
+        quickMode: false,
+        servingSize: undefined,
+      },
+    });
+
+  // Update form resolver when language changes
+  useEffect(() => {
+    form.reset(undefined, { keepValues: true }); // Keep values but update resolver
+  }, [currentFormSchema, form]);
+
 
   // Update CSS variable for dynamic font switching when language changes
   useEffect(() => {
     const selectedLangData = supportedLanguages.find(lang => lang.value === selectedLanguage);
     const fontVariable = selectedLangData ? selectedLangData.fontVariable : 'var(--font-noto-sans)'; // Default fallback
     document.documentElement.style.setProperty('--font-dynamic', fontVariable);
-    // Also set the lang attribute for potential CSS selectors (though variable is primary)
     document.documentElement.lang = selectedLanguage;
   }, [selectedLanguage]);
 
@@ -118,16 +165,6 @@ export default function Home() {
     setIsClient(true);
   }, []);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      ingredients: '',
-      dietaryRestrictions: '',
-      preferences: '',
-      quickMode: false,
-      servingSize: undefined,
-    },
-  });
 
    // Handle form reset
    const handleReset = () => {
@@ -135,8 +172,8 @@ export default function Home() {
     setRecipes(null);
     setIsLoading(false);
     toast({
-      title: 'Form Cleared',
-      description: 'Ready for new ingredients!',
+      title: t('toast.formClearedTitle'),
+      description: t('toast.formClearedDesc'),
       variant: 'default',
     });
   };
@@ -146,24 +183,24 @@ export default function Home() {
     console.log('Saving recipe:', recipe.recipeName);
     // Implement actual saving logic here (e.g., localStorage, API call)
     toast({
-      title: 'Recipe Saved!',
-      description: `${recipe.recipeName} has been added to your favorites (simulation).`,
+      title: t('toast.recipeSavedTitle'),
+      description: t('toast.recipeSavedDesc').replace('{recipeName}', recipe.recipeName),
       variant: 'default',
     });
   };
 
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<ReturnType<typeof formSchema>>) {
     setIsLoading(true);
     setRecipes(null);
     try {
       // Enhance preferences based on new inputs
       let enhancedPreferences = values.preferences || '';
       if (values.quickMode) {
-        enhancedPreferences += (enhancedPreferences ? ', ' : '') + 'quick meal (under 30 minutes)';
+        enhancedPreferences += (enhancedPreferences ? ', ' : '') + t('quickModePreference'); // Use translation
       }
       if (values.servingSize) {
-         enhancedPreferences += (enhancedPreferences ? ', ' : '') + `serves ${values.servingSize}`;
+         enhancedPreferences += (enhancedPreferences ? ', ' : '') + t('servingSizePreference').replace('{count}', values.servingSize.toString()); // Use translation
       }
 
 
@@ -178,26 +215,27 @@ export default function Home() {
       setRecipes(result);
       if (result.length === 0) {
         toast({
-          title: 'No Recipes Found',
-          description:
-            "Couldn't find any recipes with the given ingredients and preferences. Try adjusting your input.",
+          title: t('toast.noRecipesTitle'),
+          description: t('toast.noRecipesDesc'),
           variant: 'default',
         });
       } else {
         toast({
-          title: 'Recipes Found!',
-          description: `We found ${result.length} recipe suggestion${result.length > 1 ? 's' : ''} for you.`,
+          title: t('toast.recipesFoundTitle'),
+          description: t('toast.recipesFoundDesc')
+            .replace('{count}', result.length.toString())
+            .replace('{s}', result.length > 1 ? 's' : ''), // Basic pluralization
           variant: 'default',
         });
       }
     } catch (error) {
       console.error('Error suggesting recipes:', error);
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Failed to suggest recipes. Please try again later.',
-        variant: 'destructive',
-      });
+      const errorMessage = error instanceof Error ? error.message : t('toast.genericError');
+       toast({
+          title: t('toast.errorTitle'),
+          description: errorMessage,
+          variant: 'destructive',
+        });
     } finally {
       setIsLoading(false);
     }
@@ -228,7 +266,7 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center py-10 animate-pulse space-y-4">
       <Loader2 className="h-12 w-12 animate-spin text-primary" />
       <span className="text-lg text-muted-foreground">
-        Generating delicious ideas...
+        {t('loadingMessage')} {/* Use translation */}
       </span>
       {/* Add skeleton card placeholders */}
       <div className="w-full max-w-3xl space-y-6">
@@ -255,6 +293,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background via-muted/5 to-background dark:from-background dark:via-black/10 dark:to-background/90">
+       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/90 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60 shadow-sm transition-shadow duration-300 hover:shadow-md">
         <div className="container flex h-16 items-center px-4 md:px-6">
           <motion.div
@@ -265,10 +304,11 @@ export default function Home() {
           >
             <ChefHat className="h-7 w-7 mr-2 text-primary drop-shadow-sm" />
             <span className="text-xl font-bold tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 dark:from-primary/80 dark:to-primary/60">
-              RecipeSage
+              {t('appTitle')} {/* Use translation */}
             </span>
           </motion.div>
           <div className="flex items-center justify-end space-x-2 md:space-x-3">
+            {/* Language Selector */}
             <TooltipProvider delayDuration={100}>
               <motion.div
                 initial={{y: -20, opacity: 0}}
@@ -277,32 +317,33 @@ export default function Home() {
               >
                 <Select
                   value={selectedLanguage}
-                  onValueChange={setSelectedLanguage}
+                  onValueChange={(value) => setSelectedLanguage(value as LanguageCode)}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SelectTrigger
                         className="w-auto h-9 px-2.5 gap-1.5 border-none shadow-none bg-transparent hover:bg-accent focus:ring-1 focus:ring-primary/50 transition-colors"
-                        aria-label="Select language"
+                        aria-label={t('languageSelector.ariaLabel')} // Use translation
                       >
                         <Languages className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
-                        <SelectValue placeholder="Language" />
+                        <SelectValue placeholder={t('languageSelector.placeholder')} /> {/* Use translation */}
                       </SelectTrigger>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      <p>Select Language</p>
+                      <p>{t('languageSelector.tooltip')}</p> {/* Use translation */}
                     </TooltipContent>
                   </Tooltip>
                   <SelectContent className="max-h-60 overflow-y-auto backdrop-blur-md bg-popover/90">
                     {supportedLanguages.map(lang => (
                       <SelectItem key={lang.value} value={lang.value}>
-                        {lang.label}
+                        {lang.label} {/* Keep native label */}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </motion.div>
 
+              {/* Theme Toggle */}
               <motion.div
                 initial={{y: -20, opacity: 0}}
                 animate={{y: 0, opacity: 1}}
@@ -316,16 +357,16 @@ export default function Home() {
                           variant="ghost"
                           size="icon"
                           className="h-9 w-9 transition-transform hover:scale-110 focus:ring-1 focus:ring-primary/50"
-                          aria-label="Toggle theme"
+                          aria-label={t('themeSelector.ariaLabel')} // Use translation
                         >
                           <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                           <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                          <span className="sr-only">Toggle theme</span>
+                          <span className="sr-only">{t('themeSelector.ariaLabel')}</span> {/* Use translation */}
                         </Button>
                       </DropdownMenuTrigger>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      <p>Change Theme</p>
+                      <p>{t('themeSelector.tooltip')}</p> {/* Use translation */}
                     </TooltipContent>
                   </Tooltip>
                   <DropdownMenuContent
@@ -333,13 +374,13 @@ export default function Home() {
                     className="animate-in fade-in zoom-in-95 backdrop-blur-md bg-popover/90"
                   >
                     <DropdownMenuItem onClick={() => setTheme('light')}>
-                      <Sun className="mr-2 h-4 w-4" /> Light
+                      <Sun className="mr-2 h-4 w-4" /> {t('themeSelector.light')} {/* Use translation */}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme('dark')}>
-                      <Moon className="mr-2 h-4 w-4" /> Dark
+                      <Moon className="mr-2 h-4 w-4" /> {t('themeSelector.dark')} {/* Use translation */}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme('system')}>
-                      <Palette className="mr-2 h-4 w-4" /> System
+                      <Palette className="mr-2 h-4 w-4" /> {t('themeSelector.system')} {/* Use translation */}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -349,6 +390,7 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1 container py-10 md:py-16 px-4 md:px-6">
+        {/* Hero Section */}
         <motion.section
           initial={{opacity: 0, y: -20}}
           animate={{opacity: 1, y: 0}}
@@ -356,14 +398,14 @@ export default function Home() {
           className="mb-12 text-center"
         >
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60 dark:from-primary/90 dark:via-primary/70 dark:to-primary/50 py-2">
-            Unlock Your Inner Chef!
+             {t('hero.title')} {/* Use translation */}
           </h1>
           <p className="text-muted-foreground mt-4 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            Enter ingredients you have, add preferences, and let RecipeSage find
-            your next delicious meal, tailored just for you.
+            {t('hero.subtitle')} {/* Use translation */}
           </p>
         </motion.section>
 
+        {/* Form Card */}
         <motion.div
           initial={{opacity: 0, scale: 0.95}}
           animate={{opacity: 1, scale: 1}}
@@ -372,10 +414,10 @@ export default function Home() {
           <Card className="w-full max-w-2xl mx-auto mb-12 shadow-lg border border-border/60 hover:shadow-xl transition-shadow duration-300 bg-card/90 backdrop-blur-sm overflow-hidden">
             <CardHeader className="pb-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-t-lg border-b border-primary/10">
               <CardTitle className="text-xl font-semibold text-primary flex items-center gap-2">
-                <Sparkles className="h-5 w-5" /> Find Recipes
+                <Sparkles className="h-5 w-5" /> {t('form.title')} {/* Use translation */}
               </CardTitle>
               <CardDescription>
-                Tell us what you have and what you like. We'll handle the rest!
+                {t('form.description')} {/* Use translation */}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -384,6 +426,7 @@ export default function Home() {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-6"
                 >
+                  {/* Ingredients Field */}
                   <motion.div variants={itemVariants}>
                     <FormField
                       control={form.control}
@@ -391,11 +434,11 @@ export default function Home() {
                       render={({field}) => (
                         <FormItem>
                           <FormLabel className="font-medium text-foreground/90 flex items-center gap-1.5">
-                           <Soup size={16}/> Available Ingredients *
+                           <Soup size={16}/> {t('form.ingredientsLabel')} * {/* Use translation */}
                           </FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="e.g., chicken breast, broccoli, soy sauce, rice, garlic..."
+                              placeholder={t('form.ingredientsPlaceholder')} // Use translation
                               {...field}
                               rows={4}
                               className="resize-none focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70"
@@ -409,6 +452,7 @@ export default function Home() {
                   </motion.div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     {/* Dietary Restrictions Field */}
                      <motion.div variants={itemVariants}>
                        <FormField
                          control={form.control}
@@ -416,11 +460,11 @@ export default function Home() {
                          render={({field}) => (
                            <FormItem>
                              <FormLabel className="font-medium text-foreground/90">
-                               Dietary Restrictions
+                               {t('form.dietaryRestrictionsLabel')} {/* Use translation */}
                              </FormLabel>
                              <FormControl>
                                <Input
-                                 placeholder="e.g., vegetarian, gluten-free"
+                                 placeholder={t('form.dietaryRestrictionsPlaceholder')} // Use translation
                                  {...field}
                                 className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70"
                                />
@@ -430,6 +474,7 @@ export default function Home() {
                          )}
                        />
                      </motion.div>
+                     {/* Preferences Field */}
                      <motion.div variants={itemVariants}>
                        <FormField
                          control={form.control}
@@ -437,11 +482,11 @@ export default function Home() {
                          render={({field}) => (
                            <FormItem>
                              <FormLabel className="font-medium text-foreground/90">
-                               Other Preferences
+                               {t('form.preferencesLabel')} {/* Use translation */}
                              </FormLabel>
                              <FormControl>
                                <Input
-                                 placeholder="e.g., spicy, Italian cuisine"
+                                 placeholder={t('form.preferencesPlaceholder')} // Use translation
                                  {...field}
                                  className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70"
                                />
@@ -453,7 +498,7 @@ export default function Home() {
                      </motion.div>
                   </div>
 
-                  {/* New Form Fields */}
+                  {/* Quick Mode & Serving Size */}
                   <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
                       <FormField
                         control={form.control}
@@ -465,11 +510,11 @@ export default function Home() {
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
                                 id="quick-mode"
-                                aria-label="Quick mode (under 30 minutes)"
+                                aria-label={t('form.quickModeAriaLabel')} // Use translation
                               />
                             </FormControl>
                             <Label htmlFor="quick-mode" className="font-medium text-foreground/90 cursor-pointer">
-                              Quick Mode? <span className="text-xs text-muted-foreground">(Under 30 min)</span>
+                              {t('form.quickModeLabel')} <span className="text-xs text-muted-foreground">{t('form.quickModeHint')}</span> {/* Use translation */}
                             </Label>
                           </FormItem>
                         )}
@@ -480,13 +525,13 @@ export default function Home() {
                        render={({ field }) => (
                          <FormItem className="flex-1 min-w-[120px]">
                            <FormLabel className="font-medium text-foreground/90 flex items-center gap-1.5">
-                            <Scale size={16} /> Servings
+                            <Scale size={16} /> {t('form.servingSizeLabel')} {/* Use translation */}
                            </FormLabel>
                            <FormControl>
                              <Input
                                type="number"
                                min="1"
-                               placeholder="e.g., 2"
+                               placeholder={t('form.servingSizePlaceholder')} // Use translation
                                {...field}
                                // Ensure value is handled correctly for number input
                                value={field.value ?? ''}
@@ -500,7 +545,7 @@ export default function Home() {
                      />
                   </motion.div>
 
-
+                  {/* Submit & Reset Buttons */}
                   <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 pt-4">
                     <Button
                       type="submit"
@@ -511,11 +556,11 @@ export default function Home() {
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Finding Recipes...
+                          {t('form.submitButtonLoading')} {/* Use translation */}
                         </>
                       ) : (
                          <>
-                          <Sparkles className="mr-2 h-5 w-5"/> Get Suggestions
+                          <Sparkles className="mr-2 h-5 w-5"/> {t('form.submitButton')} {/* Use translation */}
                          </>
                       )}
                     </Button>
@@ -526,23 +571,25 @@ export default function Home() {
                       className="w-full sm:w-auto transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-muted/20"
                       disabled={isLoading}
                     >
-                      Clear Form
+                      {t('form.resetButton')} {/* Use translation */}
                     </Button>
                   </motion.div>
                 </form>
               </Form>
             </CardContent>
+             {/* Card Footer with Info */}
             <CardFooter className="p-4 bg-muted/30 dark:bg-background/30 rounded-b-lg border-t border-border/30">
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Info className="h-3.5 w-3.5" /> AI generates suggestions based
-                on your input. Results may vary. Double-check allergies!
+                <Info className="h-3.5 w-3.5" /> {t('form.footerNote')} {/* Use translation */}
               </p>
             </CardFooter>
           </Card>
         </motion.div>
 
+        {/* Loading Skeleton */}
         {isLoading && isClient && <LoadingSkeleton />}
 
+        {/* Recipe Results Section */}
         <AnimatePresence mode="wait">
           {recipes && recipes.length > 0 && !isLoading && (
             <motion.div
@@ -554,7 +601,7 @@ export default function Home() {
               className="space-y-10 mt-16"
             >
               <h2 className="text-3xl font-semibold text-center border-b pb-4 mb-10 text-foreground/90 dark:text-foreground/80">
-                Your Recipe Suggestions
+                {t('results.title')} {/* Use translation */}
               </h2>
               {recipes.map((recipe, index) => (
                 <motion.div key={recipe.recipeName + index} variants={itemVariants}>
@@ -563,12 +610,13 @@ export default function Home() {
                       'w-full max-w-3xl mx-auto shadow-lg border border-border/60 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30 group bg-card/95 backdrop-blur-sm'
                     )}
                   >
+                    {/* Recipe Image and Title Header */}
                     <CardHeader className="p-0 relative aspect-[16/7] overflow-hidden group">
                       {recipe.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={recipe.imageUrl}
-                          alt={`Generated image for ${recipe.recipeName}`}
+                          alt={t('results.imageAlt').replace('{recipeName}', recipe.recipeName)} // Use translation
                           width={800}
                           height={350}
                           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -582,10 +630,10 @@ export default function Home() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300"></div>
                       <div className="absolute bottom-0 left-0 right-0 p-5">
                         <CardTitle className="text-2xl font-bold text-white drop-shadow-lg">
-                          {recipe.recipeName}
+                          {recipe.recipeName} {/* Keep AI-generated name */}
                         </CardTitle>
                       </div>
-                      {/* Save Button */}
+                       {/* Save Button */}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -594,46 +642,53 @@ export default function Home() {
                                 size="icon"
                                 className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/40 text-white hover:bg-primary hover:text-primary-foreground transition-all opacity-70 group-hover:opacity-100 backdrop-blur-sm"
                                 onClick={() => handleSaveRecipe(recipe)}
-                                aria-label="Save recipe"
+                                aria-label={t('results.saveButtonAriaLabel')} // Use translation
                               >
                                 <Heart className="h-5 w-5" />
                               </Button>
                             </TooltipTrigger>
                              <TooltipContent side="left">
-                                <p>Save Recipe</p>
+                                <p>{t('results.saveButtonTooltip')}</p> {/* Use translation */}
                               </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                     </CardHeader>
+                    {/* Recipe Details Content */}
                     <CardContent className="p-6 space-y-6">
                       <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.1 }}
                           className="flex flex-wrap gap-3 items-center">
+                         {/* Time Badge */}
                         <Badge
                           variant="outline"
                           className="flex items-center gap-1.5 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-1 px-2.5 text-sm font-medium"
                         >
                           <Clock className="h-4 w-4" />
-                          {recipe.estimatedTime}
+                          {recipe.estimatedTime} {/* Keep AI-generated */}
                         </Badge>
+                        {/* Difficulty Badge */}
                         <Badge
                           variant="outline"
                           className="flex items-center gap-1.5 border-secondary-foreground/40 bg-secondary/50 dark:bg-secondary/20 backdrop-blur-sm py-1 px-2.5 text-sm font-medium"
                         >
                           <BarChart className="h-4 w-4 -rotate-90" />
-                          {recipe.difficulty}
+                          {recipe.difficulty} {/* Keep AI-generated */}
                         </Badge>
                       </motion.div>
 
+                      {/* Ingredients Section */}
                      <motion.div
                        initial={{ opacity: 0, y: 10 }}
                        animate={{ opacity: 1, y: 0 }}
                        transition={{ duration: 0.4, delay: 0.2 }}
                        >
-                        <h3 className="text-lg font-semibold mb-3 text-foreground/90">Ingredients</h3>
+                        <h3 className="text-lg font-semibold mb-3 text-foreground/90 flex items-center gap-2">
+                           <BookOpen size={18}/> {t('results.ingredientsTitle')} {/* Use translation */}
+                        </h3>
                         <ul className="list-disc list-outside pl-5 space-y-1.5 text-foreground/80 dark:text-foreground/75 whitespace-pre-line marker:text-primary/80 marker:text-lg">
+                          {/* Split and render ingredients */}
                           {recipe.ingredients.split('\n').map((item, idx) => {
                             const cleanedItem = item.replace(/^- \s*/, '').trim();
                             return cleanedItem ? <li key={idx}>{cleanedItem}</li> : null;
@@ -641,19 +696,23 @@ export default function Home() {
                         </ul>
                       </motion.div>
                       <Separator className="my-6 bg-border/40" />
+                      {/* Instructions Section */}
                        <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.3 }}>
-                        <h3 className="text-lg font-semibold mb-4 text-foreground/90">Instructions</h3>
+                        <h3 className="text-lg font-semibold mb-4 text-foreground/90 flex items-center gap-2">
+                            <ChefHat size={18}/> {t('results.instructionsTitle')} {/* Use translation */}
+                         </h3>
                         <div className="space-y-5 text-foreground/80 dark:text-foreground/75 whitespace-pre-line">
+                          {/* Split and render instructions */}
                           {recipe.instructions.split('\n').map((step, idx) => {
                             const cleanedStep = step
                               .replace(/^\s*(\d+\.|-)\s*/, '')
                               .trim();
                             return cleanedStep ? (
                               <div key={idx} className="flex items-start">
-                                <span className="mr-3 mt-1 font-bold text-primary text-lg leading-tight bg-primary/10 rounded-full h-6 w-6 flex items-center justify-center">
+                                <span className="mr-3 mt-1 font-bold text-primary text-lg leading-tight bg-primary/10 rounded-full h-6 w-6 flex items-center justify-center shrink-0">
                                   {idx + 1}
                                 </span>
                                 <p className="flex-1 leading-relaxed pt-0.5">
@@ -672,6 +731,7 @@ export default function Home() {
           )}
         </AnimatePresence>
 
+        {/* No Recipes Found Card */}
         <AnimatePresence>
           {recipes !== null && recipes.length === 0 && !isLoading && (
             <motion.div
@@ -684,16 +744,17 @@ export default function Home() {
               <Card className="w-full max-w-xl mx-auto text-center p-10 shadow-sm border border-border/50 bg-card mt-16 rounded-lg">
                 <ChefHat className="h-14 w-14 mx-auto text-muted-foreground/70 mb-5" />
                 <p className="text-xl font-medium text-muted-foreground">
-                  No recipes found matching your criteria.
+                  {t('results.noRecipesFoundTitle')} {/* Use translation */}
                 </p>
                 <p className="text-base text-muted-foreground/80 mt-3">
-                  Try adjusting your ingredients or preferences for better luck!
+                  {t('results.noRecipesFoundSuggestion')} {/* Use translation */}
                 </p>
               </Card>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+       {/* Footer */}
       <motion.footer
         initial={{opacity: 0}}
         animate={{opacity: 1}}
@@ -702,7 +763,7 @@ export default function Home() {
       >
         <div className="container flex flex-col items-center justify-center gap-2 text-center md:h-16 md:flex-row md:justify-between">
           <p className="text-sm text-muted-foreground">
-            Built with <Heart className="inline h-4 w-4 text-red-500 mx-1"/> by{' '}
+             {t('footer.builtWith')} {/* Use translation */}
             <a
               href="https://developers.google.com/studio"
               target="_blank"
@@ -711,10 +772,10 @@ export default function Home() {
             >
               Firebase Studio
             </a>
-             . Powered by Gemini.
+             . {t('footer.poweredBy')} {/* Use translation */}
           </p>
            <p className="text-xs text-muted-foreground/80">
-             &copy; {new Date().getFullYear()} RecipeSage. All rights reserved (not really).
+             {t('footer.copyright').replace('{year}', new Date().getFullYear().toString())} {/* Use translation */}
           </p>
         </div>
       </motion.footer>
