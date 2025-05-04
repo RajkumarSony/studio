@@ -22,6 +22,13 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true); // Start loading until auth state is determined
+  const [isClient, setIsClient] = useState(false); // Track if component has mounted
+
+  // Set isClient to true only on the client-side after mounting
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   useEffect(() => {
     // Listen for Firebase authentication state changes
@@ -64,9 +71,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      // setLoading(false); // Let the onAuthStateChanged handle this
   };
 
-  // Show loading indicator while determining auth state
-  if (loading && typeof window !== 'undefined') { // Avoid SSR flash of loading state if possible
-     // You could return a more sophisticated loading screen/skeleton here
+  // Show loading indicator ONLY on the client and ONLY while loading
+  if (loading && isClient) {
      return (
        <div className="flex items-center justify-center min-h-screen">
          <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -74,7 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      );
    }
 
-
+  // Render children when not loading, or during server-side render/pre-mount
   return (
     <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
       {children}
