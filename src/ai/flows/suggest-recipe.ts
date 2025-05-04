@@ -99,7 +99,7 @@ const suggestRecipePrompt = ai.definePrompt({
     schema: RecipeTextOutputSchema,
   },
   // Explicitly define the model for text generation
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-2.0-flash',
   prompt: `Given the following ingredients: {{{ingredients}}}.
 {{#if dietaryRestrictions}}
 Also consider these dietary restrictions: {{{dietaryRestrictions}}}.
