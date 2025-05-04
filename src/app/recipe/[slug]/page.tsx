@@ -1,7 +1,7 @@
 // src/app/recipe/[slug]/page.tsx
 'use client';
 
-import React, { Suspense, useEffect, useState, useMemo } from 'react';
+import React, { Suspense, useEffect, useState, useMemo, useCallback } from 'react'; // Import useCallback
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -21,6 +21,7 @@ import {
   ImageOff,
   ArrowLeft,
   UtensilsCrossed, // Icon for Nutrition/Diet
+  AlertTriangle, // Icon for error
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -30,8 +31,8 @@ import { Loader2 } from 'lucide-react'; // Import Loader for Suspense fallback
 import { cn } from '@/lib/utils';
 import type { RecipeItem } from '@/ai/flows/suggest-recipe'; // Import RecipeItem type
 
-// Helper function to get translations based on language code
-const getTranslations = (lang: LanguageCode) => translations[lang] || translations.en;
+// Helper function to get the translation messages object for a language
+const getTranslationMessages = (lang: LanguageCode) => translations[lang] || translations.en;
 
 // Enhanced Loading Skeleton
 function RecipeDetailLoading() {
@@ -76,7 +77,9 @@ function RecipeDetailLoading() {
               </div>
 
              {/* Optional Details Placeholder */}
-             <Separator className="my-8 bg-border/30" />
+             {(
+               <Separator className="my-8 bg-border/30" />
+             )}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                  <div>
                      <div className="h-5 w-1/2 bg-muted/50 rounded mb-3"></div>
@@ -107,35 +110,76 @@ function RecipeDetailContent() {
   const [isClient, setIsClient] = useState(false);
 
   // Get essential data from query params
-  const queryRecipeName = useMemo(() => searchParams.get('name'), [searchParams]);
+  const queryRecipeName = useMemo(() => searchParams.get('name') ? decodeURIComponent(searchParams.get('name')!) : null, [searchParams]);
   const queryLang = useMemo(() => (searchParams.get('lang') as LanguageCode) || 'en', [searchParams]);
-  const queryImageUrl = useMemo(() => searchParams.get('imageUrl'), [searchParams]);
+  const queryImageUrl = useMemo(() => searchParams.get('imageUrl') ? decodeURIComponent(searchParams.get('imageUrl')!) : null, [searchParams]);
   const queryImageStored = useMemo(() => searchParams.get('imageStored') === 'true', [searchParams]);
 
-  const t = useMemo(() => getTranslations(queryLang), [queryLang]);
+  // Define the translation function 't' using useCallback
+  const t = useCallback((key: string, options?: { [key: string]: string | number }) => {
+    const messages = getTranslationMessages(queryLang);
+    // Split key for nested access, e.g., "recipeDetail.backButton"
+    const keys = key.split('.');
+    let result: any = messages;
+
+    for (const k of keys) {
+      result = result?.[k];
+      if (result === undefined) {
+        // Fallback to English if key not found in selected language
+        let fallbackResult: any = translations.en;
+        for (const fk of keys) {
+            fallbackResult = fallbackResult?.[fk];
+            if (fallbackResult === undefined) {
+                 console.warn(`Translation key "${key}" not found in language "${queryLang}" or fallback "en".`);
+                 return key; // Return key itself if not found anywhere
+            }
+        }
+         result = fallbackResult || key;
+         break; // Found in fallback, stop searching
+      }
+    }
+    // Replace placeholders like {count} or {recipeName}
+    if (typeof result === 'string' && options) {
+       Object.keys(options).forEach((placeholder) => {
+         result = result.replace(`{${placeholder}}`, String(options[placeholder]));
+       });
+     }
+
+    return typeof result === 'string' ? result : key; // Ensure we return a string
+  }, [queryLang]); // Recreate t if language changes
+
 
   useEffect(() => {
     setIsClient(true); // Indicate component has mounted on the client
 
     if (queryRecipeName) {
       try {
-        const storedData = sessionStorage.getItem(`recipe-${queryRecipeName}`);
+        const storageKey = `recipe-${queryRecipeName}`;
+        console.log("Attempting to load from session storage with key:", storageKey);
+        const storedData = sessionStorage.getItem(storageKey);
         if (storedData) {
-          const parsedData: RecipeItem = JSON.parse(storedData);
-          // Combine query param data (like potentially shorter imageUrl) with stored data
-          const combinedData = {
-              ...parsedData,
-              recipeName: queryRecipeName, // Ensure name from query is used
-              language: queryLang, // Ensure lang from query is used
-              // Use imageUrl from query if present and not flagged as stored, otherwise use stored one
-              imageUrl: queryImageStored ? parsedData.imageUrl : (queryImageUrl || parsedData.imageUrl),
-          };
-          setRecipeData(combinedData);
-          console.log("Recipe data loaded from session storage:", combinedData);
+          const parsedData: Omit<RecipeItem, 'language'> = JSON.parse(storedData); // Language comes from query
+
+           // Decode fields that might have been URI encoded
+          const decodedData: RecipeItem = {
+            ...parsedData,
+             recipeName: queryRecipeName, // Use decoded name from query
+             language: queryLang, // Use language from query
+             // Use image URL from query if present (and decoded), otherwise use stored one
+             imageUrl: queryImageStored ? parsedData.imageUrl : (queryImageUrl || parsedData.imageUrl),
+             // Decode other potentially encoded text fields if necessary
+             // e.g., ingredients: decodeURIComponent(parsedData.ingredients || ''),
+             // instructions: decodeURIComponent(parsedData.instructions || ''),
+             // estimatedTime: decodeURIComponent(parsedData.estimatedTime || ''),
+             // ... etc. for other text fields passed via storage
+             // For simplicity, we assume essential text fields were handled okay by JSON stringify/parse
+           };
+
+          setRecipeData(decodedData);
+          console.log("Recipe data loaded and combined:", decodedData);
         } else {
-           console.warn("Recipe data not found in session storage for:", queryRecipeName);
-          // Optionally, try to reconstruct from query params if enough data is passed
-          // For now, just set loading to false to show potentially incomplete data or an error message
+           console.warn("Recipe data not found in session storage for key:", storageKey);
+          // Fallback or error display logic could go here if storage fails
         }
       } catch (error) {
         console.error("Error loading recipe from session storage:", error);
@@ -146,12 +190,21 @@ function RecipeDetailContent() {
         console.error("Recipe name not found in query parameters.");
         setIsLoading(false); // Stop loading if no name is provided
     }
+    // Clear the specific item from session storage after loading to prevent buildup? Optional.
+    // return () => {
+    //   if (queryRecipeName) {
+    //     sessionStorage.removeItem(`recipe-${queryRecipeName}`);
+    //   }
+    // };
   }, [queryRecipeName, queryLang, queryImageUrl, queryImageStored]); // Depend on query params
+
 
   // Function to safely render text with line breaks
   const renderMultilineText = (text: string | null | undefined) => {
     if (!text) return null;
-    return text.split('\n').map((line, index) => {
+    // Replace potential escaped newlines from JSON with actual newlines
+    const processedText = text.replace(/\\n/g, '\n');
+    return processedText.split('\n').map((line, index) => {
       const trimmedLine = line.trim();
       if (!trimmedLine) return null; // Skip empty lines
       // Remove leading list markers like "1.", "-", "*"
@@ -163,7 +216,9 @@ function RecipeDetailContent() {
    // Function to render instructions with steps
    const renderInstructions = (text: string | null | undefined) => {
      if (!text) return <p>{t('recipeDetail.instructionsPlaceholder') || 'No instructions available.'}</p>;
-     return text.split('\n').map((step, idx) => {
+      // Replace potential escaped newlines from JSON with actual newlines
+     const processedText = text.replace(/\\n/g, '\n');
+     return processedText.split('\n').map((step, idx) => {
        const cleanedStep = step.trim(); // Keep list markers if present
        return cleanedStep ? (
           <motion.div
@@ -173,6 +228,8 @@ function RecipeDetailContent() {
              animate={{ opacity: 1, x: 0 }}
              transition={{ delay: 0.4 + idx * 0.05, duration: 0.4 }} // Stagger animation
            >
+             {/* Consider adding step numbers visually if not present in text */}
+             {/* <span className="font-semibold text-primary w-5 text-right">{idx + 1}.</span> */}
              <p className="flex-1 leading-relaxed text-foreground/80 dark:text-foreground/75">
                 {cleanedStep}
              </p>
@@ -184,7 +241,9 @@ function RecipeDetailContent() {
    // Function to render ingredients list
     const renderIngredientsList = (text: string | null | undefined) => {
       if (!text) return <li>{t('recipeDetail.ingredientsPlaceholder') || 'No ingredients listed.'}</li>;
-      return text.split('\n').map((item, idx) => {
+       // Replace potential escaped newlines from JSON with actual newlines
+      const processedText = text.replace(/\\n/g, '\n');
+      return processedText.split('\n').map((item, idx) => {
         const cleanedItem = item.replace(/^- \s*/, '').trim(); // Remove leading dash and trim
         return cleanedItem ? (
            <motion.li
@@ -217,12 +276,16 @@ function RecipeDetailContent() {
                    <Button asChild variant="outline" size="sm" className="mb-6 group transition-all hover:bg-accent hover:shadow-sm">
                      <Link href="/">
                        <ArrowLeft className="mr-2 h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
+                       {/* Use the translation function t here */}
                        {t('recipeDetail.backButton')}
                      </Link>
                    </Button>
-                    <Card className="p-8 bg-card border border-destructive/50">
-                        <CardTitle className="text-destructive text-xl mb-4">Error Loading Recipe</CardTitle>
-                        <p className="text-muted-foreground">Could not load the details for this recipe. It might be missing or the link might be incorrect.</p>
+                    <Card className="p-8 bg-card border border-destructive/50 shadow-lg">
+                       <div className="flex justify-center mb-4">
+                         <AlertTriangle className="h-12 w-12 text-destructive" />
+                       </div>
+                        <CardTitle className="text-destructive text-xl mb-2">{t('recipeDetail.errorLoadingTitle')}</CardTitle>
+                        <p className="text-muted-foreground">{t('recipeDetail.errorLoadingMessage')}</p>
                     </Card>
                 </motion.div>
            </div>
@@ -244,6 +307,11 @@ function RecipeDetailContent() {
 
   return (
     <div className="container mx-auto py-8 sm:py-12 px-4 md:px-6 max-w-4xl">
+      {/* Apply the dynamic font style based on the loaded language */}
+      {/* This requires setting the font variable in CSS based on `queryLang` */}
+      {/* Ideally handled in a layout or higher component, but can be forced here if needed */}
+      {/* <style>{`:root { --font-dynamic: ${getFontVariable(queryLang)}; }`}</style> */}
+
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -256,7 +324,7 @@ function RecipeDetailContent() {
           </Link>
         </Button>
 
-        <Card className="overflow-hidden shadow-lg border border-border/60 bg-card">
+        <Card className="overflow-hidden shadow-xl border border-border/60 bg-card rounded-xl">
           <CardHeader className="p-0 relative aspect-[16/8] sm:aspect-[16/7] overflow-hidden group">
             {imageUrl ? (
                 // Use next/image for optimization if URL is not a data URI
@@ -267,11 +335,11 @@ function RecipeDetailContent() {
                          width={1000}
                          height={562}
                          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                         priority
+                         priority // Load main image faster
                          unoptimized={false} // Allow optimization for HTTP URLs
                      />
                  ) : (
-                     // Fallback to img tag for data URIs
+                     // Fallback to img tag for data URIs (no Next.js optimization)
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                           src={imageUrl}
@@ -301,14 +369,14 @@ function RecipeDetailContent() {
                 <div className="flex flex-wrap gap-2 items-center mt-1">
                   <Badge
                     variant="secondary"
-                    className="flex items-center gap-1 bg-white/90 text-foreground backdrop-blur-sm py-0.5 px-2.5 text-xs sm:text-sm font-medium shadow-sm border border-black/10"
+                    className="flex items-center gap-1 bg-white/90 text-foreground backdrop-blur-sm py-0.5 px-2.5 text-xs sm:text-sm font-medium shadow-sm border border-black/10 rounded-full"
                   >
                     <Clock className="h-3.5 w-3.5 text-primary" />
                     {estimatedTime || 'N/A'}
                   </Badge>
                   <Badge
                     variant="secondary"
-                    className="flex items-center gap-1 bg-white/90 text-foreground backdrop-blur-sm py-0.5 px-2.5 text-xs sm:text-sm font-medium shadow-sm border border-black/10"
+                    className="flex items-center gap-1 bg-white/90 text-foreground backdrop-blur-sm py-0.5 px-2.5 text-xs sm:text-sm font-medium shadow-sm border border-black/10 rounded-full"
                   >
                     <BarChart className="h-3.5 w-3.5 -rotate-90 text-primary" />
                     {difficulty || 'N/A'}
@@ -329,7 +397,7 @@ function RecipeDetailContent() {
                <h2 id="ingredients-heading" className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 text-foreground/90 flex items-center gap-2">
                  <BookOpen size={20} className="text-primary"/> {t('results.ingredientsTitle')}
                </h2>
-               <Card className="bg-muted/30 dark:bg-background/20 border border-border/40 p-4 rounded-lg shadow-inner">
+               <Card className="bg-muted/30 dark:bg-background/20 border border-border/40 p-4 sm:p-5 rounded-lg shadow-inner">
                  <ul className="list-disc list-outside pl-5 space-y-1 text-sm sm:text-base text-foreground/80 dark:text-foreground/75 marker:text-primary/80 marker:text-lg">
                     {renderIngredientsList(ingredients)}
                  </ul>
@@ -359,21 +427,30 @@ function RecipeDetailContent() {
              {(nutritionFacts || dietPlanSuitability) && (
                  <>
                      <Separator className="my-6 sm:my-8 bg-border/40" />
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                     <motion.div
+                         className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"
+                         initial="hidden"
+                         animate="visible"
+                         variants={{
+                             hidden: { opacity: 0 },
+                             visible: {
+                                 opacity: 1,
+                                 transition: { staggerChildren: 0.2, delayChildren: 0.5 }
+                             }
+                         }}
+                     >
                          {/* Nutrition Facts Section */}
                          {nutritionFacts && (
                              <motion.section
                                  aria-labelledby="nutrition-heading"
-                                 initial={{ opacity: 0, y: 20 }}
-                                 animate={{ opacity: 1, y: 0 }}
-                                 transition={{ delay: 0.5, duration: 0.5, ease: 'easeOut' }}
+                                 variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                              >
                                  <h2 id="nutrition-heading" className="text-lg sm:text-xl font-semibold mb-3 text-foreground/90 flex items-center gap-2">
                                      <UtensilsCrossed size={18} className="text-primary"/> {t('recipeDetail.nutritionTitle')}
                                  </h2>
-                                 <Card className="bg-muted/30 dark:bg-background/20 border-border/50 rounded-lg shadow-inner overflow-hidden">
-                                     <CardContent className="p-4 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                                         {renderMultilineText(nutritionFacts)}
+                                 <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full"> {/* Ensure card takes height */}
+                                     <CardContent className="p-4 text-sm text-muted-foreground leading-relaxed">
+                                         {renderMultilineText(nutritionFacts) || <p>{t('recipeDetail.nutritionPlaceholder')}</p>}
                                      </CardContent>
                                  </Card>
                              </motion.section>
@@ -383,21 +460,19 @@ function RecipeDetailContent() {
                          {dietPlanSuitability && (
                              <motion.section
                                  aria-labelledby="diet-plan-heading"
-                                 initial={{ opacity: 0, y: 20 }}
-                                 animate={{ opacity: 1, y: 0 }}
-                                 transition={{ delay: 0.6, duration: 0.5, ease: 'easeOut' }}
+                                 variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                              >
                                  <h2 id="diet-plan-heading" className="text-lg sm:text-xl font-semibold mb-3 text-foreground/90 flex items-center gap-2">
                                      <UtensilsCrossed size={18} className="text-primary"/> {t('recipeDetail.dietPlanTitle')}
                                  </h2>
-                                 <Card className="bg-muted/30 dark:bg-background/20 border-border/50 rounded-lg shadow-inner overflow-hidden">
-                                     <CardContent className="p-4 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                                         {renderMultilineText(dietPlanSuitability)}
+                                 <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full"> {/* Ensure card takes height */}
+                                     <CardContent className="p-4 text-sm text-muted-foreground leading-relaxed">
+                                         {renderMultilineText(dietPlanSuitability) || <p>{t('recipeDetail.dietPlanPlaceholder')}</p>}
                                      </CardContent>
                                  </Card>
                              </motion.section>
                          )}
-                     </div>
+                     </motion.div>
                  </>
              )}
 
@@ -406,7 +481,7 @@ function RecipeDetailContent() {
 
           {/* Optional Footer for Image Prompt */}
           {imagePrompt && (
-              <CardFooter className="p-4 sm:p-5 bg-muted/40 dark:bg-background/30 border-t border-border/30 mt-4">
+              <CardFooter className="p-4 sm:p-5 bg-muted/40 dark:bg-background/30 border-t border-border/30 mt-4 rounded-b-xl">
                  <p className="text-xs text-muted-foreground italic text-center w-full">
                     <strong>{t('recipeDetail.imagePromptLabel')}:</strong> "{imagePrompt}"
                   </p>

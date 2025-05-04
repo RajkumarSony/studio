@@ -68,7 +68,11 @@ interface TranslationMessages {
     dietPlanTitle: string;
     nutritionPlaceholder: string;
     dietPlanPlaceholder: string;
+    ingredientsPlaceholder: string;
+    instructionsPlaceholder: string;
     imagePromptLabel: string;
+    errorLoadingTitle: string; // New error title
+    errorLoadingMessage: string; // New error message
   };
   toast: {
     formClearedTitle: string;
@@ -81,6 +85,7 @@ interface TranslationMessages {
     recipesFoundDesc: string; // Use {count} and {s} placeholders
     errorTitle: string;
     genericError: string; // Default error if specific message isn't available
+    validationError: string; // Error for form validation issues
   };
   footer: {
     builtWith: string; // Includes "Built with ❤️ by "
@@ -127,10 +132,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'Quick mode (under 30 minutes)',
       servingSizeLabel: 'Servings',
       servingSizePlaceholder: 'e.g., 2',
-      cuisineTypeLabel: 'Cuisine Type',
-      cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai',
-      cookingMethodLabel: 'Cooking Method',
-      cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling',
+      cuisineTypeLabel: 'Cuisine Type', // New field
+      cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai', // New field
+      cookingMethodLabel: 'Cooking Method', // New field
+      cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling', // New field
       includeDetailsLabel: 'Include Details?',
       includeDetailsHint: '(Nutrition/Diet)',
       includeDetailsAriaLabel: 'Include nutrition facts and diet plan suitability',
@@ -155,9 +160,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        backButton: 'Back to Suggestions',
        nutritionTitle: 'Nutrition Facts (Estimated)',
        dietPlanTitle: 'Diet Plan Suitability',
-       nutritionPlaceholder: 'Detailed nutrition information (e.g., calories, protein, carbs, fat) will be generated here by the AI based on the ingredients and instructions.',
-       dietPlanPlaceholder: 'Example integration: This recipe fits well into a balanced diet. Consider pairing with a side salad for a complete meal. Specific diet plan recommendations (Keto, Paleo, etc.) could be generated here.',
+       nutritionPlaceholder: 'Nutrition information will appear here if available.',
+       dietPlanPlaceholder: 'Diet plan suitability information will appear here if available.',
+       ingredientsPlaceholder: 'No ingredients listed.',
+       instructionsPlaceholder: 'No instructions available.',
        imagePromptLabel: 'Image Prompt',
+       errorLoadingTitle: 'Error Loading Recipe',
+       errorLoadingMessage: 'Could not load the details for this recipe. It might be missing or the link might be incorrect.',
      },
     toast: {
       formClearedTitle: 'Form Cleared',
@@ -170,6 +179,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       recipesFoundDesc: 'We found {count} recipe suggestion{s} for you.',
       errorTitle: 'Error',
       genericError: 'Failed to suggest recipes. Please try again later.',
+      validationError: 'Input validation failed. Please check your entries.',
     },
     footer: {
       builtWith: 'Built with ❤️ by ',
@@ -213,10 +223,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'त्वरित मोड (30 मिनट से कम)',
       servingSizeLabel: 'सर्विंग्स',
       servingSizePlaceholder: 'जैसे, 2',
-      cuisineTypeLabel: 'व्यंजन प्रकार',
-      cuisineTypePlaceholder: 'जैसे, भारतीय, मैक्सिकन, थाई',
-      cookingMethodLabel: 'खाना पकाने की विधि',
-      cookingMethodPlaceholder: 'जैसे, बेकिंग, स्टिर-फ्राई, ग्रिलिंग',
+      cuisineTypeLabel: 'व्यंजन प्रकार', // New field
+      cuisineTypePlaceholder: 'जैसे, भारतीय, मैक्सिकन, थाई', // New field
+      cookingMethodLabel: 'खाना पकाने की विधि', // New field
+      cookingMethodPlaceholder: 'जैसे, बेकिंग, स्टिर-फ्राई, ग्रिलिंग', // New field
       includeDetailsLabel: 'विवरण शामिल करें?',
       includeDetailsHint: '(पोषण/आहार)',
       includeDetailsAriaLabel: 'पोषण तथ्य और आहार योजना उपयुक्तता शामिल करें',
@@ -241,9 +251,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       backButton: 'सुझावों पर वापस जाएं',
       nutritionTitle: 'पोषण तथ्य (अनुमानित)',
       dietPlanTitle: 'आहार योजना उपयुक्तता',
-      nutritionPlaceholder: 'विस्तृत पोषण जानकारी (जैसे, कैलोरी, प्रोटीन, कार्ब्स, वसा) सामग्री और निर्देशों के आधार पर AI द्वारा यहां उत्पन्न की जाएगी।',
-      dietPlanPlaceholder: 'उदाहरण एकीकरण: यह रेसिपी संतुलित आहार में अच्छी तरह फिट बैठती है। संपूर्ण भोजन के लिए साइड सलाद के साथ जोड़ी बनाने पर विचार करें। विशिष्ट आहार योजना सिफारिशें (केटो, पैलियो, आदि) यहां उत्पन्न की जा सकती हैं।',
+      nutritionPlaceholder: 'पोषण जानकारी उपलब्ध होने पर यहाँ दिखाई देगी।',
+      dietPlanPlaceholder: 'आहार योजना उपयुक्तता जानकारी उपलब्ध होने पर यहाँ दिखाई देगी।',
+      ingredientsPlaceholder: 'कोई सामग्री सूचीबद्ध नहीं है।',
+      instructionsPlaceholder: 'कोई निर्देश उपलब्ध नहीं है।',
       imagePromptLabel: 'छवि प्रॉम्प्ट',
+      errorLoadingTitle: 'रेसिपी लोड करने में त्रुटि',
+      errorLoadingMessage: 'इस रेसिपी का विवरण लोड नहीं किया जा सका। यह गुम हो सकता है या लिंक गलत हो सकता है।',
     },
     toast: {
       formClearedTitle: 'फॉर्म साफ़ किया गया',
@@ -256,6 +270,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       recipesFoundDesc: 'हमें आपके लिए {count} रेसिपी सुझाव मिले हैं।',
       errorTitle: 'त्रुटि',
       genericError: 'रेसिपी सुझाने में विफल। कृपया बाद में पुनः प्रयास करें।',
+      validationError: 'इनपुट सत्यापन विफल रहा। कृपया अपनी प्रविष्टियाँ जांचें।',
     },
     footer: {
       builtWith: '❤️ द्वारा निर्मित ',
@@ -299,10 +314,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         quickModeAriaLabel: 'দ্রুত মোড (৩০ মিনিটের নিচে)',
         servingSizeLabel: 'পরিবেশন সংখ্যা',
         servingSizePlaceholder: 'যেমন, ২',
-        cuisineTypeLabel: 'রন্ধনশৈলী',
-        cuisineTypePlaceholder: 'যেমন, ভারতীয়, মেক্সিকান, থাই',
-        cookingMethodLabel: 'রান্নার পদ্ধতি',
-        cookingMethodPlaceholder: 'যেমন, বেকিং, স্টার-ফ্রাই, গ্রিলিং',
+        cuisineTypeLabel: 'রন্ধনশৈলী', // New field
+        cuisineTypePlaceholder: 'যেমন, ভারতীয়, মেক্সিকান, থাই', // New field
+        cookingMethodLabel: 'রান্নার পদ্ধতি', // New field
+        cookingMethodPlaceholder: 'যেমন, বেকিং, স্টার-ফ্রাই, গ্রিলিং', // New field
         includeDetailsLabel: 'বিস্তারিত অন্তর্ভুক্ত?',
         includeDetailsHint: '(পুষ্টি/খাদ্য)',
         includeDetailsAriaLabel: 'পুষ্টি তথ্য এবং খাদ্য পরিকল্পনার উপযুক্ততা অন্তর্ভুক্ত করুন',
@@ -327,9 +342,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        backButton: 'পরামর্শে ফিরে যান',
        nutritionTitle: 'পুষ্টি তথ্য (আনুমানিক)',
        dietPlanTitle: 'খাদ্য পরিকল্পনার উপযুক্ততা',
-       nutritionPlaceholder: 'বিস্তারিত পুষ্টি তথ্য (যেমন, ক্যালোরি, প্রোটিন, কার্বস, ফ্যাট) উপকরণ এবং নির্দেশাবলীর উপর ভিত্তি করে AI দ্বারা এখানে তৈরি করা হবে।',
-       dietPlanPlaceholder: 'উদাহরণ ইন্টিগ্রেশন: এই রেসিপিটি একটি সুষম খাদ্যের সাথে ভালভাবে খাপ খায়। একটি সম্পূর্ণ খাবারের জন্য সাইড সালাদের সাথে জুটি বাঁধার কথা বিবেচনা করুন। নির্দিষ্ট ডায়েট প্ল্যানের সুপারিশ (কেটো, প্যালিও, ইত্যাদি) এখানে তৈরি করা যেতে পারে।',
+       nutritionPlaceholder: 'পুষ্টির তথ্য উপলব্ধ থাকলে এখানে দেখা যাবে।',
+       dietPlanPlaceholder: 'খাদ্য পরিকল্পনার উপযুক্ততার তথ্য উপলব্ধ থাকলে এখানে দেখা যাবে।',
+       ingredientsPlaceholder: 'কোন উপকরণ তালিকাভুক্ত নেই।',
+       instructionsPlaceholder: 'কোনো নির্দেশনা উপলব্ধ নেই।',
        imagePromptLabel: 'চিত্র প্রম্পট',
+       errorLoadingTitle: 'রেসিপি লোড করতে ত্রুটি',
+       errorLoadingMessage: 'এই রেসিপির বিবরণ লোড করা যায়নি। এটি অনুপস্থিত থাকতে পারে বা লিঙ্কটি ভুল হতে পারে।',
      },
     toast: {
         formClearedTitle: 'ফর্ম পরিষ্কার করা হয়েছে',
@@ -342,6 +361,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         recipesFoundDesc: 'আমরা আপনার জন্য {count}টি রেসিপি পরামর্শ খুঁজে পেয়েছি।',
         errorTitle: 'ত্রুটি',
         genericError: 'রেসিপি পরামর্শ দিতে ব্যর্থ হয়েছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।',
+        validationError: 'ইনপুট যাচাইকরণ ব্যর্থ হয়েছে। অনুগ্রহ করে আপনার এন্ট্রি চেক করুন।',
     },
     footer: {
         builtWith: '❤️ দিয়ে তৈরি ',
@@ -385,10 +405,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'झटपट मोड (३० मिनिटांपेक्षा कमी)',
           servingSizeLabel: 'सर्व्हिंग्ज',
           servingSizePlaceholder: 'उदा. २',
-          cuisineTypeLabel: 'पाककृती प्रकार',
-          cuisineTypePlaceholder: 'उदा. भारतीय, मेक्सिकन, थाई',
-          cookingMethodLabel: 'शिजवण्याची पद्धत',
-          cookingMethodPlaceholder: 'उदा. बेकिंग, स्टिर-फ्राय, ग्रिलिंग',
+          cuisineTypeLabel: 'पाककृती प्रकार', // New field
+          cuisineTypePlaceholder: 'उदा. भारतीय, मेक्सिकन, थाई', // New field
+          cookingMethodLabel: 'शिजवण्याची पद्धत', // New field
+          cookingMethodPlaceholder: 'उदा. बेकिंग, स्टिर-फ्राय, ग्रिलिंग', // New field
           includeDetailsLabel: 'तपशील समाविष्ट करायचे?',
           includeDetailsHint: '(पोषण/आहार)',
           includeDetailsAriaLabel: 'पोषण तथ्ये आणि आहार योजना योग्यता समाविष्ट करा',
@@ -413,9 +433,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          backButton: 'सूचनांवर परत जा',
          nutritionTitle: 'पोषण तथ्ये (अंदाजित)',
          dietPlanTitle: 'आहार योजना योग्यता',
-         nutritionPlaceholder: 'तपशीलवार पोषण माहिती (उदा. कॅलरीज, प्रथिने, कर्बोदके, चरबी) साहित्य आणि सूचनांवर आधारित AI द्वारे येथे तयार केली जाईल.',
-         dietPlanPlaceholder: 'उदाहरण एकत्रीकरण: ही रेसिपी संतुलित आहारात चांगली बसते. संपूर्ण जेवणासाठी साइड सॅलडसह जोडण्याचा विचार करा. विशिष्ट आहार योजना शिफारसी (केटो, पॅलिओ, इ.) येथे तयार केल्या जाऊ शकतात.',
+         nutritionPlaceholder: 'पोषण माहिती उपलब्ध असल्यास येथे दिसेल.',
+         dietPlanPlaceholder: 'आहार योजना योग्यतेची माहिती उपलब्ध असल्यास येथे दिसेल.',
+         ingredientsPlaceholder: 'कोणतेही साहित्य सूचीबद्ध नाही.',
+         instructionsPlaceholder: 'कोणतीही कृती उपलब्ध नाही.',
          imagePromptLabel: 'प्रतिमा प्रॉम्प्ट',
+         errorLoadingTitle: 'रेसिपी लोड करण्यात त्रुटी',
+         errorLoadingMessage: 'या रेसिपीचा तपशील लोड होऊ शकला नाही. तो गहाळ असू शकतो किंवा लिंक चुकीची असू शकते.',
        },
       toast: {
           formClearedTitle: 'फॉर्म साफ केला',
@@ -428,6 +452,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           recipesFoundDesc: 'आम्हाला तुमच्यासाठी {count} रेसिपी सूचना सापडल्या.',
           errorTitle: 'त्रुटी',
           genericError: 'रेसिपी सुचवण्यात अयशस्वी. कृपया नंतर पुन्हा प्रयत्न करा.',
+          validationError: 'इनपुट प्रमाणीकरण अयशस्वी. कृपया आपल्या नोंदी तपासा.',
       },
       footer: {
           builtWith: '❤️ ने बनवले आहे ',
@@ -471,10 +496,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'விரைவு பயன்முறை (30 நிமிடங்களுக்குள்)',
           servingSizeLabel: 'பரிமாறும் அளவு',
           servingSizePlaceholder: 'எ.கா., 2',
-          cuisineTypeLabel: 'சமையல் வகை',
-          cuisineTypePlaceholder: 'எ.கா., இந்தியன், மெக்சிகன், தாய்',
-          cookingMethodLabel: 'சமையல் முறை',
-          cookingMethodPlaceholder: 'எ.கா., பேக்கிங், ஸ்டிர்-ஃப்ரை, கிரில்லிங்',
+          cuisineTypeLabel: 'சமையல் வகை', // New field
+          cuisineTypePlaceholder: 'எ.கா., இந்தியன், மெக்சிகன், தாய்', // New field
+          cookingMethodLabel: 'சமையல் முறை', // New field
+          cookingMethodPlaceholder: 'எ.கா., பேக்கிங், ஸ்டிர்-ஃப்ரை, கிரில்லிங்', // New field
           includeDetailsLabel: 'விவரங்களைச் சேர்க்கவா?',
           includeDetailsHint: '(ஊட்டச்சத்து/உணவு)',
           includeDetailsAriaLabel: 'ஊட்டச்சத்து உண்மைகள் மற்றும் உணவுத் திட்டப் பொருத்தத்தைச் சேர்க்கவும்',
@@ -499,9 +524,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          backButton: 'பரிந்துரைகளுக்குத் திரும்பு',
          nutritionTitle: 'ஊட்டச்சத்து உண்மைகள் (மதிப்பிடப்பட்டது)',
          dietPlanTitle: 'உணவுத் திட்டப் பொருத்தம்',
-         nutritionPlaceholder: 'விரிவான ஊட்டச்சத்து தகவல்கள் (எ.கா., கலோரிகள், புரதம், கார்போஹைட்ரேட்டுகள், கொழுப்பு) பொருட்கள் மற்றும் வழிமுறைகளின் அடிப்படையில் AI ஆல் இங்கே உருவாக்கப்படும்.',
-         dietPlanPlaceholder: 'எடுத்துக்காட்டு ஒருங்கிணைப்பு: இந்த செய்முறை சமச்சீர் உணவில் நன்றாகப் பொருந்துகிறது. முழுமையான உணவிற்கு ஒரு பக்க சாலட் உடன் இணைக்க பரிசீலிக்கவும். குறிப்பிட்ட உணவுத் திட்டப் பரிந்துரைகள் (கெட்டோ, பாலியோ, முதலியன) இங்கே உருவாக்கப்படலாம்.',
+         nutritionPlaceholder: 'ஊட்டச்சத்து தகவல் கிடைத்தால் இங்கே தோன்றும்.',
+         dietPlanPlaceholder: 'உணவுத் திட்டப் பொருத்தம் பற்றிய தகவல் கிடைத்தால் இங்கே தோன்றும்.',
+         ingredientsPlaceholder: 'பொருட்கள் எதுவும் பட்டியலிடப்படவில்லை.',
+         instructionsPlaceholder: 'செய்முறை எதுவும் கிடைக்கவில்லை.',
          imagePromptLabel: 'பட உந்தல்',
+         errorLoadingTitle: 'செய்முறையை ஏற்றுவதில் பிழை',
+         errorLoadingMessage: 'இந்த செய்முறையின் விவரங்களை ஏற்ற முடியவில்லை. அது விடுபட்டிருக்கலாம் அல்லது இணைப்பு தவறாக இருக்கலாம்.',
        },
       toast: {
           formClearedTitle: 'படிவம் அழிக்கப்பட்டது',
@@ -514,6 +543,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           recipesFoundDesc: 'உங்களுக்காக {count} சமையல் குறிப்பு பரிந்துரைகளைக் கண்டறிந்துள்ளோம்.',
           errorTitle: 'பிழை',
           genericError: 'சமையல் குறிப்புகளைப் பரிந்துரைக்க முடியவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.',
+          validationError: 'உள்ளீட்டு சரிபார்ப்பு தோல்வியடைந்தது. உங்கள் உள்ளீடுகளை சரிபார்க்கவும்.',
       },
       footer: {
           builtWith: '❤️ ஆல் உருவாக்கப்பட்டது ',
@@ -557,10 +587,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'త్వరిత మోడ్ (30 నిమిషాలలోపు)',
           servingSizeLabel: 'సర్వింగ్‌లు',
           servingSizePlaceholder: 'ఉదా., 2',
-          cuisineTypeLabel: 'వంటకం రకం',
-          cuisineTypePlaceholder: 'ఉదా., ఇండియన్, మెక్సికన్, థాయ్',
-          cookingMethodLabel: 'వంట పద్ధతి',
-          cookingMethodPlaceholder: 'ఉదా., బేకింగ్, స్టర్-ఫ్రై, గ్రిల్లింగ్',
+          cuisineTypeLabel: 'వంటకం రకం', // New field
+          cuisineTypePlaceholder: 'ఉదా., ఇండియన్, మెక్సికన్, థాయ్', // New field
+          cookingMethodLabel: 'వంట పద్ధతి', // New field
+          cookingMethodPlaceholder: 'ఉదా., బేకింగ్, స్టర్-ఫ్రై, గ్రిల్లింగ్', // New field
           includeDetailsLabel: 'వివరాలను చేర్చాలా?',
           includeDetailsHint: '(పోషకాహారం/ఆహారం)',
           includeDetailsAriaLabel: 'పోషకాహార వాస్తవాలు మరియు ఆహార ప్రణాళిక అనుకూలతను చేర్చండి',
@@ -585,9 +615,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          backButton: 'సూచనలకు తిరిగి వెళ్ళు',
          nutritionTitle: 'పోషకాహార వాస్తవాలు (అంచనా)',
          dietPlanTitle: 'ఆహార ప్రణాళిక అనుకూలత',
-         nutritionPlaceholder: 'వివరణాత్మక పోషకాహార సమాచారం (ఉదా., కేలరీలు, ప్రోటీన్, కార్బోహైడ్రేట్లు, కొవ్వు) పదార్థాలు మరియు సూచనల ఆధారంగా AI ద్వారా ఇక్కడ రూపొందించబడుతుంది.',
-         dietPlanPlaceholder: 'ఉదాహరణ ఏకీకరణ: ఈ వంటకం సమతుల్య ఆహారంలో బాగా సరిపోతుంది. పూర్తి భోజనం కోసం సైడ్ సలాడ్‌తో జత చేయడాన్ని పరిగణించండి. నిర్దిష్ట ఆహార ప్రణాళిక సిఫార్సులు (కీటో, పాలియో, మొదలైనవి) ఇక్కడ రూపొందించబడతాయి.',
+         nutritionPlaceholder: 'పోషకాహార సమాచారం అందుబాటులో ఉంటే ఇక్కడ కనిపిస్తుంది.',
+         dietPlanPlaceholder: 'ఆహార ప్రణాళిక అనుకూలత సమాచారం అందుబాటులో ఉంటే ఇక్కడ కనిపిస్తుంది.',
+         ingredientsPlaceholder: 'పదార్థాలు ఏవీ జాబితా చేయబడలేదు.',
+         instructionsPlaceholder: 'సూచనలు ఏవీ అందుబాటులో లేవు.',
          imagePromptLabel: 'చిత్ర ప్రాంప్ట్',
+         errorLoadingTitle: 'వంటకాన్ని లోడ్ చేయడంలో లోపం',
+         errorLoadingMessage: 'ఈ వంటకం వివరాలను లోడ్ చేయలేకపోయాము. అది అందుబాటులో లేకపోవచ్చు లేదా లింక్ తప్పుగా ఉండవచ్చు.',
        },
       toast: {
           formClearedTitle: 'ఫారమ్ క్లియర్ చేయబడింది',
@@ -600,6 +634,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           recipesFoundDesc: 'మేము మీ కోసం {count} వంటకం సూచనలను కనుగొన్నాము.',
           errorTitle: 'లోపం',
           genericError: 'వంటకాలను సూచించడంలో విఫలమైంది. దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి.',
+          validationError: 'ఇన్‌పుట్ ధ్రువీకరణ విఫలమైంది. దయచేసి మీ ఎంట్రీలను తనిఖీ చేయండి.',
       },
       footer: {
           builtWith: '❤️ ద్వారా నిర్మించబడింది ',
@@ -643,10 +678,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'ଶୀଘ୍ର ମୋଡ୍ (୩୦ ମିନିଟ୍ ତଳେ)',
           servingSizeLabel: 'ସର୍ଭିଙ୍ଗ୍ ସଂଖ୍ୟା',
           servingSizePlaceholder: 'ଯେପରି, ୨',
-          cuisineTypeLabel: 'ରନ୍ଧନ ପ୍ରକାର',
-          cuisineTypePlaceholder: 'ଯେପରି, ଭାରତୀୟ, ମେକ୍ସିକାନ୍, ଥାଇ',
-          cookingMethodLabel: 'ରାନ୍ଧିବା ପଦ୍ଧତି',
-          cookingMethodPlaceholder: 'ଯେପରି, ବେକିଙ୍ଗ୍, ଷ୍ଟିର୍-ଫ୍ରାଏ, ଗ୍ରିଲିଙ୍ଗ୍',
+          cuisineTypeLabel: 'ରନ୍ଧନ ପ୍ରକାର', // New field
+          cuisineTypePlaceholder: 'ଯେପରି, ଭାରତୀୟ, ମେକ୍ସିକାନ୍, ଥାଇ', // New field
+          cookingMethodLabel: 'ରାନ୍ଧିବା ପଦ୍ଧତି', // New field
+          cookingMethodPlaceholder: 'ଯେପରି, ବେକିଙ୍ଗ୍, ଷ୍ଟିର୍-ଫ୍ରାଏ, ଗ୍ରିଲିଙ୍ଗ୍', // New field
           includeDetailsLabel: 'ବିବରଣୀ ସାମିଲ କରନ୍ତୁ?',
           includeDetailsHint: '(ପୋଷଣ/ଆହାର)',
           includeDetailsAriaLabel: 'ପୋଷଣ ତଥ୍ୟ ଏବଂ ଆହାର ଯୋଜନା ଉପଯୁକ୍ତତା ସାମିଲ କରନ୍ତୁ',
@@ -671,9 +706,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          backButton: 'ପରାମର୍ଶକୁ ଫେରନ୍ତୁ',
          nutritionTitle: 'ପୋଷଣ ତଥ୍ୟ (ଆନୁମାନିକ)',
          dietPlanTitle: 'ଆହାର ଯୋଜନା ଉପଯୁକ୍ତତା',
-         nutritionPlaceholder: 'ବିସ୍ତୃତ ପୋଷଣ ତଥ୍ୟ (ଯେପରି, କ୍ୟାଲୋରୀ, ପ୍ରୋଟିନ୍, କାର୍ବସ୍, ଫ୍ୟାଟ୍) ଉପାଦାନ ଏବଂ ନିର୍ଦ୍ଦେଶାବଳୀ ଆଧାରରେ AI ଦ୍ୱାରା ଏଠାରେ ପ୍ରସ୍ତୁତ କରାଯିବ।',
-         dietPlanPlaceholder: 'ଉଦାହରଣ ଏକୀକରଣ: ଏହି ରେସିପି ଏକ ସନ୍ତୁଳିତ ଆହାରରେ ଭଲ ଭାବରେ ଖାପ ଖାଏ। ଏକ ସମ୍ପୂର୍ଣ୍ଣ ଭୋଜନ ପାଇଁ ସାଇଡ୍ ସାଲାଡ୍ ସହିତ ଯୋଡିବାକୁ ବିଚାର କରନ୍ତୁ। ନିର୍ଦ୍ଦିଷ୍ଟ ଆହାର ଯୋଜନା ସୁପାରିଶ (କେଟୋ, ପାଲିଓ, ଇତ୍ୟାଦି) ଏଠାରେ ପ୍ରସ୍ତୁତ କରାଯାଇପାରେ।',
+         nutritionPlaceholder: 'ପୋଷଣ ତଥ୍ୟ ଉପଲବ୍ଧ ହେଲେ ଏଠାରେ ଦେଖାଯିବ।',
+         dietPlanPlaceholder: 'ଆହାର ଯୋଜନା ଉପଯୁକ୍ତତା ତଥ୍ୟ ଉପଲବ୍ଧ ହେଲେ ଏଠାରେ ଦେଖାଯିବ।',
+         ingredientsPlaceholder: 'କୌଣସି ଉପାଦାନ ତାଲିକାଭୁକ୍ତ ହୋଇନାହିଁ।',
+         instructionsPlaceholder: 'କୌଣସି ନିର୍ଦ୍ଦେଶାବଳୀ ଉପଲବ୍ଧ ନାହିଁ।',
          imagePromptLabel: 'ଚିତ୍ର ପ୍ରମ୍ପ୍ଟ',
+         errorLoadingTitle: 'ରେସିପି ଲୋଡ୍ କରିବାରେ ତ୍ରୁଟି',
+         errorLoadingMessage: 'ଏହି ରେସିପିର ବିବରଣୀ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। ଏହା ହଜିଯାଇଥାଇପାରେ କିମ୍ବା ଲିଙ୍କ୍ ଭୁଲ୍ ହୋଇପାରେ।',
        },
       toast: {
           formClearedTitle: 'ଫର୍ମ ସଫା କରାଗଲା',
@@ -686,6 +725,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           recipesFoundDesc: 'ଆମେ ଆପଣଙ୍କ ପାଇଁ {count}ଟି ରେସିପି ପରାମର୍ଶ ପାଇଛୁ।',
           errorTitle: 'ତ୍ରୁଟି',
           genericError: 'ରେସିପି ପରାମର୍ଶ ଦେବାରେ ବିଫଳ। ଦୟାକରି ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।',
+          validationError: 'ଇନପୁଟ୍ ବୈଧତା ବିଫଳ ହେଲା। ଦୟାକରି ଆପଣଙ୍କର ପ୍ରବିଷ୍ଟିଗୁଡିକ ଯାଞ୍ଚ କରନ୍ତୁ।',
       },
       footer: {
           builtWith: '❤️ ଦ୍ୱାରା ନିର୍ମିତ ',
@@ -729,10 +769,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'ਤੁਰੰਤ ਮੋਡ (੩੦ ਮਿੰਟ ਤੋਂ ਘੱਟ)',
           servingSizeLabel: 'ਸਰਵਿੰਗਜ਼',
           servingSizePlaceholder: 'ਜਿਵੇਂ ਕਿ, ੨',
-          cuisineTypeLabel: 'ਪਕਵਾਨ ਦੀ ਕਿਸਮ',
-          cuisineTypePlaceholder: 'ਜਿਵੇਂ ਕਿ, ਭਾਰਤੀ, ਮੈਕਸੀਕਨ, ਥਾਈ',
-          cookingMethodLabel: 'ਖਾਣਾ ਪਕਾਉਣ ਦਾ ਢੰਗ',
-          cookingMethodPlaceholder: 'ਜਿਵੇਂ ਕਿ, ਬੇਕਿੰਗ, ਸਟਰ-ਫਰਾਈ, ਗ੍ਰਿਲਿੰਗ',
+          cuisineTypeLabel: 'ਪਕਵਾਨ ਦੀ ਕਿਸਮ', // New field
+          cuisineTypePlaceholder: 'ਜਿਵੇਂ ਕਿ, ਭਾਰਤੀ, ਮੈਕਸੀਕਨ, ਥਾਈ', // New field
+          cookingMethodLabel: 'ਖਾਣਾ ਪਕਾਉਣ ਦਾ ਢੰਗ', // New field
+          cookingMethodPlaceholder: 'ਜਿਵੇਂ ਕਿ, ਬੇਕਿੰਗ, ਸਟਰ-ਫਰਾਈ, ਗ੍ਰਿਲਿੰਗ', // New field
           includeDetailsLabel: 'ਵੇਰਵੇ ਸ਼ਾਮਲ ਕਰੀਏ?',
           includeDetailsHint: '(ਪੋਸ਼ਣ/ਖੁਰਾਕ)',
           includeDetailsAriaLabel: 'ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਤੱਥ ਅਤੇ ਖੁਰਾਕ ਯੋਜਨਾ ਦੀ ਯੋਗਤਾ ਸ਼ਾਮਲ ਕਰੋ',
@@ -757,9 +797,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          backButton: 'ਸੁਝਾਵਾਂ \'ਤੇ ਵਾਪਸ ਜਾਓ',
          nutritionTitle: 'ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਤੱਥ (ਅਨੁਮਾਨਿਤ)',
          dietPlanTitle: 'ਖੁਰਾਕ ਯੋਜਨਾ ਯੋਗਤਾ',
-         nutritionPlaceholder: 'ਵਿਸਤ੍ਰਿਤ ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਜਾਣਕਾਰੀ (ਜਿਵੇਂ, ਕੈਲੋਰੀ, ਪ੍ਰੋਟੀਨ, ਕਾਰਬਸ, ਫੈਟ) ਸਮੱਗਰੀ ਅਤੇ ਨਿਰਦੇਸ਼ਾਂ ਦੇ ਆਧਾਰ \'ਤੇ AI ਦੁਆਰਾ ਇੱਥੇ ਤਿਆਰ ਕੀਤੀ ਜਾਵੇਗੀ।',
-         dietPlanPlaceholder: 'ਉਦਾਹਰਨ ਏਕੀਕਰਣ: ਇਹ ਵਿਅੰਜਨ ਸੰਤੁਲਿਤ ਖੁਰਾਕ ਵਿੱਚ ਚੰਗੀ ਤਰ੍ਹਾਂ ਫਿੱਟ ਬੈਠਦਾ ਹੈ। ਪੂਰੇ ਭੋਜਨ ਲਈ ਸਾਈਡ ਸਲਾਦ ਨਾਲ ਜੋੜਨ \'ਤੇ ਵਿਚਾਰ ਕਰੋ। ਖਾਸ ਖੁਰਾਕ ਯੋਜਨਾ ਸਿਫਾਰਸ਼ਾਂ (ਕੀਟੋ, ਪੈਲੀਓ, ਆਦਿ) ਇੱਥੇ ਤਿਆਰ ਕੀਤੀਆਂ ਜਾ ਸਕਦੀਆਂ ਹਨ।',
+         nutritionPlaceholder: 'ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਜਾਣਕਾਰੀ ਉਪਲਬਧ ਹੋਣ \'ਤੇ ਇੱਥੇ ਦਿਖਾਈ ਦੇਵੇਗੀ।',
+         dietPlanPlaceholder: 'ਖੁਰਾਕ ਯੋਜਨਾ ਯੋਗਤਾ ਜਾਣਕਾਰੀ ਉਪਲਬਧ ਹੋਣ \'ਤੇ ਇੱਥੇ ਦਿਖਾਈ ਦੇਵੇਗੀ।',
+         ingredientsPlaceholder: 'ਕੋਈ ਸਮੱਗਰੀ ਸੂਚੀਬੱਧ ਨਹੀਂ ਹੈ।',
+         instructionsPlaceholder: 'ਕੋਈ ਨਿਰਦੇਸ਼ ਉਪਲਬਧ ਨਹੀਂ ਹਨ।',
          imagePromptLabel: 'ਚਿੱਤਰ ਪ੍ਰੋਂਪਟ',
+         errorLoadingTitle: 'ਵਿਅੰਜਨ ਲੋਡ ਕਰਨ ਵਿੱਚ ਗਲਤੀ',
+         errorLoadingMessage: 'ਇਸ ਵਿਅੰਜਨ ਦੇ ਵੇਰਵੇ ਲੋਡ ਨਹੀਂ ਕੀਤੇ ਜਾ ਸਕੇ। ਇਹ ਗੁੰਮ ਹੋ ਸਕਦਾ ਹੈ ਜਾਂ ਲਿੰਕ ਗਲਤ ਹੋ ਸਕਦਾ ਹੈ।',
        },
       toast: {
           formClearedTitle: 'ਫਾਰਮ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ',
@@ -772,6 +816,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           recipesFoundDesc: 'ਸਾਨੂੰ ਤੁਹਾਡੇ ਲਈ {count} ਵਿਅੰਜਨ ਸੁਝਾਅ ਮਿਲੇ ਹਨ।',
           errorTitle: 'ਗਲਤੀ',
           genericError: 'ਵਿਅੰਜਨ ਸੁਝਾਉਣ ਵਿੱਚ ਅਸਫਲ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
+          validationError: 'ਇਨਪੁਟ ਪ੍ਰਮਾਣਿਕਤਾ ਅਸਫਲ ਰਹੀ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੀਆਂ ਐਂਟਰੀਆਂ ਦੀ ਜਾਂਚ ਕਰੋ।',
       },
       footer: {
           builtWith: '❤️ ਦੁਆਰਾ ਬਣਾਇਆ ਗਿਆ ',
@@ -815,10 +860,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'クイックモード（30分未満）',
           servingSizeLabel: 'サービング',
           servingSizePlaceholder: '例：2',
-          cuisineTypeLabel: '料理の種類',
-          cuisineTypePlaceholder: '例：インド料理、メキシコ料理、タイ料理',
-          cookingMethodLabel: '調理法',
-          cookingMethodPlaceholder: '例：焼く、炒める、グリルする',
+          cuisineTypeLabel: '料理の種類', // New field
+          cuisineTypePlaceholder: '例：インド料理、メキシコ料理、タイ料理', // New field
+          cookingMethodLabel: '調理法', // New field
+          cookingMethodPlaceholder: '例：焼く、炒める、グリルする', // New field
           includeDetailsLabel: '詳細を含める？',
           includeDetailsHint: '（栄養/食事）',
           includeDetailsAriaLabel: '栄養成分表示と食事プランの適合性を含める',
@@ -843,9 +888,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          backButton: '提案に戻る',
          nutritionTitle: '栄養成分表示（推定）',
          dietPlanTitle: '食事プラン適合性',
-         nutritionPlaceholder: '詳細な栄養情報（例：カロリー、タンパク質、炭水化物、脂肪）は、材料と指示に基づいてAIによってここで生成されます。',
-         dietPlanPlaceholder: '統合例：このレシピはバランスの取れた食事によく合います。完全な食事のためにサイドサラダと組み合わせることを検討してください。特定の食事プランの推奨事項（ケト、パレオなど）はここで生成できます。',
+         nutritionPlaceholder: '栄養情報が利用可能な場合はここに表示されます。',
+         dietPlanPlaceholder: '食事プランの適合性情報が利用可能な場合はここに表示されます。',
+         ingredientsPlaceholder: '材料はリストされていません。',
+         instructionsPlaceholder: '作り方は利用できません。',
          imagePromptLabel: '画像プロンプト',
+         errorLoadingTitle: 'レシピの読み込みエラー',
+         errorLoadingMessage: 'このレシピの詳細を読み込めませんでした。見つからないか、リンクが間違っている可能性があります。',
        },
       toast: {
           formClearedTitle: 'フォームがクリアされました',
@@ -858,6 +907,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           recipesFoundDesc: 'あなたのために {count} 件のレシピ提案が見つかりました。',
           errorTitle: 'エラー',
           genericError: 'レシピの提案に失敗しました。後でもう一度お試しください。',
+          validationError: '入力検証に失敗しました。エントリを確認してください。',
       },
       footer: {
           builtWith: '❤️ で作成 ',
@@ -901,10 +951,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'Modo rápido (menos de 30 minutos)',
       servingSizeLabel: 'Porciones',
       servingSizePlaceholder: 'ej., 2',
-      cuisineTypeLabel: 'Tipo de Cocina',
-      cuisineTypePlaceholder: 'ej., india, mexicana, tailandesa',
-      cookingMethodLabel: 'Método de Cocción',
-      cookingMethodPlaceholder: 'ej., hornear, saltear, asar a la parrilla',
+      cuisineTypeLabel: 'Tipo de Cocina', // New field
+      cuisineTypePlaceholder: 'ej., india, mexicana, tailandesa', // New field
+      cookingMethodLabel: 'Método de Cocción', // New field
+      cookingMethodPlaceholder: 'ej., hornear, saltear, asar a la parrilla', // New field
       includeDetailsLabel: '¿Incluir Detalles?',
       includeDetailsHint: '(Nutrición/Dieta)',
       includeDetailsAriaLabel: 'Incluir información nutricional y adecuación al plan de dieta',
@@ -929,9 +979,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        backButton: 'Volver a Sugerencias',
        nutritionTitle: 'Información Nutricional (Estimada)',
        dietPlanTitle: 'Adecuación al Plan de Dieta',
-       nutritionPlaceholder: 'La información nutricional detallada (por ejemplo, calorías, proteínas, carbohidratos, grasas) será generada aquí por la IA basándose en los ingredientes y las instrucciones.',
-       dietPlanPlaceholder: 'Ejemplo de integración: Esta receta encaja bien en una dieta equilibrada. Considera acompañarla con una ensalada para una comida completa. Las recomendaciones específicas del plan de dieta (Keto, Paleo, etc.) podrían generarse aquí.',
+       nutritionPlaceholder: 'La información nutricional aparecerá aquí si está disponible.',
+       dietPlanPlaceholder: 'La información sobre la adecuación al plan de dieta aparecerá aquí si está disponible.',
+       ingredientsPlaceholder: 'No hay ingredientes listados.',
+       instructionsPlaceholder: 'No hay instrucciones disponibles.',
        imagePromptLabel: 'Prompt de Imagen',
+       errorLoadingTitle: 'Error al Cargar la Receta',
+       errorLoadingMessage: 'No se pudieron cargar los detalles de esta receta. Puede que falte o que el enlace sea incorrecto.',
      },
     toast: {
       formClearedTitle: 'Formulario Limpiado',
@@ -944,6 +998,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       recipesFoundDesc: 'Encontramos {count} sugerencia{s} de recetas para ti.',
       errorTitle: 'Error',
       genericError: 'Fallo al sugerir recetas. Por favor, inténtalo de nuevo más tarde.',
+      validationError: 'Falló la validación de entrada. Por favor, revisa tus entradas.',
     },
     footer: {
       builtWith: 'Hecho con ❤️ por ',
@@ -987,10 +1042,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'Mode rapide (moins de 30 minutes)',
       servingSizeLabel: 'Portions',
       servingSizePlaceholder: 'ex: 2',
-      cuisineTypeLabel: 'Type de Cuisine',
-      cuisineTypePlaceholder: 'ex: indienne, mexicaine, thaïlandaise',
-      cookingMethodLabel: 'Méthode de Cuisson',
-      cookingMethodPlaceholder: 'ex: cuisson au four, sauté, grill',
+      cuisineTypeLabel: 'Type de Cuisine', // New field
+      cuisineTypePlaceholder: 'ex: indienne, mexicaine, thaïlandaise', // New field
+      cookingMethodLabel: 'Méthode de Cuisson', // New field
+      cookingMethodPlaceholder: 'ex: cuisson au four, sauté, grill', // New field
       includeDetailsLabel: 'Inclure les Détails ?',
       includeDetailsHint: '(Nutrition/Régime)',
       includeDetailsAriaLabel: 'Inclure les informations nutritionnelles et la compatibilité avec le régime alimentaire',
@@ -1015,9 +1070,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        backButton: 'Retour aux Suggestions',
        nutritionTitle: 'Informations Nutritionnelles (Estimées)',
        dietPlanTitle: 'Compatibilité avec le Régime Alimentaire',
-       nutritionPlaceholder: 'Des informations nutritionnelles détaillées (par exemple, calories, protéines, glucides, lipides) seront générées ici par l\'IA en fonction des ingrédients et des instructions.',
-       dietPlanPlaceholder: 'Exemple d\'intégration : Cette recette s\'intègre bien dans une alimentation équilibrée. Envisagez de l\'accompagner d\'une salade pour un repas complet. Des recommandations spécifiques de plan alimentaire (Keto, Paleo, etc.) pourraient être générées ici.',
+       nutritionPlaceholder: 'Les informations nutritionnelles apparaîtront ici si disponibles.',
+       dietPlanPlaceholder: 'Les informations sur la compatibilité avec le régime alimentaire apparaîtront ici si disponibles.',
+       ingredientsPlaceholder: 'Aucun ingrédient listé.',
+       instructionsPlaceholder: 'Aucune instruction disponible.',
        imagePromptLabel: 'Prompt d\'Image',
+       errorLoadingTitle: 'Erreur de Chargement de la Recette',
+       errorLoadingMessage: 'Impossible de charger les détails de cette recette. Elle est peut-être manquante ou le lien est incorrect.',
      },
     toast: {
       formClearedTitle: 'Formulaire Effacé',
@@ -1030,6 +1089,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       recipesFoundDesc: 'Nous avons trouvé {count} suggestion{s} de recette pour vous.',
       errorTitle: 'Erreur',
       genericError: 'Échec de la suggestion de recettes. Veuillez réessayer plus tard.',
+      validationError: 'La validation de l\'entrée a échoué. Veuillez vérifier vos saisies.',
     },
     footer: {
       builtWith: 'Construit avec ❤️ par ',
