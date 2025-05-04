@@ -187,10 +187,21 @@ export default function Home() {
     const fontVariable = selectedLangData ? selectedLangData.fontVariable : 'var(--font-noto-sans)'; // Default fallback
     document.documentElement.style.setProperty('--font-dynamic', fontVariable);
     document.documentElement.lang = selectedLanguage;
+    // Persist language choice to localStorage
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('selectedLanguage', selectedLanguage);
+    }
   }, [selectedLanguage]);
 
 
   useEffect(() => {
+    // Load selected language from localStorage on client-side mount
+    if (typeof window !== 'undefined') {
+        const storedLanguage = localStorage.getItem('selectedLanguage');
+        if (storedLanguage && supportedLanguages.some(l => l.value === storedLanguage)) {
+            setSelectedLanguage(storedLanguage as LanguageCode);
+        }
+    }
     setIsClient(true);
   }, []);
 
@@ -218,45 +229,64 @@ export default function Home() {
     });
   };
 
-  // Function to navigate to recipe detail page
+ // Function to navigate to recipe detail page
   const handleViewRecipe = (recipe: RecipeItem) => {
-    // Create URLSearchParams object
-    const queryParams = new URLSearchParams();
+    // Use session storage to pass data if it's too large for URL
+    // Data URIs can be very long
+    try {
+      // Serialize the recipe object (excluding potentially huge image data if possible)
+      const recipeDataToStore = {
+        ...recipe,
+        // Optionally remove or replace large data before storing
+        // imageUrl: recipe.imageUrl ? 'image_data_omitted' : undefined,
+        // We'll pass imageUrl separately in query params if not too big,
+        // or rely on sessionStorage entirely
+      };
+      const serializedRecipe = JSON.stringify(recipeDataToStore);
+      sessionStorage.setItem(`recipe-${recipe.recipeName}`, serializedRecipe);
 
-    // Helper to safely encode and add parameters
-    const addParam = (key: string, value: string | undefined | null) => {
-        if (value !== undefined && value !== null) {
-            queryParams.set(key, encodeURIComponent(value));
-        }
-    };
+      // Create URLSearchParams object for essential/smaller params
+      const queryParams = new URLSearchParams();
+      const addParam = (key: string, value: string | undefined | null) => {
+          if (value !== undefined && value !== null) {
+              queryParams.set(key, encodeURIComponent(value));
+          }
+      };
 
-    // Add parameters using the helper
-    addParam('name', recipe.recipeName);
-    addParam('ingredients', recipe.ingredients);
-    addParam('instructions', recipe.instructions);
-    addParam('estimatedTime', recipe.estimatedTime);
-    addParam('difficulty', recipe.difficulty);
-    addParam('language', selectedLanguage); // Pass current language (already encoded if needed)
-
-    // Optional fields - add only if they have a value
-    addParam('imageUrl', recipe.imageUrl); // Data URIs are generally URL-safe, but encode just in case
-    addParam('imagePrompt', recipe.imagePrompt);
-    addParam('nutritionFacts', recipe.nutritionFacts);
-    addParam('dietPlanSuitability', recipe.dietPlanSuitability);
-
-
-    // Encode recipe name for the path segment (slug) - ensure it's URL-friendly
-     const encodedSlug = encodeURIComponent(recipe.recipeName.replace(/\s+/g, '-').toLowerCase())
-       // Further replace common problematic characters for paths if necessary
-       .replace(/%/g, '') // Remove percentage signs if they cause issues
-       .replace(/\?/g, '') // Remove question marks
-       .replace(/#/g, ''); // Remove hash symbols
+      // Add essential identifiers and language
+      addParam('name', recipe.recipeName);
+      addParam('lang', selectedLanguage);
+      // Add image URL only if it's NOT a data URI or is reasonably short
+      if (recipe.imageUrl && !recipe.imageUrl.startsWith('data:image')) {
+         addParam('imageUrl', recipe.imageUrl);
+      } else if (recipe.imageUrl && recipe.imageUrl.length < 1000) { // Example length limit
+          addParam('imageUrl', recipe.imageUrl);
+      } else {
+          // Indicate that image data is in session storage if it's too large
+           if (recipe.imageUrl) queryParams.set('imageStored', 'true');
+      }
 
 
-    // Construct the final URL and navigate
-    const url = `/recipe/${encodedSlug}?${queryParams.toString()}`;
-    console.log("Navigating to URL:", url); // Log the final URL for debugging
-    router.push(url);
+      // Encode recipe name for the path segment (slug)
+      const encodedSlug = encodeURIComponent(recipe.recipeName.replace(/\s+/g, '-').toLowerCase())
+        .replace(/%/g, '') // Remove percentage signs
+        .replace(/\?/g, '') // Remove question marks
+        .replace(/#/g, ''); // Remove hash symbols
+
+      // Construct the final URL and navigate
+      const url = `/recipe/${encodedSlug}?${queryParams.toString()}`;
+      console.log("Navigating to URL:", url); // Log the final URL
+      router.push(url);
+
+    } catch (error) {
+      console.error("Error saving recipe to session storage:", error);
+      toast({
+        title: "Navigation Error",
+        description: "Could not prepare recipe details for viewing.",
+        variant: "destructive",
+      });
+      // Fallback or alternative navigation if needed
+    }
   };
 
 
@@ -436,10 +466,17 @@ export default function Home() {
             >
             <TooltipProvider delayDuration={100}>
                 {/* Language Selector */}
-                <Select
-                  value={selectedLanguage}
-                  onValueChange={(value) => setSelectedLanguage(value as LanguageCode)}
-                >
+                 <Select
+                   value={selectedLanguage}
+                   onValueChange={(value) => {
+                     const newLang = value as LanguageCode;
+                     setSelectedLanguage(newLang);
+                     // Store in localStorage only on the client
+                     if (typeof window !== 'undefined') {
+                         localStorage.setItem('selectedLanguage', newLang);
+                     }
+                   }}
+                  >
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SelectTrigger
