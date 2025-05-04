@@ -43,7 +43,7 @@ This is a Next.js starter project for RecipeSage, an AI-powered recipe suggestio
         ```
 
     *   **Replace the placeholder values** (`your_..._here`, `your_mongodb_connection_string`) with your actual credentials and keys. **The application will not run correctly without `MONGODB_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`.**
-    *   **CRITICAL: Ensure your `MONGODB_URI` starts with `mongodb://` or `mongodb+srv://`.** An incorrect format (e.g., missing the scheme or using `http://`) will cause a fatal "Invalid MONGODB_URI scheme" error on startup.
+    *   **CRITICAL: Ensure your `MONGODB_URI` starts with `mongodb://` or `mongodb+srv://`.** An incorrect format (e.g., missing the scheme or using `http://`) will cause a fatal "Invalid MONGODB_URI scheme" error on startup. Verify this carefully.
     *   For `NEXTAUTH_SECRET`, generate a strong random string. You can use the command `openssl rand -base64 32` in your terminal.
     *   Make sure the database specified in `MONGODB_URI` (e.g., `/cooking`) exists or MongoDB will create it on first connection. The adapter will automatically create `users`, `accounts`, `sessions`, and `verificationTokens` collections within that database.
 
@@ -104,4 +104,3 @@ This is a Next.js starter project for RecipeSage, an AI-powered recipe suggestio
 ## Environment Variables
 
 **Crucially**, ensure all required environment variables are set in your `.env` file as described in the "Set Up Environment Variables" section. The application relies heavily on these variables for database connection, authentication, and AI features. **Pay special attention to the `MONGODB_URI` format and ensure it starts with `mongodb://` or `mongodb+srv://` to avoid connection errors.**
-```
