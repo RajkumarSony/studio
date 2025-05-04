@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { Noto_Sans, Noto_Sans_JP, Noto_Sans_KR, Noto_Sans_SC, Noto_Sans_Bengali, Noto_Sans_Devanagari, Noto_Sans_Gujarati, Noto_Sans_Gurmukhi, Noto_Sans_Kannada, Noto_Sans_Malayalam, Noto_Sans_Oriya, Noto_Sans_Tamil, Noto_Sans_Telugu } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
-import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import NextAuthProvider from '@/context/NextAuthProvider'; // Import NextAuth provider
 
@@ -100,7 +99,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
-            <Toaster />
+             {/* Toaster removed */}
           </ThemeProvider>
         </NextAuthProvider>
       </body>

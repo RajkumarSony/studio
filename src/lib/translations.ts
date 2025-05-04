@@ -76,25 +76,38 @@ interface TranslationMessages {
     errorLoadingTitle: string; // New error title
     errorLoadingMessage: string; // New error message
   };
+  // Toast translations removed
   toast: {
-    formClearedTitle: string;
-    formClearedDesc: string;
-    recipeSavedTitle: string;
-    recipeSavedDesc: string; // Use {recipeName} placeholder
-    recipeRemovedTitle: string; // New toast for removal
-    recipeRemovedDesc: string; // New toast for removal
-    noRecipesTitle: string;
-    noRecipesDesc: string;
-    recipesFoundTitle: string;
-    recipesFoundDesc: string; // Use {count} and {s} placeholders
-    errorTitle: string;
-    genericError: string; // Default error if specific message isn't available
-    validationError: string; // Error for form validation issues
-    authRequiredTitle: string; // New: Auth needed
-    authRequiredDesc: string; // New: Auth needed description
-    saveErrorTitle: string; // New: Error during save/unsave
-    saveErrorDesc: string; // New: Error during save/unsave description
-  };
+      formClearedTitle: string;
+      formClearedDesc: string;
+      recipeSavedTitle: string;
+      recipeSavedDesc: string; // Use {recipeName} placeholder
+      recipeRemovedTitle: string; // New toast for removal
+      recipeRemovedDesc: string; // New toast for removal
+      noRecipesTitle: string;
+      noRecipesDesc: string;
+      recipesFoundTitle: string;
+      recipesFoundDesc: string; // Use {count} and {s} placeholders
+      errorTitle: string;
+      genericError: string; // Default error if specific message isn't available
+      validationError: string; // Error for form validation issues
+      authRequiredTitle: string; // New: Auth needed
+      authRequiredDesc: string; // New: Auth needed description
+      saveErrorTitle: string; // New: Error during save/unsave
+      saveErrorDesc: string; // New: Error during save/unsave description
+      storageQuotaExceededTitle: string; // New: Storage quota exceeded
+      storageQuotaExceededDesc: string; // New: Storage quota exceeded description
+      storageErrorTitle: string; // New: General storage error
+      storageErrorDesc: string; // New: General storage error description
+      storageQuotaWarningTitle: string; // New: Storage quota warning
+      storageQuotaWarningDesc: string; // New: Storage quota warning description
+      storageClearedTitle: string; // New: Storage cleared title
+      storageClearedDesc: string; // New: Storage cleared description
+      networkErrorTitle: string; // New: Network error title
+      networkErrorDesc: string; // New: Network error description
+      aiServiceUnavailable: string; // New: AI service unavailable
+      apiKeyError: string; // New: API key error
+    };
   footer: {
     builtWith: string; // Includes "Built with ❤️ by "
     poweredBy: string;
@@ -178,13 +191,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        errorLoadingTitle: 'Error Loading Recipe',
        errorLoadingMessage: 'Could not load the details for this recipe. It might be missing or the link might be incorrect.',
      },
-    toast: {
+    toast: { // Keep the toast structure but maybe use console.log instead
       formClearedTitle: 'Form Cleared',
       formClearedDesc: 'Ready for new ingredients!',
       recipeSavedTitle: 'Recipe Saved!',
-      recipeSavedDesc: '{recipeName} has been saved.', // Updated
-      recipeRemovedTitle: 'Recipe Removed', // New
-      recipeRemovedDesc: '{recipeName} has been removed from saved recipes.', // New
+      recipeSavedDesc: '{recipeName} has been saved.',
+      recipeRemovedTitle: 'Recipe Removed',
+      recipeRemovedDesc: '{recipeName} has been removed from saved recipes.',
       noRecipesTitle: 'No Recipes Found',
       noRecipesDesc: 'Couldn\'t find any recipes with the given ingredients and preferences. Try adjusting your input.',
       recipesFoundTitle: 'Recipes Found!',
@@ -192,10 +205,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Error',
       genericError: 'Failed to suggest recipes. Please try again later.',
       validationError: 'Input validation failed. Please check your entries.',
-      authRequiredTitle: 'Authentication Required', // New
-      authRequiredDesc: 'Please sign in to save recipes.', // New
-      saveErrorTitle: 'Save Error', // New
-      saveErrorDesc: 'Could not save or remove the recipe. Please try again.', // New
+      authRequiredTitle: 'Authentication Required',
+      authRequiredDesc: 'Please sign in to save recipes.',
+      saveErrorTitle: 'Save Error',
+      saveErrorDesc: 'Could not save or remove the recipe. Please try again.',
+      storageQuotaExceededTitle: "Storage Limit Exceeded",
+      storageQuotaExceededDesc: "Browser storage is full. Recipe details might not be fully saved.",
+      storageErrorTitle: "Storage Error",
+      storageErrorDesc: "Could not save data to browser storage.",
+      storageQuotaWarningTitle: "Storage Almost Full",
+      storageQuotaWarningDesc: "Results might not persist fully due to browser storage limits.",
+      storageClearedTitle: "Storage Cleared",
+      storageClearedDesc: "Cleared previous session data due to storage limits.",
+      networkErrorTitle: "Network Error",
+      networkErrorDesc: "Could not connect to the server. Please check your internet connection.",
+      aiServiceUnavailable: "AI service is currently unavailable. Please try again later.",
+      apiKeyError: "Invalid API key configuration for AI service.",
     },
     footer: {
       builtWith: 'Built with ❤️ by ',
@@ -279,13 +304,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorLoadingTitle: 'रेसिपी लोड करने में त्रुटि',
       errorLoadingMessage: 'इस रेसिपी का विवरण लोड नहीं किया जा सका। यह गुम हो सकता है या लिंक गलत हो सकता है।',
     },
-    toast: {
+    toast: { // Keep the toast structure but maybe use console.log instead
       formClearedTitle: 'फॉर्म साफ़ किया गया',
       formClearedDesc: 'नई सामग्री के लिए तैयार!',
       recipeSavedTitle: 'रेसिपी सहेजी गई!',
-      recipeSavedDesc: '{recipeName} सहेजा गया है।', // Updated
-      recipeRemovedTitle: 'रेसिपी हटाई गई', // New
-      recipeRemovedDesc: '{recipeName} को सहेजी गई रेसिपी से हटा दिया गया है।', // New
+      recipeSavedDesc: '{recipeName} सहेजा गया है।',
+      recipeRemovedTitle: 'रेसिपी हटाई गई',
+      recipeRemovedDesc: '{recipeName} को सहेजी गई रेसिपी से हटा दिया गया है।',
       noRecipesTitle: 'कोई रेसिपी नहीं मिली',
       noRecipesDesc: 'दी गई सामग्री और प्राथमिकताओं के साथ कोई रेसिपी नहीं मिल सकी। अपना इनपुट समायोजित करने का प्रयास करें।',
       recipesFoundTitle: 'रेसिपी मिलीं!',
@@ -293,10 +318,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'त्रुटि',
       genericError: 'रेसिपी सुझाने में विफल। कृपया बाद में पुनः प्रयास करें।',
       validationError: 'इनपुट सत्यापन विफल रहा। कृपया अपनी प्रविष्टियाँ जांचें।',
-      authRequiredTitle: 'प्रमाणीकरण आवश्यक', // New
-      authRequiredDesc: 'रेसिपी सहेजने के लिए कृपया साइन इन करें।', // New
-      saveErrorTitle: 'सहेजने में त्रुटि', // New
-      saveErrorDesc: 'रेसिपी को सहेजा या हटाया नहीं जा सका। कृपया पुनः प्रयास करें।', // New
+      authRequiredTitle: 'प्रमाणीकरण आवश्यक',
+      authRequiredDesc: 'रेसिपी सहेजने के लिए कृपया साइन इन करें।',
+      saveErrorTitle: 'सहेजने में त्रुटि',
+      saveErrorDesc: 'रेसिपी को सहेजा या हटाया नहीं जा सका। कृपया पुनः प्रयास करें।',
+      storageQuotaExceededTitle: "भंडारण सीमा पार हो गई",
+      storageQuotaExceededDesc: "ब्राउज़र भंडारण भर गया है। रेसिपी विवरण पूरी तरह से सहेजा नहीं जा सका।",
+      storageErrorTitle: "भंडारण त्रुटि",
+      storageErrorDesc: "ब्राउज़र भंडारण में डेटा सहेजा नहीं जा सका।",
+      storageQuotaWarningTitle: "भंडारण लगभग भर गया",
+      storageQuotaWarningDesc: "ब्राउज़र भंडारण सीमाओं के कारण परिणाम पूरी तरह से बने नहीं रह सकते हैं।",
+      storageClearedTitle: "भंडारण साफ़ किया गया",
+      storageClearedDesc: "भंडारण सीमाओं के कारण पिछला सत्र डेटा साफ़ किया गया।",
+      networkErrorTitle: "नेटवर्क त्रुटि",
+      networkErrorDesc: "सर्वर से कनेक्ट नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जांचें।",
+      aiServiceUnavailable: "AI सेवा वर्तमान में अनुपलब्ध है। कृपया बाद में पुनः प्रयास करें।",
+      apiKeyError: "AI सेवा के लिए अमान्य API कुंजी कॉन्फ़िगरेशन।",
     },
     footer: {
       builtWith: '❤️ द्वारा निर्मित ',
@@ -378,13 +415,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        errorLoadingTitle: 'রেসিপি লোড করতে ত্রুটি',
        errorLoadingMessage: 'এই রেসিপির বিবরণ লোড করা যায়নি। এটি অনুপস্থিত থাকতে পারে বা লিঙ্কটি ভুল হতে পারে।',
      },
-    toast: {
+    toast: { // Keep the toast structure but maybe use console.log instead
         formClearedTitle: 'ফর্ম পরিষ্কার করা হয়েছে',
         formClearedDesc: 'নতুন উপকরণের জন্য প্রস্তুত!',
         recipeSavedTitle: 'রেসিপি সংরক্ষিত হয়েছে!',
-        recipeSavedDesc: '{recipeName} সংরক্ষিত হয়েছে।', // Updated
-        recipeRemovedTitle: 'রেসিপি সরানো হয়েছে', // New
-        recipeRemovedDesc: '{recipeName} সংরক্ষিত রেসিপি থেকে সরানো হয়েছে।', // New
+        recipeSavedDesc: '{recipeName} সংরক্ষিত হয়েছে।',
+        recipeRemovedTitle: 'রেসিপি সরানো হয়েছে',
+        recipeRemovedDesc: '{recipeName} সংরক্ষিত রেসিপি থেকে সরানো হয়েছে।',
         noRecipesTitle: 'কোনও রেসিপি পাওয়া যায়নি',
         noRecipesDesc: 'প্রদত্ত উপকরণ এবং পছন্দগুলির সাথে কোনও রেসিপি খুঁজে পাওয়া যায়নি। আপনার ইনপুট সামঞ্জস্য করার চেষ্টা করুন।',
         recipesFoundTitle: 'রেসিপি পাওয়া গেছে!',
@@ -392,10 +429,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         errorTitle: 'ত্রুটি',
         genericError: 'রেসিপি পরামর্শ দিতে ব্যর্থ হয়েছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।',
         validationError: 'ইনপুট যাচাইকরণ ব্যর্থ হয়েছে। অনুগ্রহ করে আপনার এন্ট্রি চেক করুন।',
-        authRequiredTitle: 'প্রমাণীকরণ প্রয়োজন', // New
-        authRequiredDesc: 'রেসিপি সংরক্ষণ করতে অনুগ্রহ করে সাইন ইন করুন।', // New
-        saveErrorTitle: 'সংরক্ষণে ত্রুটি', // New
-        saveErrorDesc: 'রেসিপি সংরক্ষণ বা সরাতে முடியவில்லை। অনুগ্রহ করে আবার চেষ্টা করুন।', // New
+        authRequiredTitle: 'প্রমাণীকরণ প্রয়োজন',
+        authRequiredDesc: 'রেসিপি সংরক্ষণ করতে অনুগ্রহ করে সাইন ইন করুন।',
+        saveErrorTitle: 'সংরক্ষণে ত্রুটি',
+        saveErrorDesc: 'রেসিপি সংরক্ষণ বা সরাতে முடியவில்லை। অনুগ্রহ করে আবার চেষ্টা করুন।',
+        storageQuotaExceededTitle: "স্টোরেজ সীমা অতিক্রম করেছে",
+        storageQuotaExceededDesc: "ব্রাউজার স্টোরেজ পূর্ণ। রেসিপির বিবরণ সম্পূর্ণরূপে সংরক্ষিত নাও হতে পারে।",
+        storageErrorTitle: "স্টোরেজ ত্রুটি",
+        storageErrorDesc: "ব্রাউজার স্টোরেজে ডেটা সংরক্ষণ করা যায়নি।",
+        storageQuotaWarningTitle: "স্টোরেজ প্রায় পূর্ণ",
+        storageQuotaWarningDesc: "ব্রাউজার স্টোরেজ সীমার কারণে ফলাফল সম্পূর্ণরূপে টিকে নাও থাকতে পারে।",
+        storageClearedTitle: "স্টোরেজ পরিষ্কার করা হয়েছে",
+        storageClearedDesc: "স্টোরেজ সীমার কারণে পূর্ববর্তী সেশন ডেটা পরিষ্কার করা হয়েছে।",
+        networkErrorTitle: "নেটওয়ার্ক ত্রুটি",
+        networkErrorDesc: "সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন।",
+        aiServiceUnavailable: "AI পরিষেবা বর্তমানে অনুপলব্ধ। অনুগ্রহ করে পরে আবার চেষ্টা করুন।",
+        apiKeyError: "AI পরিষেবার জন্য অবৈধ API কী কনফিগারেশন।",
     },
     footer: {
         builtWith: '❤️ দিয়ে তৈরি ',
@@ -477,13 +526,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingTitle: 'रेसिपी लोड करण्यात त्रुटी',
          errorLoadingMessage: 'या रेसिपीचा तपशील लोड होऊ शकला नाही. तो गहाळ असू शकतो किंवा लिंक चुकीची असू शकते.',
        },
-      toast: {
+      toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'फॉर्म साफ केला',
           formClearedDesc: 'नवीन साहित्यासाठी तयार!',
           recipeSavedTitle: 'रेसिपी जतन केली!',
-          recipeSavedDesc: '{recipeName} जतन केले आहे.', // Updated
-          recipeRemovedTitle: 'रेसिपी काढली', // New
-          recipeRemovedDesc: '{recipeName} जतन केलेल्या रेसिपीमधून काढले आहे.', // New
+          recipeSavedDesc: '{recipeName} जतन केले आहे.',
+          recipeRemovedTitle: 'रेसिपी काढली',
+          recipeRemovedDesc: '{recipeName} जतन केलेल्या रेसिपीमधून काढले आहे.',
           noRecipesTitle: 'कोणतीही रेसिपी आढळली नाही',
           noRecipesDesc: 'दिलेल्या साहित्य आणि प्राधान्यांसह कोणतीही रेसिपी सापडली नाही. तुमचे इनपुट समायोजित करण्याचा प्रयत्न करा.',
           recipesFoundTitle: 'रेसिपी सापडल्या!',
@@ -491,10 +540,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'त्रुटी',
           genericError: 'रेसिपी सुचवण्यात अयशस्वी. कृपया नंतर पुन्हा प्रयत्न करा.',
           validationError: 'इनपुट प्रमाणीकरण अयशस्वी. कृपया आपल्या नोंदी तपासा.',
-          authRequiredTitle: 'प्रमाणीकरण आवश्यक', // New
-          authRequiredDesc: 'रेसिपी जतन करण्यासाठी कृपया साइन इन करा.', // New
-          saveErrorTitle: 'जतन करण्यात त्रुटी', // New
-          saveErrorDesc: 'रेसिपी जतन किंवा काढता आली नाही. कृपया पुन्हा प्रयत्न करा.', // New
+          authRequiredTitle: 'प्रमाणीकरण आवश्यक',
+          authRequiredDesc: 'रेसिपी जतन करण्यासाठी कृपया साइन इन करा.',
+          saveErrorTitle: 'जतन करण्यात त्रुटी',
+          saveErrorDesc: 'रेसिपी जतन किंवा काढता आली नाही. कृपया पुन्हा प्रयत्न करा.',
+          storageQuotaExceededTitle: "स्टोरेज मर्यादा ओलांडली",
+          storageQuotaExceededDesc: "ब्राउझर स्टोरेज भरले आहे. रेसिपी तपशील पूर्णपणे जतन केला जाऊ शकत नाही.",
+          storageErrorTitle: "स्टोरेज त्रुटी",
+          storageErrorDesc: "ब्राउझर स्टोरेजमध्ये डेटा जतन करता आला नाही.",
+          storageQuotaWarningTitle: "स्टोरेज जवळजवळ भरले आहे",
+          storageQuotaWarningDesc: "ब्राउझर स्टोरेज मर्यादेमुळे परिणाम पूर्णपणे टिकू शकत नाहीत.",
+          storageClearedTitle: "स्टोरेज साफ केले",
+          storageClearedDesc: "स्टोरेज मर्यादेमुळे मागील सत्र डेटा साफ केला.",
+          networkErrorTitle: "नेटवर्क त्रुटी",
+          networkErrorDesc: "सर्व्हरशी कनेक्ट होऊ शकलो नाही. कृपया आपले इंटरनेट कनेक्शन तपासा.",
+          aiServiceUnavailable: "AI सेवा सध्या अनुपलब्ध आहे. कृपया नंतर पुन्हा प्रयत्न करा.",
+          apiKeyError: "AI सेवेसाठी अवैध API की कॉन्फिगरेशन.",
       },
       footer: {
           builtWith: '❤️ ने बनवले आहे ',
@@ -576,13 +637,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingTitle: 'செய்முறையை ஏற்றுவதில் பிழை',
          errorLoadingMessage: 'இந்த செய்முறையின் விவரங்களை ஏற்ற முடியவில்லை. அது விடுபட்டிருக்கலாம் அல்லது இணைப்பு தவறாக இருக்கலாம்.',
        },
-      toast: {
+      toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'படிவம் அழிக்கப்பட்டது',
           formClearedDesc: 'புதிய பொருட்களுக்குத் தயார்!',
           recipeSavedTitle: 'சமையல் குறிப்பு சேமிக்கப்பட்டது!',
-          recipeSavedDesc: '{recipeName} சேமிக்கப்பட்டது.', // Updated
-          recipeRemovedTitle: 'செய்முறை அகற்றப்பட்டது', // New
-          recipeRemovedDesc: '{recipeName} சேமித்த செய்முறைகளிலிருந்து அகற்றப்பட்டது.', // New
+          recipeSavedDesc: '{recipeName} சேமிக்கப்பட்டது.',
+          recipeRemovedTitle: 'செய்முறை அகற்றப்பட்டது',
+          recipeRemovedDesc: '{recipeName} சேமித்த செய்முறைகளிலிருந்து அகற்றப்பட்டது.',
           noRecipesTitle: 'சமையல் குறிப்புகள் எதுவும் இல்லை',
           noRecipesDesc: 'கொடுக்கப்பட்ட பொருட்கள் மற்றும் விருப்பங்களுடன் எந்த சமையல் குறிப்புகளையும் கண்டுபிடிக்க முடியவில்லை. உங்கள் உள்ளீட்டைச் சரிசெய்ய முயற்சிக்கவும்.',
           recipesFoundTitle: 'சமையல் குறிப்புகள் கிடைத்தன!',
@@ -590,10 +651,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'பிழை',
           genericError: 'சமையல் குறிப்புகளைப் பரிந்துரைக்க முடியவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.',
           validationError: 'உள்ளீட்டு சரிபார்ப்பு தோல்வியடைந்தது. உங்கள் உள்ளீடுகளை சரிபார்க்கவும்.',
-          authRequiredTitle: 'அங்கீகாரம் தேவை', // New
-          authRequiredDesc: 'செய்முறைகளைச் சேமிக்க தயவுசெய்து உள்நுழையவும்.', // New
-          saveErrorTitle: 'சேமிப்பதில் பிழை', // New
-          saveErrorDesc: 'செய்முறையைச் சேமிக்கவோ அல்லது அகற்றவோ முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.', // New
+          authRequiredTitle: 'அங்கீகாரம் தேவை',
+          authRequiredDesc: 'செய்முறைகளைச் சேமிக்க தயவுசெய்து உள்நுழையவும்.',
+          saveErrorTitle: 'சேமிப்பதில் பிழை',
+          saveErrorDesc: 'செய்முறையைச் சேமிக்கவோ அல்லது அகற்றவோ முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.',
+          storageQuotaExceededTitle: "சேமிப்பக வரம்பு மீறப்பட்டது",
+          storageQuotaExceededDesc: "உலாவி சேமிப்பகம் நிரம்பியுள்ளது. சமையல் குறிப்பு விவரங்கள் முழுமையாக சேமிக்கப்படாமல் போகலாம்.",
+          storageErrorTitle: "சேமிப்பகப் பிழை",
+          storageErrorDesc: "உலாவி சேமிப்பகத்தில் தரவைச் சேமிக்க முடியவில்லை.",
+          storageQuotaWarningTitle: "சேமிப்பகம் கிட்டத்தட்ட நிரம்பியுள்ளது",
+          storageQuotaWarningDesc: "உலாவி சேமிப்பக வரம்புகள் காரணமாக முடிவுகள் முழுமையாக நிலைத்திருக்காது.",
+          storageClearedTitle: "சேமிப்பகம் அழிக்கப்பட்டது",
+          storageClearedDesc: "சேமிப்பக வரம்புகள் காரணமாக முந்தைய அமர்வு தரவு அழிக்கப்பட்டது.",
+          networkErrorTitle: "நெட்வொர்க் பிழை",
+          networkErrorDesc: "சேவையகத்துடன் இணைக்க முடியவில்லை. உங்கள் இணைய இணைப்பைச் சரிபார்க்கவும்.",
+          aiServiceUnavailable: "AI சேவை தற்போது கிடைக்கவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.",
+          apiKeyError: "AI சேவைக்கான தவறான API விசை கட்டமைப்பு.",
       },
       footer: {
           builtWith: '❤️ ஆல் உருவாக்கப்பட்டது ',
@@ -675,13 +748,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingTitle: 'వంటకాన్ని లోడ్ చేయడంలో లోపం',
          errorLoadingMessage: 'ఈ వంటకం వివరాలను లోడ్ చేయలేకపోయాము. అది అందుబాటులో లేకపోవచ్చు లేదా లింక్ తప్పుగా ఉండవచ్చు.',
        },
-      toast: {
+      toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'ఫారమ్ క్లియర్ చేయబడింది',
           formClearedDesc: 'కొత్త పదార్థాల కోసం సిద్ధంగా ఉంది!',
           recipeSavedTitle: 'వంటకం సేవ్ చేయబడింది!',
-          recipeSavedDesc: '{recipeName} సేవ్ చేయబడింది.', // Updated
-          recipeRemovedTitle: 'రెసిపీ తీసివేయబడింది', // New
-          recipeRemovedDesc: '{recipeName} సేవ్ చేసిన రెసిపీల నుండి తీసివేయబడింది.', // New
+          recipeSavedDesc: '{recipeName} సేవ్ చేయబడింది.',
+          recipeRemovedTitle: 'రెసిపీ తీసివేయబడింది',
+          recipeRemovedDesc: '{recipeName} సేవ్ చేసిన రెసిపీల నుండి తీసివేయబడింది.',
           noRecipesTitle: 'వంటకాలు ఏవీ కనుగొనబడలేదు',
           noRecipesDesc: 'ఇచ్చిన పదార్థాలు మరియు ప్రాధాన్యతలతో ఏ వంటకాలను కనుగొనలేకపోయాము. మీ ఇన్‌పుట్‌ను సర్దుబాటు చేయడానికి ప్రయత్నించండి.',
           recipesFoundTitle: 'వంటకాలు కనుగొనబడ్డాయి!',
@@ -689,10 +762,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'లోపం',
           genericError: 'వంటకాలను సూచించడంలో విఫలమైంది. దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి.',
           validationError: 'ఇన్‌పుట్ ధ్రువీకరణ విఫలమైంది. దయచేసి మీ ఎంట్రీలను తనిఖీ చేయండి.',
-          authRequiredTitle: 'ప్రామాణీకరణ అవసరం', // New
-          authRequiredDesc: 'వంటకాలను సేవ్ చేయడానికి దయచేసి సైన్ ఇన్ చేయండి.', // New
-          saveErrorTitle: 'సేవ్ చేయడంలో లోపం', // New
-          saveErrorDesc: 'వంటకాన్ని సేవ్ చేయడం లేదా తీసివేయడం సాధ్యపడలేదు. దయచేసి మళ్లీ ప్రయత్నించండి.', // New
+          authRequiredTitle: 'ప్రామాణీకరణ అవసరం',
+          authRequiredDesc: 'వంటకాలను సేవ్ చేయడానికి దయచేసి సైన్ ఇన్ చేయండి.',
+          saveErrorTitle: 'సేవ్ చేయడంలో లోపం',
+          saveErrorDesc: 'వంటకాన్ని సేవ్ చేయడం లేదా తీసివేయడం సాధ్యపడలేదు. దయచేసి మళ్లీ ప్రయత్నించండి.',
+          storageQuotaExceededTitle: "నిల్వ కోటా మించిపోయింది",
+          storageQuotaExceededDesc: "బ్రౌజర్ నిల్వ నిండిపోయింది. వంటకం వివరాలు పూర్తిగా సేవ్ చేయబడకపోవచ్చు.",
+          storageErrorTitle: "నిల్వ లోపం",
+          storageErrorDesc: "బ్రౌజర్ నిల్వలో డేటాను సేవ్ చేయడం సాధ్యపడలేదు.",
+          storageQuotaWarningTitle: "నిల్వ దాదాపు నిండిపోయింది",
+          storageQuotaWarningDesc: "బ్రౌజర్ నిల్వ పరిమితుల కారణంగా ఫలితాలు పూర్తిగా నిలబడకపోవచ్చు.",
+          storageClearedTitle: "నిల్వ క్లియర్ చేయబడింది",
+          storageClearedDesc: "నిల్వ పరిమితుల కారణంగా మునుపటి సెషన్ డేటా క్లియర్ చేయబడింది.",
+          networkErrorTitle: "నెట్‌వర్క్ లోపం",
+          networkErrorDesc: "సర్వర్‌కి కనెక్ట్ కాలేకపోయాము. దయచేసి మీ ఇంటర్నెట్ కనెక్షన్‌ని తనిఖీ చేయండి.",
+          aiServiceUnavailable: "AI సేవ ప్రస్తుతం అందుబాటులో లేదు. దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి.",
+          apiKeyError: "AI సేవ కోసం చెల్లని API కీ కాన్ఫిగరేషన్.",
       },
       footer: {
           builtWith: '❤️ ద్వారా నిర్మించబడింది ',
@@ -774,13 +859,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingTitle: 'ରେସିପି ଲୋଡ୍ କରିବାରେ ତ୍ରୁଟି',
          errorLoadingMessage: 'ଏହି ରେସିପିର ବିବରଣୀ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। ଏହା ହଜିଯାଇଥାଇପାରେ କିମ୍ବା ଲିଙ୍କ୍ ଭୁଲ୍ ହୋଇପାରେ।',
        },
-      toast: {
+      toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'ଫର୍ମ ସଫା କରାଗଲା',
           formClearedDesc: 'ନୂଆ ଉପାଦାନ ପାଇଁ ପ୍ରସ୍ତୁତ!',
           recipeSavedTitle: 'ରେସିପି ସଂରକ୍ଷିତ ହେଲା!',
-          recipeSavedDesc: '{recipeName} ସଂରକ୍ଷିତ ହୋଇଛି।', // Updated
-          recipeRemovedTitle: 'ରେସିପି ଅପସାରିତ ହେଲା', // New
-          recipeRemovedDesc: '{recipeName} ସଂରକ୍ଷିତ ରେସିପିରୁ ଅପସାରିତ ହୋଇଛି।', // New
+          recipeSavedDesc: '{recipeName} ସଂରକ୍ଷିତ ହୋଇଛି।',
+          recipeRemovedTitle: 'ରେସିପି ଅପସାରିତ ହେଲା',
+          recipeRemovedDesc: '{recipeName} ସଂରକ୍ଷିତ ରେସିପିରୁ ଅପସାରିତ ହୋଇଛି।',
           noRecipesTitle: 'କୌଣସି ରେସିପି ମିଳିଲା ନାହିଁ',
           noRecipesDesc: 'ପ୍ରଦତ୍ତ ଉପାଦାନ ଏବଂ ପସନ୍ଦଗୁଡିକ ସହିତ କୌଣସି ରେସିପି ମିଳିଲା ନାହିଁ। ଆପଣଙ୍କ ଇନପୁଟ୍ ସଜାଡିବାକୁ ଚେଷ୍ଟା କରନ୍ତୁ।',
           recipesFoundTitle: 'ରେସିପି ମିଳିଲା!',
@@ -788,10 +873,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'ତ୍ରୁଟି',
           genericError: 'ରେସିପି ପରାମର୍ଶ ଦେବାରେ ବିଫଳ। ଦୟାକରି ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।',
           validationError: 'ଇନପୁଟ୍ ବୈଧତା ବିଫଳ ହେଲା। ଦୟାକରି ଆପଣଙ୍କର ପ୍ରବିଷ୍ଟିଗୁଡିକ ଯାଞ୍ଚ କରନ୍ତୁ।',
-          authRequiredTitle: 'ପ୍ରମାଣୀକରଣ ଆବଶ୍ୟକ', // New
-          authRequiredDesc: 'ରେସିପି ସଂରକ୍ଷଣ କରିବାକୁ ଦୟାକରି ସାଇନ୍ ଇନ୍ କରନ୍ତୁ।', // New
-          saveErrorTitle: 'ସଂରକ୍ଷଣ ତ୍ରୁଟି', // New
-          saveErrorDesc: 'ରେସିପି ସଂରକ୍ଷଣ କିମ୍ବା ଅପସାରଣ କରାଯାଇପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।', // New
+          authRequiredTitle: 'ପ୍ରମାଣୀକରଣ ଆବଶ୍ୟକ',
+          authRequiredDesc: 'ରେସିପି ସଂରକ୍ଷଣ କରିବାକୁ ଦୟାକରି ସାଇନ୍ ଇନ୍ କରନ୍ତୁ।',
+          saveErrorTitle: 'ସଂରକ୍ଷଣ ତ୍ରୁଟି',
+          saveErrorDesc: 'ରେସିପି ସଂରକ୍ଷଣ କିମ୍ବା ଅପସାରଣ କରାଯାଇପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।',
+          storageQuotaExceededTitle: "ଷ୍ଟୋରେଜ୍ ସୀମା ଅତିକ୍ରମ କରିଛି",
+          storageQuotaExceededDesc: "ବ୍ରାଉଜର୍ ଷ୍ଟୋରେଜ୍ ପୂର୍ଣ୍ଣ। ରେସିପି ବିବରଣୀ ସମ୍ପୂର୍ଣ୍ଣ ଭାବେ ସଂରକ୍ଷିତ ହୋଇନପାରେ।",
+          storageErrorTitle: "ଷ୍ଟୋରେଜ୍ ତ୍ରୁଟି",
+          storageErrorDesc: "ବ୍ରାଉଜର୍ ଷ୍ଟୋରେଜରେ ଡାଟା ସଂରକ୍ଷଣ କରାଯାଇପାରିଲା ନାହିଁ।",
+          storageQuotaWarningTitle: "ଷ୍ଟୋରେଜ୍ ପ୍ରାୟ ପୂର୍ଣ୍ଣ",
+          storageQuotaWarningDesc: "ବ୍ରାଉଜର୍ ଷ୍ଟୋରେଜ୍ ସୀମା ଯୋଗୁଁ ଫଳାଫଳ ସମ୍ପୂର୍ଣ୍ଣ ଭାବେ ରହିନପାରେ।",
+          storageClearedTitle: "ଷ୍ଟୋରେଜ୍ ସଫା କରାଗଲା",
+          storageClearedDesc: "ଷ୍ଟୋରେଜ୍ ସୀମା ଯୋଗୁଁ ପୂର୍ବ ସେସନ୍ ଡାଟା ସଫା କରାଗଲା।",
+          networkErrorTitle: "ନେଟୱାର୍କ ତ୍ରୁଟି",
+          networkErrorDesc: "ସର୍ଭର୍ ସହିତ ସଂଯୋଗ ହୋଇପାରିଲା ନାହିଁ। ଦୟାକରି ଆପଣଙ୍କର ଇଣ୍ଟରନେଟ୍ ସଂଯୋଗ ଯାଞ୍ଚ କରନ୍ତୁ।",
+          aiServiceUnavailable: "AI ସେବା ବର୍ତ୍ତମାନ ଅନୁପଲବ୍ଧ। ଦୟାକରି ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
+          apiKeyError: "AI ସେବା ପାଇଁ ଅବୈଧ API କୀ ବିନ୍ୟାସ।",
       },
       footer: {
           builtWith: '❤️ ଦ୍ୱାରା ନିର୍ମିତ ',
@@ -873,13 +970,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingTitle: 'ਵਿਅੰਜਨ ਲੋਡ ਕਰਨ ਵਿੱਚ ਗਲਤੀ',
          errorLoadingMessage: 'ਇਸ ਵਿਅੰਜਨ ਦੇ ਵੇਰਵੇ ਲੋਡ ਨਹੀਂ ਕੀਤੇ ਜਾ ਸਕੇ। ਇਹ ਗੁੰਮ ਹੋ ਸਕਦਾ ਹੈ ਜਾਂ ਲਿੰਕ ਗਲਤ ਹੋ ਸਕਦਾ ਹੈ।',
        },
-      toast: {
+      toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'ਫਾਰਮ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ',
           formClearedDesc: 'ਨਵੀਂ ਸਮੱਗਰੀ ਲਈ ਤਿਆਰ!',
           recipeSavedTitle: 'ਵਿਅੰਜਨ ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ!',
-          recipeSavedDesc: '{recipeName} ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ ਹੈ।', // Updated
-          recipeRemovedTitle: 'ਵਿਅੰਜਨ ਹਟਾਇਆ ਗਿਆ', // New
-          recipeRemovedDesc: '{recipeName} ਨੂੰ ਸੁਰੱਖਿਅਤ ਕੀਤੇ ਵਿਅੰਜਨਾਂ ਵਿੱਚੋਂ ਹਟਾ ਦਿੱਤਾ ਗਿਆ ਹੈ।', // New
+          recipeSavedDesc: '{recipeName} ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ ਹੈ।',
+          recipeRemovedTitle: 'ਵਿਅੰਜਨ ਹਟਾਇਆ ਗਿਆ',
+          recipeRemovedDesc: '{recipeName} ਨੂੰ ਸੁਰੱਖਿਅਤ ਕੀਤੇ ਵਿਅੰਜਨਾਂ ਵਿੱਚੋਂ ਹਟਾ ਦਿੱਤਾ ਗਿਆ ਹੈ।',
           noRecipesTitle: 'ਕੋਈ ਵਿਅੰਜਨ ਨਹੀਂ ਮਿਲਿਆ',
           noRecipesDesc: 'ਦਿੱਤੀ ਗਈ ਸਮੱਗਰੀ ਅਤੇ ਤਰਜੀਹਾਂ ਨਾਲ ਕੋਈ ਵਿਅੰਜਨ ਨਹੀਂ ਲੱਭ ਸਕਿਆ। ਆਪਣੇ ਇਨਪੁਟ ਨੂੰ ਵਿਵਸਥਿਤ ਕਰਨ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
           recipesFoundTitle: 'ਵਿਅੰਜਨ ਮਿਲੇ!',
@@ -887,10 +984,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'ਗਲਤੀ',
           genericError: 'ਵਿਅੰਜਨ ਸੁਝਾਉਣ ਵਿੱਚ ਅਸਫਲ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
           validationError: 'ਇਨਪੁਟ ਪ੍ਰਮਾਣਿਕਤਾ ਅਸਫਲ ਰਹੀ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੀਆਂ ਐਂਟਰੀਆਂ ਦੀ ਜਾਂਚ ਕਰੋ।',
-          authRequiredTitle: 'ਪ੍ਰਮਾਣਿਕਤਾ ਲੋੜੀਂਦੀ ਹੈ', // New
-          authRequiredDesc: 'ਵਿਅੰਜਨਾਂ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕਰਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਸਾਈਨ ਇਨ ਕਰੋ।', // New
-          saveErrorTitle: 'ਸੁਰੱਖਿਅਤ ਕਰਨ ਵਿੱਚ ਗਲਤੀ', // New
-          saveErrorDesc: 'ਵਿਅੰਜਨ ਨੂੰ ਸੁਰੱਖਿਅਤ ਜਾਂ ਹਟਾਇਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।', // New
+          authRequiredTitle: 'ਪ੍ਰਮਾਣਿਕਤਾ ਲੋੜੀਂਦੀ ਹੈ',
+          authRequiredDesc: 'ਵਿਅੰਜਨਾਂ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕਰਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਸਾਈਨ ਇਨ ਕਰੋ।',
+          saveErrorTitle: 'ਸੁਰੱਖਿਅਤ ਕਰਨ ਵਿੱਚ ਗਲਤੀ',
+          saveErrorDesc: 'ਵਿਅੰਜਨ ਨੂੰ ਸੁਰੱਖਿਅਤ ਜਾਂ ਹਟਾਇਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
+          storageQuotaExceededTitle: "ਸਟੋਰੇਜ ਕੋਟਾ ਵੱਧ ਗਿਆ",
+          storageQuotaExceededDesc: "ਬ੍ਰਾਊਜ਼ਰ ਸਟੋਰੇਜ ਭਰ ਗਈ ਹੈ। ਵਿਅੰਜਨ ਦੇ ਵੇਰਵੇ ਪੂਰੀ ਤਰ੍ਹਾਂ ਸੁਰੱਖਿਅਤ ਨਹੀਂ ਕੀਤੇ ਜਾ ਸਕਦੇ ਹਨ।",
+          storageErrorTitle: "ਸਟੋਰੇਜ ਗਲਤੀ",
+          storageErrorDesc: "ਬ੍ਰਾਊਜ਼ਰ ਸਟੋਰੇਜ ਵਿੱਚ ਡਾਟਾ ਸੁਰੱਖਿਅਤ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ।",
+          storageQuotaWarningTitle: "ਸਟੋਰੇਜ ਲਗਭਗ ਭਰ ਗਈ ਹੈ",
+          storageQuotaWarningDesc: "ਬ੍ਰਾਊਜ਼ਰ ਸਟੋਰੇਜ ਸੀਮਾਵਾਂ ਕਾਰਨ ਨਤੀਜੇ ਪੂਰੀ ਤਰ੍ਹਾਂ ਬਰਕਰਾਰ ਨਹੀਂ ਰਹਿ ਸਕਦੇ ਹਨ।",
+          storageClearedTitle: "ਸਟੋਰੇਜ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ",
+          storageClearedDesc: "ਸਟੋਰੇਜ ਸੀਮਾਵਾਂ ਕਾਰਨ ਪਿਛਲਾ ਸੈਸ਼ਨ ਡਾਟਾ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ।",
+          networkErrorTitle: "ਨੈੱਟਵਰਕ ਗਲਤੀ",
+          networkErrorDesc: "ਸਰਵਰ ਨਾਲ ਕਨੈਕਟ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣਾ ਇੰਟਰਨੈੱਟ ਕਨੈਕਸ਼ਨ ਚੈੱਕ ਕਰੋ।",
+          aiServiceUnavailable: "AI ਸੇਵਾ ਇਸ ਵੇਲੇ ਉਪਲਬਧ ਨਹੀਂ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+          apiKeyError: "AI ਸੇਵਾ ਲਈ ਅਵੈਧ API ਕੁੰਜੀ ਸੰਰਚਨਾ।",
       },
       footer: {
           builtWith: '❤️ ਦੁਆਰਾ ਬਣਾਇਆ ਗਿਆ ',
@@ -972,13 +1081,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingTitle: 'レシピの読み込みエラー',
          errorLoadingMessage: 'このレシピの詳細を読み込めませんでした。見つからないか、リンクが間違っている可能性があります。',
        },
-      toast: {
+      toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'フォームがクリアされました',
           formClearedDesc: '新しい材料の準備ができました！',
           recipeSavedTitle: 'レシピが保存されました！',
-          recipeSavedDesc: '{recipeName} が保存されました。', // Updated
-          recipeRemovedTitle: 'レシピが削除されました', // New
-          recipeRemovedDesc: '{recipeName} が保存されたレシピから削除されました。', // New
+          recipeSavedDesc: '{recipeName} が保存されました。',
+          recipeRemovedTitle: 'レシピが削除されました',
+          recipeRemovedDesc: '{recipeName} が保存されたレシピから削除されました。',
           noRecipesTitle: 'レシピが見つかりません',
           noRecipesDesc: '指定された材料と好みでレシピが見つかりませんでした。入力を調整してみてください。',
           recipesFoundTitle: 'レシピが見つかりました！',
@@ -986,10 +1095,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'エラー',
           genericError: 'レシピの提案に失敗しました。後でもう一度お試しください。',
           validationError: '入力検証に失敗しました。エントリを確認してください。',
-          authRequiredTitle: '認証が必要です', // New
-          authRequiredDesc: 'レシピを保存するにはサインインしてください。', // New
-          saveErrorTitle: '保存エラー', // New
-          saveErrorDesc: 'レシピを保存または削除できませんでした。もう一度お試しください。', // New
+          authRequiredTitle: '認証が必要です',
+          authRequiredDesc: 'レシピを保存するにはサインインしてください。',
+          saveErrorTitle: '保存エラー',
+          saveErrorDesc: 'レシピを保存または削除できませんでした。もう一度お試しください。',
+          storageQuotaExceededTitle: "ストレージ制限を超えました",
+          storageQuotaExceededDesc: "ブラウザストレージがいっぱいです。レシピの詳細が完全に保存されない可能性があります。",
+          storageErrorTitle: "ストレージエラー",
+          storageErrorDesc: "ブラウザストレージにデータを保存できませんでした。",
+          storageQuotaWarningTitle: "ストレージがほぼいっぱいです",
+          storageQuotaWarningDesc: "ブラウザのストレージ制限のため、結果が完全に保持されない可能性があります。",
+          storageClearedTitle: "ストレージがクリアされました",
+          storageClearedDesc: "ストレージ制限のため、前のセッションデータがクリアされました。",
+          networkErrorTitle: "ネットワークエラー",
+          networkErrorDesc: "サーバーに接続できませんでした。インターネット接続を確認してください。",
+          aiServiceUnavailable: "AIサービスは現在利用できません。後でもう一度お試しください。",
+          apiKeyError: "AIサービスのAPIキー設定が無効です。",
       },
       footer: {
           builtWith: '❤️ で作成 ',
@@ -1071,13 +1192,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        errorLoadingTitle: 'Error al Cargar la Receta',
        errorLoadingMessage: 'No se pudieron cargar los detalles de esta receta. Puede que falte o que el enlace sea incorrecto.',
      },
-    toast: {
+    toast: { // Keep the toast structure but maybe use console.log instead
       formClearedTitle: 'Formulario Limpiado',
       formClearedDesc: '¡Listo para nuevos ingredientes!',
       recipeSavedTitle: '¡Receta Guardada!',
-      recipeSavedDesc: '{recipeName} ha sido guardada.', // Updated
-      recipeRemovedTitle: 'Receta Eliminada', // New
-      recipeRemovedDesc: '{recipeName} ha sido eliminada de las recetas guardadas.', // New
+      recipeSavedDesc: '{recipeName} ha sido guardada.',
+      recipeRemovedTitle: 'Receta Eliminada',
+      recipeRemovedDesc: '{recipeName} ha sido eliminada de las recetas guardadas.',
       noRecipesTitle: 'No se Encontraron Recetas',
       noRecipesDesc: 'No se pudieron encontrar recetas con los ingredientes y preferencias dados. Intenta ajustar tu entrada.',
       recipesFoundTitle: '¡Recetas Encontradas!',
@@ -1085,10 +1206,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Error',
       genericError: 'Fallo al sugerir recetas. Por favor, inténtalo de nuevo más tarde.',
       validationError: 'Falló la validación de entrada. Por favor, revisa tus entradas.',
-      authRequiredTitle: 'Autenticación Requerida', // New
-      authRequiredDesc: 'Por favor, inicia sesión para guardar recetas.', // New
-      saveErrorTitle: 'Error al Guardar', // New
-      saveErrorDesc: 'No se pudo guardar o eliminar la receta. Por favor, inténtalo de nuevo.', // New
+      authRequiredTitle: 'Autenticación Requerida',
+      authRequiredDesc: 'Por favor, inicia sesión para guardar recetas.',
+      saveErrorTitle: 'Error al Guardar',
+      saveErrorDesc: 'No se pudo guardar o eliminar la receta. Por favor, inténtalo de nuevo.',
+      storageQuotaExceededTitle: "Límite de almacenamiento excedido",
+      storageQuotaExceededDesc: "El almacenamiento del navegador está lleno. Es posible que los detalles de la receta no se guarden por completo.",
+      storageErrorTitle: "Error de almacenamiento",
+      storageErrorDesc: "No se pudieron guardar los datos en el almacenamiento del navegador.",
+      storageQuotaWarningTitle: "Almacenamiento casi lleno",
+      storageQuotaWarningDesc: "Es posible que los resultados no persistan completamente debido a los límites de almacenamiento del navegador.",
+      storageClearedTitle: "Almacenamiento borrado",
+      storageClearedDesc: "Se borraron los datos de la sesión anterior debido a los límites de almacenamiento.",
+      networkErrorTitle: "Error de red",
+      networkErrorDesc: "No se pudo conectar al servidor. Por favor, comprueba tu conexión a Internet.",
+      aiServiceUnavailable: "El servicio de IA no está disponible actualmente. Por favor, inténtalo de nuevo más tarde.",
+      apiKeyError: "Configuración de clave API no válida para el servicio de IA.",
     },
     footer: {
       builtWith: 'Hecho con ❤️ por ',
@@ -1170,13 +1303,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        errorLoadingTitle: 'Erreur de Chargement de la Recette',
        errorLoadingMessage: 'Impossible de charger les détails de cette recette. Elle est peut-être manquante ou le lien est incorrect.',
      },
-    toast: {
+    toast: { // Keep the toast structure but maybe use console.log instead
       formClearedTitle: 'Formulaire Effacé',
       formClearedDesc: 'Prêt pour de nouveaux ingrédients !',
       recipeSavedTitle: 'Recette Enregistrée !',
-      recipeSavedDesc: '{recipeName} a été enregistrée.', // Updated
-      recipeRemovedTitle: 'Recette Supprimée', // New
-      recipeRemovedDesc: '{recipeName} a été supprimée des recettes enregistrées.', // New
+      recipeSavedDesc: '{recipeName} a été enregistrée.',
+      recipeRemovedTitle: 'Recette Supprimée',
+      recipeRemovedDesc: '{recipeName} a été supprimée des recettes enregistrées.',
       noRecipesTitle: 'Aucune Recette Trouvée',
       noRecipesDesc: 'Impossible de trouver des recettes avec les ingrédients et préférences donnés. Essayez d\'ajuster votre saisie.',
       recipesFoundTitle: 'Recettes Trouvées !',
@@ -1184,10 +1317,22 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Erreur',
       genericError: 'Échec de la suggestion de recettes. Veuillez réessayer plus tard.',
       validationError: 'La validation de l\'entrée a échoué. Veuillez vérifier vos saisies.',
-      authRequiredTitle: 'Authentification Requise', // New
-      authRequiredDesc: 'Veuillez vous connecter pour enregistrer des recettes.', // New
-      saveErrorTitle: 'Erreur d\'Enregistrement', // New
-      saveErrorDesc: 'Impossible d\'enregistrer ou de supprimer la recette. Veuillez réessayer.', // New
+      authRequiredTitle: 'Authentification Requise',
+      authRequiredDesc: 'Veuillez vous connecter pour enregistrer des recettes.',
+      saveErrorTitle: 'Erreur d\'Enregistrement',
+      saveErrorDesc: 'Impossible d\'enregistrer ou de supprimer la recette. Veuillez réessayer.',
+      storageQuotaExceededTitle: "Limite de stockage dépassée",
+      storageQuotaExceededDesc: "Le stockage du navigateur est plein. Les détails de la recette pourraient ne pas être entièrement sauvegardés.",
+      storageErrorTitle: "Erreur de stockage",
+      storageErrorDesc: "Impossible de sauvegarder les données dans le stockage du navigateur.",
+      storageQuotaWarningTitle: "Stockage presque plein",
+      storageQuotaWarningDesc: "Les résultats pourraient ne pas persister entièrement en raison des limites de stockage du navigateur.",
+      storageClearedTitle: "Stockage effacé",
+      storageClearedDesc: "Les données de la session précédente ont été effacées en raison des limites de stockage.",
+      networkErrorTitle: "Erreur réseau",
+      networkErrorDesc: "Impossible de se connecter au serveur. Veuillez vérifier votre connexion Internet.",
+      aiServiceUnavailable: "Le service d'IA est actuellement indisponible. Veuillez réessayer plus tard.",
+      apiKeyError: "Configuration de clé API invalide pour le service d'IA.",
     },
     footer: {
       builtWith: 'Construit avec ❤️ par ',
