@@ -249,35 +249,45 @@ export default function Home() {
       }
 
       if (storedResults) {
-        const parsedResults: RecipeItem[] = JSON.parse(storedResults);
+        const parsedResults: RecipeItem[] & { imageOmitted?: boolean }[] = JSON.parse(storedResults);
          // Rehydrate potentially omitted large image URLs from the full recipes state if it exists
          // This assumes `recipes` state might still hold the full data from the last API call
          // or if the `recipes` state was also persisted elsewhere (which it isn't currently).
          // A more robust approach might involve storing image URLs separately if they are too large.
          const rehydratedResults = parsedResults.map(storedRecipe => {
+             // Find the full recipe data if it's still in the main 'recipes' state
              const fullRecipe = recipes?.find(r => r.recipeName === storedRecipe.recipeName);
+
              if (storedRecipe.imageOmitted && fullRecipe?.imageUrl) {
                  console.log(`Rehydrating omitted image URL for ${storedRecipe.recipeName}`);
+                 // Merge the stored data (which might have language) with the full image URL
                  return { ...storedRecipe, imageUrl: fullRecipe.imageUrl, imageOmitted: false };
+             } else if (storedRecipe.imageOmitted) {
+                 // Ensure imageUrl is undefined if image was omitted
+                 return { ...storedRecipe, imageUrl: undefined };
              }
-             return storedRecipe;
+             return storedRecipe; // Return as is if not omitted or no full recipe found
          });
 
-         setRecipes(rehydratedResults); // Restore previous results
+         setRecipes(rehydratedResults as RecipeItem[]); // Restore previous results
          console.log(`Restored ${rehydratedResults.length} recipe results from sessionStorage.`);
       } else {
          console.log("No previous results found in sessionStorage.");
+         setRecipes(null); // Explicitly set to null if nothing found
       }
     } catch (error) {
       console.warn("Could not restore state from sessionStorage:", error);
       // Optionally clear potentially corrupted storage
       sessionStorage.removeItem(FORM_STATE_KEY);
       sessionStorage.removeItem(RECIPE_RESULTS_KEY);
+      setRecipes(null); // Set to null on error
+      form.reset(); // Reset form on error
     } finally {
         setInitialLoadComplete(true); // Mark initial load as complete
     }
 
-  }, [form, recipes]); // Added recipes dependency for rehydration logic
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]); // Only run once on mount
 
 
    // Fetch saved recipe names when user logs in or changes, or when recipes load/change
@@ -427,6 +437,7 @@ export default function Home() {
       addParam('diet', recipe.dietPlanSuitability);
 
       // Prepare data for sessionStorage (exclude large image URI by default)
+      // Add language used to generate this specific recipe
       const dataToStore: Partial<RecipeItem> & { imageOmitted?: boolean; language?: LanguageCode } = {
         recipeName: recipe.recipeName, // Keep name for matching
         ingredients: recipe.ingredients,
@@ -436,7 +447,7 @@ export default function Home() {
         imagePrompt: recipe.imagePrompt,
         nutritionFacts: recipe.nutritionFacts,
         dietPlanSuitability: recipe.dietPlanSuitability,
-        language: selectedLanguage, // Include language used to generate this
+        language: selectedLanguage, // Include the language context for this recipe
         // Omit imageUrl initially
         imageUrl: undefined,
         imageOmitted: false,
@@ -468,6 +479,7 @@ export default function Home() {
           }
        } else {
          console.log(`No image URL provided for ${recipe.recipeName}.`);
+          addParam('imageUnavailable', 'true'); // Explicitly state no image
        }
 
 
@@ -611,12 +623,12 @@ export default function Home() {
                console.error("Error storing results in sessionStorage:", storageError);
                 if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
                    console.warn("SessionStorage quota exceeded. Clearing previous results/state and trying again with minimal data.");
-                   // Attempt to clear and retry storing only form state
+                   // Attempt to clear and retry storing only form state and results WITHOUT images to reduce size
                    try {
                        sessionStorage.removeItem(RECIPE_RESULTS_KEY);
                        sessionStorage.removeItem(FORM_STATE_KEY);
                         // Store only form state and results WITHOUT images to reduce size
-                        const recipesWithoutImages = recipesArray.map(({ imageUrl, imageOmitted, ...rest }) => rest);
+                        const recipesWithoutImages = recipesArray.map(({ imageUrl, imageOmitted, ...rest }) => ({ ...rest, language: selectedLanguage, imageOmitted: true }));
                         sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(recipesWithoutImages));
                        sessionStorage.setItem(FORM_STATE_KEY, JSON.stringify(values));
                        console.warn(t('toast.storageQuotaWarningTitle'), t('toast.storageQuotaWarningDesc'));
@@ -645,23 +657,30 @@ export default function Home() {
        if (userId && recipesArray.length > 0) {
             try {
                 // Prepare history data
-                const historyEntry = {
-                    userId: userId, // Pass string ID, DB function will convert it
-                    searchInput: input, // The input sent to the AI
-                    // Store simplified results (just names)
-                    resultsSummary: recipesArray.map(r => r.recipeName),
-                    resultCount: recipesArray.length,
-                    timestamp: new Date(), // Add timestamp
-                };
+                 // Prepare history data - DO NOT save large images in history
+                 const historyEntry = {
+                     userId: userId, // Pass string ID, DB function will convert it
+                     searchInput: input, // The input sent to the AI
+                     // Store simplified results (just names and key details, no large text fields like instructions)
+                     resultsSummary: recipesArray.map(r => ({
+                         recipeName: r.recipeName,
+                         estimatedTime: r.estimatedTime,
+                         difficulty: r.difficulty,
+                         // Optionally add ingredients list summary if needed
+                     })),
+                     resultCount: recipesArray.length,
+                     timestamp: new Date(), // Add timestamp
+                 };
                 await saveRecipeHistory(historyEntry);
                 console.log("Saved search to history for user:", userId);
             } catch (dbError) {
                  console.error("Failed to save search history to MongoDB:", dbError);
                  if (dbError instanceof Error) {
-                   setError(`History Error: ${dbError.message}`);
-                 } else {
-                   setError('Failed to save search history.');
-                 }
+                    // Inform user history saving failed, but don't block recipe viewing
+                    setError(prevError => prevError ? `${prevError}. History Error: ${dbError.message}` : `History Error: ${dbError.message}`);
+                  } else {
+                    setError(prevError => prevError ? `${prevError}. Failed to save search history.` : 'Failed to save search history.');
+                  }
             }
         }
 
@@ -840,10 +859,9 @@ export default function Home() {
                           aria-label={t('languageSelector.ariaLabel')}
                         >
                           <Languages className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground transition-colors" />
-                          {/* Display short code for selected language */}
-                           <SelectValue aria-label={`Selected language: ${selectedLanguage.toUpperCase()}`}>
-                              {/* Ensure SelectValue is updated when language changes */}
-                              {isClient ? selectedLanguage.toUpperCase() : 'EN'}
+                          {/* Use placeholder and render selected language directly */}
+                           <SelectValue placeholder={t('languageSelector.placeholder')}>
+                             {isClient ? selectedLanguage.toUpperCase() : 'EN'}
                            </SelectValue>
                         </SelectTrigger>
                       </TooltipTrigger>
