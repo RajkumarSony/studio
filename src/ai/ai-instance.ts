@@ -8,8 +8,10 @@ export const ai = genkit({
       apiKey: process.env.GOOGLE_GENAI_API_KEY,
     }),
   ],
-  // Use gemini-pro as the default text model.
-  // The specific prompt call failed looking for this model, even though
-  // the previous default was gemini-2.0-flash-exp. Reverting to gemini-pro.
-  model: 'googleai/gemini-pro',
+  // Use gemini-1.5-flash-latest as the default text model.
+  // This model is generally capable and supports function calling/tool use.
+  // It might also handle multilingual prompts better than older models.
+  model: 'googleai/gemini-1.5-flash-latest',
 });
+
+  
