@@ -3,11 +3,11 @@
 
 /**
  * @fileOverview Recipe suggestion flow based on user-provided ingredients and preferences.
- *               Includes image generation for each suggested recipe and supports multiple languages.
+ *               Includes image generation, optional nutrition facts, and diet plan suitability.
  *
- * - suggestRecipes - A function that suggests recipes based on provided ingredients, optional preferences, and language, including generated images.
+ * - suggestRecipes - A function that suggests recipes based on provided input, including generated images and optional details.
  * - SuggestRecipesInput - The input type for the suggestRecipes function.
- * - RecipeItem - The type for a single suggested recipe item, including an optional image URL.
+ * - RecipeItem - The type for a single suggested recipe item, including optional details.
  */
 
 import {ai} from '@/ai/ai-instance';
@@ -26,7 +26,7 @@ const SuggestRecipesInputSchema = z.object({
   preferences: z
     .string()
     .optional()
-    .describe('Optional user preferences (e.g., spicy, quick meal, specific cuisine like Italian).'),
+    .describe('Optional user preferences (e.g., spicy, quick meal, specific cuisine like Italian, healthy, specific cooking method).'),
   language: z
     .string()
     .optional()
@@ -34,6 +34,11 @@ const SuggestRecipesInputSchema = z.object({
     .describe(
       'The language for the recipe suggestions (e.g., en, hi, es, fr).'
     ),
+  includeDetails: z
+     .boolean()
+     .optional()
+     .default(false) // Default to not include detailed info
+     .describe('Whether to include estimated nutrition facts and diet plan suitability.'),
 });
 export type SuggestRecipesInput = z.infer<typeof SuggestRecipesInputSchema>;
 
@@ -65,6 +70,14 @@ const RecipeItemSchema = z.object({
     .describe(
       "A data URI (base64 encoded) of the generated image for the recipe. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+   nutritionFacts: z
+     .string()
+     .optional()
+     .describe('Estimated nutrition facts (calories, protein, carbs, fat) for one serving. Include only if requested.'),
+   dietPlanSuitability: z
+     .string()
+     .optional()
+     .describe('Brief assessment of how the recipe fits into common diet plans (e.g., balanced, keto-friendly, high-protein). Include only if requested.'),
 });
 export type RecipeItem = z.infer<typeof RecipeItemSchema>;
 
@@ -72,9 +85,9 @@ export type RecipeItem = z.infer<typeof RecipeItemSchema>;
 const SuggestRecipesOutputSchema = z.array(RecipeItemSchema);
 
 /**
- * Suggests up to 3 recipes based on the provided input, including generating images.
- * @param input The ingredients, optional preferences, and language.
- * @returns A promise that resolves to an array of suggested recipes with image URLs.
+ * Suggests up to 3 recipes based on the provided input, including generating images and optionally details.
+ * @param input The ingredients, optional preferences, language, and detail flag.
+ * @returns A promise that resolves to an array of suggested recipes with image URLs and optional details.
  */
 export async function suggestRecipes(
   input: SuggestRecipesInput
@@ -85,8 +98,9 @@ export async function suggestRecipes(
 }
 
 // Define schema for the prompt output *before* image generation
+// Adjust based on whether details are requested
 const RecipeTextOutputSchema = z.array(
-  RecipeItemSchema.omit({imageUrl: true}) // Omit imageUrl initially
+  RecipeItemSchema.omit({imageUrl: true}) // Omit imageUrl initially, nutrition/diet are conditional in prompt
 );
 
 const suggestRecipePrompt = ai.definePrompt({
@@ -96,31 +110,36 @@ const suggestRecipePrompt = ai.definePrompt({
   },
   output: {
     // Expecting an array of recipes *without* the final imageUrl yet
+    // Nutrition/diet fields might be present based on input.includeDetails
     schema: RecipeTextOutputSchema,
   },
-  // Explicitly define the model for text generation
-  model: 'googleai/gemini-2.0-flash',
-  prompt: `Given the following ingredients: {{{ingredients}}}.
+  model: 'googleai/gemini-2.0-flash', // Use specified model
+  prompt: `You are an expert culinary assistant. Given the following ingredients: {{{ingredients}}}.
 {{#if dietaryRestrictions}}
-Also consider these dietary restrictions: {{{dietaryRestrictions}}}.
+Consider these dietary restrictions: {{{dietaryRestrictions}}}.
 {{/if}}
 {{#if preferences}}
-Also consider these preferences: {{{preferences}}}.
+Consider these preferences: {{{preferences}}}.
 {{/if}}
 
-Suggest up to 3 recipes that can be made primarily using these ingredients.
+Suggest up to 3 distinct recipes that can be made primarily using these ingredients.
 
-**Important:** Generate the response (Recipe Name, Ingredients, Instructions, Estimated Time, Difficulty) in the language specified by the language code: '{{{language}}}'. If the language code is 'en', use English.
+**Important:** Generate the main response (Recipe Name, Ingredients, Instructions, Estimated Time, Difficulty) in the language specified by the language code: '{{{language}}}'. If the language code is 'en', use English.
 
 For each recipe, provide:
-1.  Recipe Name (in '{{{language}}}')
-2.  Ingredients list (including quantities if possible, in '{{{language}}}')
-3.  Step-by-step instructions (in '{{{language}}}')
-4.  Estimated cooking time (e.g., "30 minutes", translated to '{{{language}}}')
-5.  Difficulty level (e.g., "Easy", "Medium", "Hard", translated to '{{{language}}}')
-6.  A detailed, visually descriptive prompt suitable for an image generation model to create an appetizing photo of the finished dish. **This image prompt MUST remain in English**, regardless of the requested language. Focus on presentation, textures, colors, and garnishes. Example: "A close-up shot of a vibrant chicken stir-fry in a wok, showcasing glossy sauce-coated chicken pieces, bright green broccoli florets, red bell pepper strips, and fluffy white rice. Steam gently rises from the dish." Store this in the 'imagePrompt' field.
+1.  **Recipe Name** (in '{{{language}}}')
+2.  **Ingredients list** (including quantities if possible, in '{{{language}}}')
+3.  **Step-by-step instructions** (in '{{{language}}}')
+4.  **Estimated cooking time** (e.g., "30 minutes", translated to '{{{language}}}')
+5.  **Difficulty level** (e.g., "Easy", "Medium", "Hard", translated to '{{{language}}}')
+6.  **Image Prompt:** A detailed, visually descriptive prompt (max 50 words) suitable for an image generation model to create an appetizing photo of the finished dish. **This image prompt MUST remain in English**, regardless of the requested language. Focus on presentation, textures, colors, and garnishes. Store this in the 'imagePrompt' field.
 
-Return the result as a JSON array, where each object in the array represents a recipe and matches the output schema (excluding the final imageUrl). Ensure the JSON is valid.`,
+{{#if includeDetails}}
+7.  **Nutrition Facts (Estimated):** Provide estimated nutritional information per serving (Calories, Protein, Carbohydrates, Fat). Keep it concise. Calculate based on standard ingredient values. (in '{{{language}}}'). Store this in the 'nutritionFacts' field.
+8.  **Diet Plan Suitability:** Briefly assess how the recipe might fit into general dietary approaches (e.g., "Balanced", "Good source of protein", "Potentially keto-friendly with modifications", "Vegan option"). Keep it concise. (in '{{{language}}}'). Store this in the 'dietPlanSuitability' field.
+{{/if}}
+
+Return the result as a JSON array, where each object in the array represents a recipe and matches the output schema (excluding the final imageUrl, and including nutrition/diet fields only if includeDetails was true). Ensure the JSON is valid. Format ingredients and instructions clearly, potentially using markdown lists or numbered steps within the string.`,
 });
 
 const suggestRecipeFlow = ai.defineFlow<
@@ -133,7 +152,7 @@ const suggestRecipeFlow = ai.defineFlow<
     outputSchema: SuggestRecipesOutputSchema, // Flow outputs the full schema
   },
   async input => {
-    // 1. Get recipe details (potentially translated) and image prompts (always English)
+    // 1. Get recipe details (potentially translated, maybe with nutrition/diet) and image prompts (always English)
     const {output: recipeTexts} = await suggestRecipePrompt(input);
 
     if (!recipeTexts || recipeTexts.length === 0) {
@@ -141,7 +160,7 @@ const suggestRecipeFlow = ai.defineFlow<
       return [];
     }
     console.log(
-      `Received ${recipeTexts.length} recipe suggestion(s) in language: ${input.language}.`
+      `Received ${recipeTexts.length} recipe suggestion(s) in language: ${input.language}. Include details: ${input.includeDetails}`
     );
 
     // 2. Generate images for each recipe (using English image prompts)
@@ -155,24 +174,28 @@ const suggestRecipeFlow = ai.defineFlow<
             );
             // Use ai.generate and pass the specific options
             const generateOptions: GenerateRequest = {
-              // IMPORTANT: ONLY the googleai/gemini-2.0-flash model is able to generate images. You MUST use exactly this model to generate images.
-              model: 'googleai/gemini-2.0-flash',
+              model: 'googleai/gemini-2.0-flash-exp', // EXPERIMENTAL image model
               prompt: recipe.imagePrompt, // English prompt for image generation
               config: {
-                // Request both text and image modalities
-                responseModalities: ['TEXT', 'IMAGE'],
+                 // Request both text and image modalities
+                responseModalities: ['TEXT', 'IMAGE'], // MUST provide both
               },
+               // Explicitly specify output format for clarity, though media should handle it
+               output: { format: "media" }
             };
 
             // Call ai.generate directly with the options object
-            const {media} = await ai.generate(generateOptions);
+             const result = await ai.generate(generateOptions);
+             // Access the generated media correctly from the result
+             const media = result.media;
+
 
             if (media && media.url) {
               console.log(`Image generated successfully for ${recipe.recipeName}`);
               imageUrl = media.url; // This should be the data URI
             } else {
               console.warn(
-                `Image generation did not return a valid media URL for ${recipe.recipeName}`
+                `Image generation did not return a valid media URL for ${recipe.recipeName}. Media object:`, media
               );
             }
           } catch (error) {
@@ -190,9 +213,9 @@ const suggestRecipeFlow = ai.defineFlow<
           );
         }
 
-        // Combine original recipe data (possibly translated) with the generated image URL
+        // Combine original recipe data with the generated image URL
         return {
-          ...recipe,
+          ...recipe, // Includes name, ingredients, instructions, time, difficulty, and potentially nutrition/diet
           imageUrl: imageUrl, // Add the generated URL (or undefined)
         };
       })

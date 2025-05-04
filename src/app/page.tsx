@@ -22,6 +22,7 @@ import {
   Heart, // Example: Icon for saving/favoriting?
   BookOpen, // For Ingredients/Instructions titles
   AlertTriangle, // For Warnings
+  ArrowRight, // Icon for navigation
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -72,6 +73,8 @@ import {
 import {Switch} from '@/components/ui/switch';
 import {Label} from '@/components/ui/label';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
+import Link from 'next/link'; // Import Link for navigation
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 // Define supported languages and their corresponding CSS font variables
 // Moved this structure to translations.ts, import here if needed for UI logic
@@ -99,11 +102,14 @@ const formSchema = (t: (key: keyof typeof translations.en.form) => string) => z.
   preferences: z.string().optional(),
   quickMode: z.boolean().optional(),
   servingSize: z.number().int().min(1).optional(),
+  cuisineType: z.string().optional(), // Added cuisine type
+  cookingMethod: z.string().optional(), // Added cooking method
 });
 
 export default function Home() {
   const {setTheme} = useTheme();
   const {toast} = useToast();
+  const router = useRouter();
   const [recipes, setRecipes] = useState<RecipeItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
@@ -143,6 +149,8 @@ export default function Home() {
         preferences: '',
         quickMode: false,
         servingSize: undefined,
+        cuisineType: '',
+        cookingMethod: '',
       },
     });
 
@@ -189,6 +197,24 @@ export default function Home() {
     });
   };
 
+  // Function to navigate to recipe detail page
+  const handleViewRecipe = (recipe: RecipeItem) => {
+    const queryParams = new URLSearchParams({
+        name: recipe.recipeName,
+        ingredients: recipe.ingredients,
+        instructions: recipe.instructions,
+        estimatedTime: recipe.estimatedTime,
+        difficulty: recipe.difficulty,
+        imageUrl: recipe.imageUrl ?? '', // Pass imageUrl if available
+        imagePrompt: recipe.imagePrompt ?? '', // Pass imagePrompt
+        language: selectedLanguage, // Pass current language
+    });
+
+    // Encode recipe name for URL safety
+    const encodedName = encodeURIComponent(recipe.recipeName.replace(/\s+/g, '-').toLowerCase());
+    router.push(`/recipe/${encodedName}?${queryParams.toString()}`);
+  };
+
 
   async function onSubmit(values: z.infer<ReturnType<typeof formSchema>>) {
     setIsLoading(true);
@@ -201,6 +227,12 @@ export default function Home() {
       }
       if (values.servingSize) {
          enhancedPreferences += (enhancedPreferences ? ', ' : '') + t('servingSizePreference').replace('{count}', values.servingSize.toString()); // Use translation
+      }
+      if (values.cuisineType) {
+          enhancedPreferences += (enhancedPreferences ? ', ' : '') + `cuisine type: ${values.cuisineType}`;
+      }
+       if (values.cookingMethod) {
+          enhancedPreferences += (enhancedPreferences ? ', ' : '') + `preferred cooking method: ${values.cookingMethod}`;
       }
 
 
@@ -246,20 +278,20 @@ export default function Home() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.15, // Slightly increased stagger
-        delayChildren: 0.3,
+        staggerChildren: 0.1, // Faster stagger
+        delayChildren: 0.1, // Start sooner
       },
     },
   };
 
   const itemVariants = {
-    hidden: {y: 25, opacity: 0}, // Increased initial Y offset
+    hidden: {y: 20, opacity: 0}, // Reduced initial Y offset
     visible: {
       y: 0,
       opacity: 1,
-      transition: {type: 'spring', stiffness: 90, damping: 15}, // Adjusted spring physics
+      transition: {type: 'spring', stiffness: 100, damping: 12}, // Snappier spring
     },
-    exit: {y: -25, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } }, // Smoother exit
+    exit: {y: -20, opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }, // Faster exit
   };
 
   const LoadingSkeleton = () => (
@@ -496,6 +528,50 @@ export default function Home() {
                          )}
                        />
                      </motion.div>
+                    {/* Cuisine Type Field */}
+                    <motion.div variants={itemVariants}>
+                       <FormField
+                         control={form.control}
+                         name="cuisineType"
+                         render={({field}) => (
+                           <FormItem>
+                             <FormLabel className="font-medium text-foreground/90">
+                               {t('form.cuisineTypeLabel')}
+                             </FormLabel>
+                             <FormControl>
+                               <Input
+                                 placeholder={t('form.cuisineTypePlaceholder')}
+                                 {...field}
+                                className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70"
+                               />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                     </motion.div>
+                     {/* Cooking Method Field */}
+                     <motion.div variants={itemVariants}>
+                       <FormField
+                         control={form.control}
+                         name="cookingMethod"
+                         render={({field}) => (
+                           <FormItem>
+                             <FormLabel className="font-medium text-foreground/90">
+                               {t('form.cookingMethodLabel')}
+                             </FormLabel>
+                             <FormControl>
+                               <Input
+                                 placeholder={t('form.cookingMethodPlaceholder')}
+                                 {...field}
+                                 className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70"
+                               />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                     </motion.div>
                   </div>
 
                   {/* Quick Mode & Serving Size */}
@@ -598,38 +674,38 @@ export default function Home() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="space-y-10 mt-16"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16" // Use grid layout
             >
-              <h2 className="text-3xl font-semibold text-center border-b pb-4 mb-10 text-foreground/90 dark:text-foreground/80">
+              <h2 className="col-span-full text-3xl font-semibold text-center border-b pb-4 mb-4 text-foreground/90 dark:text-foreground/80"> {/* Adjust title span */}
                 {t('results.title')} {/* Use translation */}
               </h2>
               {recipes.map((recipe, index) => (
                 <motion.div key={recipe.recipeName + index} variants={itemVariants}>
                   <Card
-                    className={cn(
-                      'w-full max-w-3xl mx-auto shadow-lg border border-border/60 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30 group bg-card/95 backdrop-blur-sm'
-                    )}
+                     className={cn(
+                        'w-full h-full flex flex-col shadow-lg border border-border/60 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30 group bg-card/95 backdrop-blur-sm'
+                      )}
                   >
-                    {/* Recipe Image and Title Header */}
-                    <CardHeader className="p-0 relative aspect-[16/7] overflow-hidden group">
+                    {/* Recipe Image Header */}
+                    <CardHeader className="p-0 relative aspect-[16/9] overflow-hidden group">
                       {recipe.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={recipe.imageUrl}
                           alt={t('results.imageAlt').replace('{recipeName}', recipe.recipeName)} // Use translation
-                          width={800}
-                          height={350}
+                          width={400}
+                          height={225}
                           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                           loading="lazy"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20">
-                          <ImageOff className="h-16 w-16 text-muted-foreground/40" />
+                          <ImageOff className="h-12 w-12 text-muted-foreground/40" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300"></div>
-                      <div className="absolute bottom-0 left-0 right-0 p-5">
-                        <CardTitle className="text-2xl font-bold text-white drop-shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300"></div>
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <CardTitle className="text-lg font-bold text-white drop-shadow-md line-clamp-2">
                           {recipe.recipeName} {/* Keep AI-generated name */}
                         </CardTitle>
                       </div>
@@ -640,11 +716,11 @@ export default function Home() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/40 text-white hover:bg-primary hover:text-primary-foreground transition-all opacity-70 group-hover:opacity-100 backdrop-blur-sm"
+                                className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/40 text-white hover:bg-primary hover:text-primary-foreground transition-all opacity-70 group-hover:opacity-100 backdrop-blur-sm"
                                 onClick={() => handleSaveRecipe(recipe)}
                                 aria-label={t('results.saveButtonAriaLabel')} // Use translation
                               >
-                                <Heart className="h-5 w-5" />
+                                <Heart className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                              <TooltipContent side="left">
@@ -654,76 +730,54 @@ export default function Home() {
                         </TooltipProvider>
                     </CardHeader>
                     {/* Recipe Details Content */}
-                    <CardContent className="p-6 space-y-6">
+                    <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3"> {/* Adjust padding and layout */}
                       <motion.div
-                          initial={{ opacity: 0, y: 10 }}
+                          initial={{ opacity: 0, y: 5 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4, delay: 0.1 }}
-                          className="flex flex-wrap gap-3 items-center">
+                          transition={{ duration: 0.3, delay: 0.1 }}
+                          className="flex flex-wrap gap-2 items-center">
                          {/* Time Badge */}
                         <Badge
                           variant="outline"
-                          className="flex items-center gap-1.5 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-1 px-2.5 text-sm font-medium"
+                          className="flex items-center gap-1 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-0.5 px-2 text-xs font-medium"
                         >
-                          <Clock className="h-4 w-4" />
+                          <Clock className="h-3 w-3" />
                           {recipe.estimatedTime} {/* Keep AI-generated */}
                         </Badge>
                         {/* Difficulty Badge */}
                         <Badge
-                          variant="outline"
-                          className="flex items-center gap-1.5 border-secondary-foreground/40 bg-secondary/50 dark:bg-secondary/20 backdrop-blur-sm py-1 px-2.5 text-sm font-medium"
+                           variant="outline"
+                           className="flex items-center gap-1 border-secondary-foreground/40 bg-secondary/50 dark:bg-secondary/20 backdrop-blur-sm py-0.5 px-2 text-xs font-medium"
                         >
-                          <BarChart className="h-4 w-4 -rotate-90" />
+                          <BarChart className="h-3 w-3 -rotate-90" />
                           {recipe.difficulty} {/* Keep AI-generated */}
                         </Badge>
                       </motion.div>
 
-                      {/* Ingredients Section */}
-                     <motion.div
-                       initial={{ opacity: 0, y: 10 }}
-                       animate={{ opacity: 1, y: 0 }}
-                       transition={{ duration: 0.4, delay: 0.2 }}
-                       >
-                        <h3 className="text-lg font-semibold mb-3 text-foreground/90 flex items-center gap-2">
-                           <BookOpen size={18}/> {t('results.ingredientsTitle')} {/* Use translation */}
-                        </h3>
-                        <ul className="list-disc list-outside pl-5 space-y-1.5 text-foreground/80 dark:text-foreground/75 whitespace-pre-line marker:text-primary/80 marker:text-lg">
-                          {/* Split and render ingredients */}
-                          {recipe.ingredients.split('\n').map((item, idx) => {
-                            const cleanedItem = item.replace(/^- \s*/, '').trim();
-                            return cleanedItem ? <li key={idx}>{cleanedItem}</li> : null;
-                          })}
-                        </ul>
-                      </motion.div>
-                      <Separator className="my-6 bg-border/40" />
-                      {/* Instructions Section */}
-                       <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4, delay: 0.3 }}>
-                        <h3 className="text-lg font-semibold mb-4 text-foreground/90 flex items-center gap-2">
-                            <ChefHat size={18}/> {t('results.instructionsTitle')} {/* Use translation */}
-                         </h3>
-                        <div className="space-y-5 text-foreground/80 dark:text-foreground/75 whitespace-pre-line">
-                          {/* Split and render instructions */}
-                          {recipe.instructions.split('\n').map((step, idx) => {
-                            const cleanedStep = step
-                              .replace(/^\s*(\d+\.|-)\s*/, '')
-                              .trim();
-                            return cleanedStep ? (
-                              <div key={idx} className="flex items-start">
-                                <span className="mr-3 mt-1 font-bold text-primary text-lg leading-tight bg-primary/10 rounded-full h-6 w-6 flex items-center justify-center shrink-0">
-                                  {idx + 1}
-                                </span>
-                                <p className="flex-1 leading-relaxed pt-0.5">
-                                  {cleanedStep}
-                                </p>
-                              </div>
-                            ) : null;
-                          })}
-                        </div>
-                      </motion.div>
+                     {/* Short description/summary if available or first few lines of instructions */}
+                     <motion.p
+                         initial={{ opacity: 0, y: 5 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         transition={{ duration: 0.3, delay: 0.2 }}
+                         className="text-sm text-muted-foreground line-clamp-3 leading-snug"
+                      >
+                         {/* Display first part of instructions as a preview */}
+                         {recipe.instructions.split('\n')[0]?.replace(/^\s*(\d+\.|-)\s*/, '').trim() ?? t('results.defaultDescription')}
+                       </motion.p>
+
                     </CardContent>
+                     {/* View Recipe Button */}
+                     <CardFooter className="p-4 pt-0">
+                         <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+                            onClick={() => handleViewRecipe(recipe)}
+                          >
+                            {t('results.viewRecipeButton')}
+                            <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                          </Button>
+                      </CardFooter>
                   </Card>
                 </motion.div>
               ))}
@@ -782,3 +836,4 @@ export default function Home() {
     </div>
   );
 }
+
