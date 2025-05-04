@@ -226,22 +226,35 @@ export async function removeRecipeFromMongoDB(userIdString: string, recipeName: 
 
 /**
  * Saves a recipe search event to the history collection.
- * @param historyData The data for the history entry.
+ * @param historyData The data for the history entry, expecting userId as a string.
  * @returns A promise that resolves when the history entry is saved.
  */
-export async function saveRecipeHistory(historyData: Omit<HistoryDocument, '_id'>): Promise<void> {
+export async function saveRecipeHistory(historyData: { userId: string; searchInput: SuggestRecipesInput; resultsSummary: string[]; resultCount: number; timestamp?: Date }): Promise<void> {
     if (!historyData.userId) {
         throw new Error("User ID is required to save history.");
     }
 
+    let userObjectId: ObjectId;
+    try {
+        userObjectId = new ObjectId(historyData.userId);
+    } catch (error) {
+        console.error("Invalid user ID format for saving history:", historyData.userId);
+        throw new Error('Invalid user ID format for history save.');
+    }
+
     const { historyCollection } = await getDbCollections();
-    const entryWithTimestamp: Omit<HistoryDocument, '_id'> & { timestamp: Date } = {
-        ...historyData,
-        timestamp: historyData.timestamp || new Date(), // Ensure timestamp exists
+    // Construct the document to insert, converting string userId to ObjectId
+    const entryToInsert: HistoryDocument = {
+        _id: new ObjectId(), // Generate a new ObjectId for the history entry
+        userId: userObjectId,
+        timestamp: historyData.timestamp || new Date(),
+        searchInput: historyData.searchInput,
+        resultsSummary: historyData.resultsSummary,
+        resultCount: historyData.resultCount,
     };
 
     try {
-        const result = await historyCollection.insertOne(entryWithTimestamp as HistoryDocument);
+        const result = await historyCollection.insertOne(entryToInsert);
         if (result.insertedId) {
              console.log(`History entry saved with ID: ${result.insertedId} for user ${historyData.userId}`);
         } else {
@@ -269,10 +282,10 @@ async function saveRecipeDetails(recipe: RecipeItem, userId?: ObjectId): Promise
     }
     const { recipesCollection } = await getDbCollections();
 
-    const recipeDoc: Omit<RecipeDocument, '_id'> = {
+    const recipeDoc: Omit<RecipeDocument, '_id' | 'createdAt'> & { createdAt?: Date } = {
         ...recipe,
         createdBy: userId,
-        createdAt: new Date(),
+        // createdAt will be set by $setOnInsert or potentially updated by $set if needed
     };
 
     try {
@@ -281,7 +294,7 @@ async function saveRecipeDetails(recipe: RecipeItem, userId?: ObjectId): Promise
         const result = await recipesCollection.updateOne(
             { recipeName: recipe.recipeName }, // Find based on name
             {
-                $set: recipeDoc, // Set all fields
+                $set: recipeDoc, // Set all fields (overwrites existing except _id)
                 $setOnInsert: { createdAt: new Date() } // Only set createdAt on insert
             },
             { upsert: true }

@@ -277,7 +277,7 @@ export default function Home() {
         setInitialLoadComplete(true); // Mark initial load as complete
     }
 
-  }, [form]); // form dependency ensures reset happens after form is initialized
+  }, [form, recipes]); // Added recipes dependency for rehydration logic
 
 
    // Fetch saved recipe names when user logs in or changes, or when recipes load/change
@@ -427,7 +427,7 @@ export default function Home() {
       addParam('diet', recipe.dietPlanSuitability);
 
       // Prepare data for sessionStorage (exclude large image URI by default)
-      const dataToStore: Partial<RecipeItem> & { imageOmitted?: boolean } = {
+      const dataToStore: Partial<RecipeItem> & { imageOmitted?: boolean; language?: LanguageCode } = {
         recipeName: recipe.recipeName, // Keep name for matching
         ingredients: recipe.ingredients,
         instructions: recipe.instructions,
@@ -615,11 +615,14 @@ export default function Home() {
                    try {
                        sessionStorage.removeItem(RECIPE_RESULTS_KEY);
                        sessionStorage.removeItem(FORM_STATE_KEY);
-                       sessionStorage.setItem(FORM_STATE_KEY, JSON.stringify(values)); // Store only form state
+                        // Store only form state and results WITHOUT images to reduce size
+                        const recipesWithoutImages = recipesArray.map(({ imageUrl, imageOmitted, ...rest }) => rest);
+                        sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(recipesWithoutImages));
+                       sessionStorage.setItem(FORM_STATE_KEY, JSON.stringify(values));
                        console.warn(t('toast.storageQuotaWarningTitle'), t('toast.storageQuotaWarningDesc'));
                        setError(t('toast.storageQuotaWarningDesc')); // Inform user results might not persist
                    } catch (retryError) {
-                        console.error("Failed to save even minimal form state to sessionStorage:", retryError);
+                        console.error("Failed to save even minimal state to sessionStorage:", retryError);
                         setError(t('toast.storageErrorDesc')); // Generic storage error
                    }
                 } else {
@@ -643,12 +646,12 @@ export default function Home() {
             try {
                 // Prepare history data
                 const historyEntry = {
-                    userId: userId, // Pass string ID, should be converted to ObjectId in DB function
-                    timestamp: new Date(),
+                    userId: userId, // Pass string ID, DB function will convert it
                     searchInput: input, // The input sent to the AI
-                    // Optionally store simplified results or just a count/names
+                    // Store simplified results (just names)
                     resultsSummary: recipesArray.map(r => r.recipeName),
                     resultCount: recipesArray.length,
+                    timestamp: new Date(), // Add timestamp
                 };
                 await saveRecipeHistory(historyEntry);
                 console.log("Saved search to history for user:", userId);
