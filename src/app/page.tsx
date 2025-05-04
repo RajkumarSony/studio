@@ -83,7 +83,9 @@ import Link from 'next/link'; // Import Link for navigation
 import { useRouter } from 'next/navigation'; // Import useRouter
 import AuthButton from '@/components/AuthButton'; // Import the AuthButton
 import { useAuth } from '@/context/AuthContext'; // Import useAuth hook
-import { saveRecipeToFirestore, isRecipeSaved, removeRecipeFromFirestore } from '@/lib/firebase/firestore'; // Import Firestore functions
+// Import MongoDB functions instead of Firestore
+import { saveRecipeToMongoDB, isRecipeSavedInMongoDB, removeRecipeFromMongoDB } from '@/lib/db/recipes';
+
 
 // Define supported languages and their corresponding CSS font variables
 const supportedLanguages: { value: LanguageCode; label: string; fontVariable: string }[] = [
@@ -229,7 +231,8 @@ export default function Home() {
           if (user?.uid && recipes) {
             const savedSet = new Set<string>();
             for (const recipe of recipes) {
-              if (await isRecipeSaved(user.uid, recipe.recipeName)) {
+              // Use MongoDB check function
+              if (await isRecipeSavedInMongoDB(user.uid, recipe.recipeName)) {
                 savedSet.add(recipe.recipeName);
               }
             }
@@ -260,8 +263,6 @@ export default function Home() {
          title: t('toast.authRequiredTitle'),
          description: t('toast.authRequiredDesc'),
          variant: 'destructive',
-         // Optionally add an action to trigger sign-in
-         // action: <ToastAction altText="Sign In" onClick={signInWithGoogle}>Sign In</ToastAction>,
        });
         // Trigger Google sign-in popup
        await signInWithGoogle(); // Wait for sign-in attempt
@@ -273,8 +274,8 @@ export default function Home() {
 
      try {
        if (isCurrentlySaved) {
-         // Remove the recipe
-         await removeRecipeFromFirestore(user.uid, recipeName);
+         // Remove the recipe using MongoDB function
+         await removeRecipeFromMongoDB(user.uid, recipeName);
          setSavedRecipeNames(prev => {
            const newSet = new Set(prev);
            newSet.delete(recipeName);
@@ -286,8 +287,8 @@ export default function Home() {
            variant: 'default',
          });
        } else {
-         // Save the recipe
-         await saveRecipeToFirestore(user.uid, recipe);
+         // Save the recipe using MongoDB function
+         await saveRecipeToMongoDB(user.uid, recipe);
           setSavedRecipeNames(prev => new Set(prev).add(recipeName));
          toast({
            title: t('toast.recipeSavedTitle'),
@@ -314,17 +315,11 @@ export default function Home() {
       // Serialize the recipe object (excluding potentially huge image data if possible)
       const recipeDataToStore = {
         ...recipe,
-        // Optionally remove or replace large data before storing
-        // imageUrl: recipe.imageUrl ? 'image_data_omitted' : undefined,
-        // We'll pass imageUrl separately in query params if not too big,
-        // or rely on sessionStorage entirely
       };
       const serializedRecipe = JSON.stringify(recipeDataToStore);
 
-      // Generate a safe key for session storage
-      // Replace problematic characters for keys
-      const storageKey = `recipe-${recipe.recipeName.replace(/[^a-zA-Z0-9-_]/g, '_')}`;
-
+      // Generate a safe key for session storage based on recipe name
+      const storageKey = `recipe-${recipe.recipeName.replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 50)}`; // Sanitize and shorten key
 
       sessionStorage.setItem(storageKey, serializedRecipe);
       console.log("Recipe data stored in session storage with key:", storageKey);
@@ -333,31 +328,18 @@ export default function Home() {
       const queryParams = new URLSearchParams();
       const addParam = (key: string, value: string | undefined | null) => {
           if (value !== undefined && value !== null) {
-              queryParams.set(key, encodeURIComponent(value));
+              queryParams.set(key, value); // No need to encodeURIComponent here, URLSearchParams handles it
           }
       };
 
-      // Encode recipe name for the path segment (slug) and also pass as query for lookup
+      // Encode recipe name for the path segment (slug) and pass storage key
       const encodedSlug = encodeURIComponent(recipe.recipeName.replace(/\s+/g, '-').toLowerCase())
         .replace(/%/g, '') // Remove percentage signs
-        .replace(/\?/g, '') // Remove question marks
-        .replace(/#/g, '') // Remove hash symbols
+        .replace(/[?#]/g, '') // Remove question marks and hash symbols
         .substring(0, 100); // Limit slug length if necessary
 
-       // Use the sanitized storage key in the query params for reliable lookup
-      addParam('key', storageKey); // Pass the storage key
-      addParam('lang', selectedLanguage);
-
-      // Add image URL only if it's NOT a data URI or is reasonably short
-      if (recipe.imageUrl && !recipe.imageUrl.startsWith('data:image')) {
-         addParam('imageUrl', recipe.imageUrl);
-      } else if (recipe.imageUrl && recipe.imageUrl.length < 1000) { // Example length limit
-          addParam('imageUrl', recipe.imageUrl);
-      } else {
-          // Indicate that image data is in session storage if it's too large
-           if (recipe.imageUrl) queryParams.set('imageStored', 'true');
-      }
-
+       addParam('key', storageKey); // Pass the storage key
+       addParam('lang', selectedLanguage); // Pass current language
 
       // Construct the final URL and navigate
       const url = `/recipe/${encodedSlug}?${queryParams.toString()}`;
