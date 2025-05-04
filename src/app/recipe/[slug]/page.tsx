@@ -43,12 +43,12 @@ function RecipeDetailContent() {
   const imageUrl = searchParams.get('imageUrl');
   const imagePrompt = searchParams.get('imagePrompt') ?? '';
   const lang = (searchParams.get('language') as LanguageCode) || 'en'; // Get language
+  const nutritionFacts = searchParams.get('nutritionFacts'); // Get nutrition facts
+  const dietPlanSuitability = searchParams.get('dietPlanSuitability'); // Get diet plan suitability
+
 
   const t = getTranslations(lang); // Get translation function for the current language
 
-  // Placeholder data for Nutrition Facts and Diet Plan
-  const nutritionFacts = t('recipeDetail.nutritionPlaceholder');
-  const dietPlan = t('recipeDetail.dietPlanPlaceholder');
 
   return (
     <div className="container mx-auto py-12 px-4 md:px-6 max-w-4xl">
@@ -156,39 +156,45 @@ function RecipeDetailContent() {
               </div>
             </motion.div>
 
-             <Separator className="my-8 bg-border/40" />
+            {/* Conditionally render Nutrition and Diet Plan sections if data exists */}
+             { (nutritionFacts || dietPlanSuitability) && <Separator className="my-8 bg-border/40" /> }
 
             {/* Nutrition Facts Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-            >
-              <h2 className="text-2xl font-semibold mb-4 text-foreground/90 flex items-center gap-2">
-                 <UtensilsCrossed size={22} /> {t('recipeDetail.nutritionTitle')}
-              </h2>
-              <Card className="bg-muted/40 border-border/50">
-                <CardContent className="p-4 text-sm text-muted-foreground">
-                   <p className="whitespace-pre-line">{nutritionFacts}</p>
-                 </CardContent>
-               </Card>
-             </motion.div>
+            {nutritionFacts && (
+                 <motion.div
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: 0.5, duration: 0.5 }}
+                 >
+                   <h2 className="text-2xl font-semibold mb-4 text-foreground/90 flex items-center gap-2">
+                      <UtensilsCrossed size={22} /> {t('recipeDetail.nutritionTitle')}
+                   </h2>
+                   <Card className="bg-muted/40 border-border/50">
+                     <CardContent className="p-4 text-sm text-muted-foreground">
+                        <p className="whitespace-pre-line">{nutritionFacts}</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+            )}
+
 
             {/* Diet Plan Section */}
-            <motion.div
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ delay: 0.6, duration: 0.5 }}
-            >
-               <h2 className="text-2xl font-semibold mb-4 text-foreground/90 flex items-center gap-2">
-                 <UtensilsCrossed size={22} /> {t('recipeDetail.dietPlanTitle')}
-               </h2>
-               <Card className="bg-muted/40 border-border/50">
-                 <CardContent className="p-4 text-sm text-muted-foreground">
-                   <p className="whitespace-pre-line">{dietPlan}</p>
-                 </CardContent>
-               </Card>
-             </motion.div>
+            {dietPlanSuitability && (
+                 <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                 >
+                    <h2 className="text-2xl font-semibold mb-4 text-foreground/90 flex items-center gap-2">
+                      <UtensilsCrossed size={22} /> {t('recipeDetail.dietPlanTitle')}
+                    </h2>
+                    <Card className="bg-muted/40 border-border/50">
+                      <CardContent className="p-4 text-sm text-muted-foreground">
+                        <p className="whitespace-pre-line">{dietPlanSuitability}</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+            )}
 
 
           </CardContent>

@@ -23,6 +23,7 @@ import {
   BookOpen, // For Ingredients/Instructions titles
   AlertTriangle, // For Warnings
   ArrowRight, // Icon for navigation
+  FileText, // Icon for including details
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -104,6 +105,7 @@ const formSchema = (t: (key: keyof typeof translations.en.form) => string) => z.
   servingSize: z.number().int().min(1).optional(),
   cuisineType: z.string().optional(), // Added cuisine type
   cookingMethod: z.string().optional(), // Added cooking method
+  includeDetails: z.boolean().optional(), // Added field for nutrition/diet details
 });
 
 export default function Home() {
@@ -151,6 +153,7 @@ export default function Home() {
         servingSize: undefined,
         cuisineType: '',
         cookingMethod: '',
+        includeDetails: false, // Default to false
       },
     });
 
@@ -208,6 +211,9 @@ export default function Home() {
         imageUrl: recipe.imageUrl ?? '', // Pass imageUrl if available
         imagePrompt: recipe.imagePrompt ?? '', // Pass imagePrompt
         language: selectedLanguage, // Pass current language
+        // Add the nutrition/diet fields
+        nutritionFacts: recipe.nutritionFacts ?? '',
+        dietPlanSuitability: recipe.dietPlanSuitability ?? '',
     });
 
     // Encode recipe name for URL safety
@@ -241,6 +247,7 @@ export default function Home() {
         dietaryRestrictions: values.dietaryRestrictions || undefined,
         preferences: enhancedPreferences || undefined, // Use enhanced preferences
         language: selectedLanguage,
+        includeDetails: values.includeDetails, // Pass the switch value
       };
 
       const result = await suggestRecipes(input);
@@ -574,8 +581,9 @@ export default function Home() {
                      </motion.div>
                   </div>
 
-                  {/* Quick Mode & Serving Size */}
-                  <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
+                  {/* Quick Mode, Serving Size & Include Details */}
+                  <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 flex-wrap">
+                      {/* Quick Mode Switch */}
                       <FormField
                         control={form.control}
                         name="quickMode"
@@ -595,11 +603,13 @@ export default function Home() {
                           </FormItem>
                         )}
                       />
+
+                     {/* Serving Size Input */}
                      <FormField
                        control={form.control}
                        name="servingSize"
                        render={({ field }) => (
-                         <FormItem className="flex-1 min-w-[120px]">
+                         <FormItem className="flex-1 min-w-[120px] max-w-[200px]">
                            <FormLabel className="font-medium text-foreground/90 flex items-center gap-1.5">
                             <Scale size={16} /> {t('form.servingSizeLabel')} {/* Use translation */}
                            </FormLabel>
@@ -619,6 +629,27 @@ export default function Home() {
                          </FormItem>
                        )}
                      />
+
+                     {/* Include Details Switch */}
+                      <FormField
+                        control={form.control}
+                        name="includeDetails"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                             <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                id="include-details"
+                                aria-label={t('form.includeDetailsAriaLabel')} // Use translation
+                              />
+                            </FormControl>
+                            <Label htmlFor="include-details" className="font-medium text-foreground/90 cursor-pointer flex items-center gap-1.5">
+                             <FileText size={16}/> {t('form.includeDetailsLabel')} <span className="text-xs text-muted-foreground">{t('form.includeDetailsHint')}</span> {/* Use translation */}
+                            </Label>
+                          </FormItem>
+                        )}
+                      />
                   </motion.div>
 
                   {/* Submit & Reset Buttons */}
@@ -836,4 +867,3 @@ export default function Home() {
     </div>
   );
 }
-

@@ -42,6 +42,9 @@ interface TranslationMessages {
     cuisineTypePlaceholder: string; // New field
     cookingMethodLabel: string; // New field
     cookingMethodPlaceholder: string; // New field
+    includeDetailsLabel: string; // New field
+    includeDetailsHint: string; // New field
+    includeDetailsAriaLabel: string; // New field
     submitButton: string;
     submitButtonLoading: string;
     resetButton: string;
@@ -128,6 +131,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai',
       cookingMethodLabel: 'Cooking Method',
       cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling',
+      includeDetailsLabel: 'Include Details?',
+      includeDetailsHint: '(Nutrition/Diet)',
+      includeDetailsAriaLabel: 'Include nutrition facts and diet plan suitability',
       submitButton: 'Get Suggestions',
       submitButtonLoading: 'Finding Recipes...',
       resetButton: 'Clear Form',
@@ -148,7 +154,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
      recipeDetail: {
        backButton: 'Back to Suggestions',
        nutritionTitle: 'Nutrition Facts (Estimated)',
-       dietPlanTitle: 'Diet Plan Integration (Example)',
+       dietPlanTitle: 'Diet Plan Suitability',
        nutritionPlaceholder: 'Detailed nutrition information (e.g., calories, protein, carbs, fat) will be generated here by the AI based on the ingredients and instructions.',
        dietPlanPlaceholder: 'Example integration: This recipe fits well into a balanced diet. Consider pairing with a side salad for a complete meal. Specific diet plan recommendations (Keto, Paleo, etc.) could be generated here.',
        imagePromptLabel: 'Image Prompt',
@@ -211,6 +217,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       cuisineTypePlaceholder: 'जैसे, भारतीय, मैक्सिकन, थाई',
       cookingMethodLabel: 'खाना पकाने की विधि',
       cookingMethodPlaceholder: 'जैसे, बेकिंग, स्टिर-फ्राई, ग्रिलिंग',
+      includeDetailsLabel: 'विवरण शामिल करें?',
+      includeDetailsHint: '(पोषण/आहार)',
+      includeDetailsAriaLabel: 'पोषण तथ्य और आहार योजना उपयुक्तता शामिल करें',
       submitButton: 'सुझाव प्राप्त करें',
       submitButtonLoading: 'रेसिपी ढूंढी जा रही हैं...',
       resetButton: 'फॉर्म साफ़ करें',
@@ -231,7 +240,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
     recipeDetail: {
       backButton: 'सुझावों पर वापस जाएं',
       nutritionTitle: 'पोषण तथ्य (अनुमानित)',
-      dietPlanTitle: 'आहार योजना एकीकरण (उदाहरण)',
+      dietPlanTitle: 'आहार योजना उपयुक्तता',
       nutritionPlaceholder: 'विस्तृत पोषण जानकारी (जैसे, कैलोरी, प्रोटीन, कार्ब्स, वसा) सामग्री और निर्देशों के आधार पर AI द्वारा यहां उत्पन्न की जाएगी।',
       dietPlanPlaceholder: 'उदाहरण एकीकरण: यह रेसिपी संतुलित आहार में अच्छी तरह फिट बैठती है। संपूर्ण भोजन के लिए साइड सलाद के साथ जोड़ी बनाने पर विचार करें। विशिष्ट आहार योजना सिफारिशें (केटो, पैलियो, आदि) यहां उत्पन्न की जा सकती हैं।',
       imagePromptLabel: 'छवि प्रॉम्प्ट',
@@ -294,6 +303,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         cuisineTypePlaceholder: 'যেমন, ভারতীয়, মেক্সিকান, থাই',
         cookingMethodLabel: 'রান্নার পদ্ধতি',
         cookingMethodPlaceholder: 'যেমন, বেকিং, স্টার-ফ্রাই, গ্রিলিং',
+        includeDetailsLabel: 'বিস্তারিত অন্তর্ভুক্ত?',
+        includeDetailsHint: '(পুষ্টি/খাদ্য)',
+        includeDetailsAriaLabel: 'পুষ্টি তথ্য এবং খাদ্য পরিকল্পনার উপযুক্ততা অন্তর্ভুক্ত করুন',
         submitButton: 'পরামর্শ পান',
         submitButtonLoading: 'রেসিপি খোঁজা হচ্ছে...',
         resetButton: 'ফর্ম পরিষ্কার করুন',
@@ -314,7 +326,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
     recipeDetail: {
        backButton: 'পরামর্শে ফিরে যান',
        nutritionTitle: 'পুষ্টি তথ্য (আনুমানিক)',
-       dietPlanTitle: 'ডায়েট প্ল্যান ইন্টিগ্রেশন (উদাহরণ)',
+       dietPlanTitle: 'খাদ্য পরিকল্পনার উপযুক্ততা',
        nutritionPlaceholder: 'বিস্তারিত পুষ্টি তথ্য (যেমন, ক্যালোরি, প্রোটিন, কার্বস, ফ্যাট) উপকরণ এবং নির্দেশাবলীর উপর ভিত্তি করে AI দ্বারা এখানে তৈরি করা হবে।',
        dietPlanPlaceholder: 'উদাহরণ ইন্টিগ্রেশন: এই রেসিপিটি একটি সুষম খাদ্যের সাথে ভালভাবে খাপ খায়। একটি সম্পূর্ণ খাবারের জন্য সাইড সালাদের সাথে জুটি বাঁধার কথা বিবেচনা করুন। নির্দিষ্ট ডায়েট প্ল্যানের সুপারিশ (কেটো, প্যালিও, ইত্যাদি) এখানে তৈরি করা যেতে পারে।',
        imagePromptLabel: 'চিত্র প্রম্পট',
@@ -377,6 +389,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           cuisineTypePlaceholder: 'उदा. भारतीय, मेक्सिकन, थाई',
           cookingMethodLabel: 'शिजवण्याची पद्धत',
           cookingMethodPlaceholder: 'उदा. बेकिंग, स्टिर-फ्राय, ग्रिलिंग',
+          includeDetailsLabel: 'तपशील समाविष्ट करायचे?',
+          includeDetailsHint: '(पोषण/आहार)',
+          includeDetailsAriaLabel: 'पोषण तथ्ये आणि आहार योजना योग्यता समाविष्ट करा',
           submitButton: 'सूचना मिळवा',
           submitButtonLoading: 'रेसिपी शोधत आहे...',
           resetButton: 'फॉर्म साफ करा',
@@ -397,7 +412,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       recipeDetail: {
          backButton: 'सूचनांवर परत जा',
          nutritionTitle: 'पोषण तथ्ये (अंदाजित)',
-         dietPlanTitle: 'आहार योजना एकत्रीकरण (उदाहरण)',
+         dietPlanTitle: 'आहार योजना योग्यता',
          nutritionPlaceholder: 'तपशीलवार पोषण माहिती (उदा. कॅलरीज, प्रथिने, कर्बोदके, चरबी) साहित्य आणि सूचनांवर आधारित AI द्वारे येथे तयार केली जाईल.',
          dietPlanPlaceholder: 'उदाहरण एकत्रीकरण: ही रेसिपी संतुलित आहारात चांगली बसते. संपूर्ण जेवणासाठी साइड सॅलडसह जोडण्याचा विचार करा. विशिष्ट आहार योजना शिफारसी (केटो, पॅलिओ, इ.) येथे तयार केल्या जाऊ शकतात.',
          imagePromptLabel: 'प्रतिमा प्रॉम्प्ट',
@@ -460,6 +475,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           cuisineTypePlaceholder: 'எ.கா., இந்தியன், மெக்சிகன், தாய்',
           cookingMethodLabel: 'சமையல் முறை',
           cookingMethodPlaceholder: 'எ.கா., பேக்கிங், ஸ்டிர்-ஃப்ரை, கிரில்லிங்',
+          includeDetailsLabel: 'விவரங்களைச் சேர்க்கவா?',
+          includeDetailsHint: '(ஊட்டச்சத்து/உணவு)',
+          includeDetailsAriaLabel: 'ஊட்டச்சத்து உண்மைகள் மற்றும் உணவுத் திட்டப் பொருத்தத்தைச் சேர்க்கவும்',
           submitButton: 'பரிந்துரைகளைப் பெறுக',
           submitButtonLoading: 'சமையல் குறிப்புகள் தேடப்படுகின்றன...',
           resetButton: 'படிவத்தை அழிக்கவும்',
@@ -480,7 +498,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       recipeDetail: {
          backButton: 'பரிந்துரைகளுக்குத் திரும்பு',
          nutritionTitle: 'ஊட்டச்சத்து உண்மைகள் (மதிப்பிடப்பட்டது)',
-         dietPlanTitle: 'உணவுத் திட்டம் ஒருங்கிணைப்பு (எடுத்துக்காட்டு)',
+         dietPlanTitle: 'உணவுத் திட்டப் பொருத்தம்',
          nutritionPlaceholder: 'விரிவான ஊட்டச்சத்து தகவல்கள் (எ.கா., கலோரிகள், புரதம், கார்போஹைட்ரேட்டுகள், கொழுப்பு) பொருட்கள் மற்றும் வழிமுறைகளின் அடிப்படையில் AI ஆல் இங்கே உருவாக்கப்படும்.',
          dietPlanPlaceholder: 'எடுத்துக்காட்டு ஒருங்கிணைப்பு: இந்த செய்முறை சமச்சீர் உணவில் நன்றாகப் பொருந்துகிறது. முழுமையான உணவிற்கு ஒரு பக்க சாலட் உடன் இணைக்க பரிசீலிக்கவும். குறிப்பிட்ட உணவுத் திட்டப் பரிந்துரைகள் (கெட்டோ, பாலியோ, முதலியன) இங்கே உருவாக்கப்படலாம்.',
          imagePromptLabel: 'பட உந்தல்',
@@ -543,6 +561,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           cuisineTypePlaceholder: 'ఉదా., ఇండియన్, మెక్సికన్, థాయ్',
           cookingMethodLabel: 'వంట పద్ధతి',
           cookingMethodPlaceholder: 'ఉదా., బేకింగ్, స్టర్-ఫ్రై, గ్రిల్లింగ్',
+          includeDetailsLabel: 'వివరాలను చేర్చాలా?',
+          includeDetailsHint: '(పోషకాహారం/ఆహారం)',
+          includeDetailsAriaLabel: 'పోషకాహార వాస్తవాలు మరియు ఆహార ప్రణాళిక అనుకూలతను చేర్చండి',
           submitButton: 'సూచనలను పొందండి',
           submitButtonLoading: 'వంటకాలు కనుగొనబడుతున్నాయి...',
           resetButton: 'ఫారమ్‌ను క్లియర్ చేయండి',
@@ -563,7 +584,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       recipeDetail: {
          backButton: 'సూచనలకు తిరిగి వెళ్ళు',
          nutritionTitle: 'పోషకాహార వాస్తవాలు (అంచనా)',
-         dietPlanTitle: 'ఆహార ప్రణాళిక ఏకీకరణ (ఉదాహరణ)',
+         dietPlanTitle: 'ఆహార ప్రణాళిక అనుకూలత',
          nutritionPlaceholder: 'వివరణాత్మక పోషకాహార సమాచారం (ఉదా., కేలరీలు, ప్రోటీన్, కార్బోహైడ్రేట్లు, కొవ్వు) పదార్థాలు మరియు సూచనల ఆధారంగా AI ద్వారా ఇక్కడ రూపొందించబడుతుంది.',
          dietPlanPlaceholder: 'ఉదాహరణ ఏకీకరణ: ఈ వంటకం సమతుల్య ఆహారంలో బాగా సరిపోతుంది. పూర్తి భోజనం కోసం సైడ్ సలాడ్‌తో జత చేయడాన్ని పరిగణించండి. నిర్దిష్ట ఆహార ప్రణాళిక సిఫార్సులు (కీటో, పాలియో, మొదలైనవి) ఇక్కడ రూపొందించబడతాయి.',
          imagePromptLabel: 'చిత్ర ప్రాంప్ట్',
@@ -626,6 +647,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           cuisineTypePlaceholder: 'ଯେପରି, ଭାରତୀୟ, ମେକ୍ସିକାନ୍, ଥାଇ',
           cookingMethodLabel: 'ରାନ୍ଧିବା ପଦ୍ଧତି',
           cookingMethodPlaceholder: 'ଯେପରି, ବେକିଙ୍ଗ୍, ଷ୍ଟିର୍-ଫ୍ରାଏ, ଗ୍ରିଲିଙ୍ଗ୍',
+          includeDetailsLabel: 'ବିବରଣୀ ସାମିଲ କରନ୍ତୁ?',
+          includeDetailsHint: '(ପୋଷଣ/ଆହାର)',
+          includeDetailsAriaLabel: 'ପୋଷଣ ତଥ୍ୟ ଏବଂ ଆହାର ଯୋଜନା ଉପଯୁକ୍ତତା ସାମିଲ କରନ୍ତୁ',
           submitButton: 'ପରାମର୍ଶ ପାଆନ୍ତୁ',
           submitButtonLoading: 'ରେସିପି ଖୋଜା ଚାଲିଛି...',
           resetButton: 'ଫର୍ମ ସଫା କରନ୍ତୁ',
@@ -646,7 +670,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        recipeDetail: {
          backButton: 'ପରାମର୍ଶକୁ ଫେରନ୍ତୁ',
          nutritionTitle: 'ପୋଷଣ ତଥ୍ୟ (ଆନୁମାନିକ)',
-         dietPlanTitle: 'ଆହାର ଯୋଜନା ଏକୀକରଣ (ଉଦାହରଣ)',
+         dietPlanTitle: 'ଆହାର ଯୋଜନା ଉପଯୁକ୍ତତା',
          nutritionPlaceholder: 'ବିସ୍ତୃତ ପୋଷଣ ତଥ୍ୟ (ଯେପରି, କ୍ୟାଲୋରୀ, ପ୍ରୋଟିନ୍, କାର୍ବସ୍, ଫ୍ୟାଟ୍) ଉପାଦାନ ଏବଂ ନିର୍ଦ୍ଦେଶାବଳୀ ଆଧାରରେ AI ଦ୍ୱାରା ଏଠାରେ ପ୍ରସ୍ତୁତ କରାଯିବ।',
          dietPlanPlaceholder: 'ଉଦାହରଣ ଏକୀକରଣ: ଏହି ରେସିପି ଏକ ସନ୍ତୁଳିତ ଆହାରରେ ଭଲ ଭାବରେ ଖାପ ଖାଏ। ଏକ ସମ୍ପୂର୍ଣ୍ଣ ଭୋଜନ ପାଇଁ ସାଇଡ୍ ସାଲାଡ୍ ସହିତ ଯୋଡିବାକୁ ବିଚାର କରନ୍ତୁ। ନିର୍ଦ୍ଦିଷ୍ଟ ଆହାର ଯୋଜନା ସୁପାରିଶ (କେଟୋ, ପାଲିଓ, ଇତ୍ୟାଦି) ଏଠାରେ ପ୍ରସ୍ତୁତ କରାଯାଇପାରେ।',
          imagePromptLabel: 'ଚିତ୍ର ପ୍ରମ୍ପ୍ଟ',
@@ -709,6 +733,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           cuisineTypePlaceholder: 'ਜਿਵੇਂ ਕਿ, ਭਾਰਤੀ, ਮੈਕਸੀਕਨ, ਥਾਈ',
           cookingMethodLabel: 'ਖਾਣਾ ਪਕਾਉਣ ਦਾ ਢੰਗ',
           cookingMethodPlaceholder: 'ਜਿਵੇਂ ਕਿ, ਬੇਕਿੰਗ, ਸਟਰ-ਫਰਾਈ, ਗ੍ਰਿਲਿੰਗ',
+          includeDetailsLabel: 'ਵੇਰਵੇ ਸ਼ਾਮਲ ਕਰੀਏ?',
+          includeDetailsHint: '(ਪੋਸ਼ਣ/ਖੁਰਾਕ)',
+          includeDetailsAriaLabel: 'ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਤੱਥ ਅਤੇ ਖੁਰਾਕ ਯੋਜਨਾ ਦੀ ਯੋਗਤਾ ਸ਼ਾਮਲ ਕਰੋ',
           submitButton: 'ਸੁਝਾਅ ਪ੍ਰਾਪਤ ਕਰੋ',
           submitButtonLoading: 'ਵਿਅੰਜਨ ਲੱਭੇ ਜਾ ਰਹੇ ਹਨ...',
           resetButton: 'ਫਾਰਮ ਸਾਫ਼ ਕਰੋ',
@@ -729,7 +756,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        recipeDetail: {
          backButton: 'ਸੁਝਾਵਾਂ \'ਤੇ ਵਾਪਸ ਜਾਓ',
          nutritionTitle: 'ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਤੱਥ (ਅਨੁਮਾਨਿਤ)',
-         dietPlanTitle: 'ਖੁਰਾਕ ਯੋਜਨਾ ਏਕੀਕਰਣ (ਉਦਾਹਰਨ)',
+         dietPlanTitle: 'ਖੁਰਾਕ ਯੋਜਨਾ ਯੋਗਤਾ',
          nutritionPlaceholder: 'ਵਿਸਤ੍ਰਿਤ ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਜਾਣਕਾਰੀ (ਜਿਵੇਂ, ਕੈਲੋਰੀ, ਪ੍ਰੋਟੀਨ, ਕਾਰਬਸ, ਫੈਟ) ਸਮੱਗਰੀ ਅਤੇ ਨਿਰਦੇਸ਼ਾਂ ਦੇ ਆਧਾਰ \'ਤੇ AI ਦੁਆਰਾ ਇੱਥੇ ਤਿਆਰ ਕੀਤੀ ਜਾਵੇਗੀ।',
          dietPlanPlaceholder: 'ਉਦਾਹਰਨ ਏਕੀਕਰਣ: ਇਹ ਵਿਅੰਜਨ ਸੰਤੁਲਿਤ ਖੁਰਾਕ ਵਿੱਚ ਚੰਗੀ ਤਰ੍ਹਾਂ ਫਿੱਟ ਬੈਠਦਾ ਹੈ। ਪੂਰੇ ਭੋਜਨ ਲਈ ਸਾਈਡ ਸਲਾਦ ਨਾਲ ਜੋੜਨ \'ਤੇ ਵਿਚਾਰ ਕਰੋ। ਖਾਸ ਖੁਰਾਕ ਯੋਜਨਾ ਸਿਫਾਰਸ਼ਾਂ (ਕੀਟੋ, ਪੈਲੀਓ, ਆਦਿ) ਇੱਥੇ ਤਿਆਰ ਕੀਤੀਆਂ ਜਾ ਸਕਦੀਆਂ ਹਨ।',
          imagePromptLabel: 'ਚਿੱਤਰ ਪ੍ਰੋਂਪਟ',
@@ -792,6 +819,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           cuisineTypePlaceholder: '例：インド料理、メキシコ料理、タイ料理',
           cookingMethodLabel: '調理法',
           cookingMethodPlaceholder: '例：焼く、炒める、グリルする',
+          includeDetailsLabel: '詳細を含める？',
+          includeDetailsHint: '（栄養/食事）',
+          includeDetailsAriaLabel: '栄養成分表示と食事プランの適合性を含める',
           submitButton: '提案を取得',
           submitButtonLoading: 'レシピを検索中...',
           resetButton: 'フォームをクリア',
@@ -812,7 +842,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        recipeDetail: {
          backButton: '提案に戻る',
          nutritionTitle: '栄養成分表示（推定）',
-         dietPlanTitle: '食事プラン統合（例）',
+         dietPlanTitle: '食事プラン適合性',
          nutritionPlaceholder: '詳細な栄養情報（例：カロリー、タンパク質、炭水化物、脂肪）は、材料と指示に基づいてAIによってここで生成されます。',
          dietPlanPlaceholder: '統合例：このレシピはバランスの取れた食事によく合います。完全な食事のためにサイドサラダと組み合わせることを検討してください。特定の食事プランの推奨事項（ケト、パレオなど）はここで生成できます。',
          imagePromptLabel: '画像プロンプト',
@@ -875,6 +905,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       cuisineTypePlaceholder: 'ej., india, mexicana, tailandesa',
       cookingMethodLabel: 'Método de Cocción',
       cookingMethodPlaceholder: 'ej., hornear, saltear, asar a la parrilla',
+      includeDetailsLabel: '¿Incluir Detalles?',
+      includeDetailsHint: '(Nutrición/Dieta)',
+      includeDetailsAriaLabel: 'Incluir información nutricional y adecuación al plan de dieta',
       submitButton: 'Obtener Sugerencias',
       submitButtonLoading: 'Buscando Recetas...',
       resetButton: 'Limpiar Formulario',
@@ -895,7 +928,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
      recipeDetail: {
        backButton: 'Volver a Sugerencias',
        nutritionTitle: 'Información Nutricional (Estimada)',
-       dietPlanTitle: 'Integración del Plan de Dieta (Ejemplo)',
+       dietPlanTitle: 'Adecuación al Plan de Dieta',
        nutritionPlaceholder: 'La información nutricional detallada (por ejemplo, calorías, proteínas, carbohidratos, grasas) será generada aquí por la IA basándose en los ingredientes y las instrucciones.',
        dietPlanPlaceholder: 'Ejemplo de integración: Esta receta encaja bien en una dieta equilibrada. Considera acompañarla con una ensalada para una comida completa. Las recomendaciones específicas del plan de dieta (Keto, Paleo, etc.) podrían generarse aquí.',
        imagePromptLabel: 'Prompt de Imagen',
@@ -958,6 +991,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       cuisineTypePlaceholder: 'ex: indienne, mexicaine, thaïlandaise',
       cookingMethodLabel: 'Méthode de Cuisson',
       cookingMethodPlaceholder: 'ex: cuisson au four, sauté, grill',
+      includeDetailsLabel: 'Inclure les Détails ?',
+      includeDetailsHint: '(Nutrition/Régime)',
+      includeDetailsAriaLabel: 'Inclure les informations nutritionnelles et la compatibilité avec le régime alimentaire',
       submitButton: 'Obtenir des Suggestions',
       submitButtonLoading: 'Recherche de Recettes...',
       resetButton: 'Effacer le Formulaire',
@@ -978,7 +1014,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
     recipeDetail: {
        backButton: 'Retour aux Suggestions',
        nutritionTitle: 'Informations Nutritionnelles (Estimées)',
-       dietPlanTitle: 'Intégration du Plan Alimentaire (Exemple)',
+       dietPlanTitle: 'Compatibilité avec le Régime Alimentaire',
        nutritionPlaceholder: 'Des informations nutritionnelles détaillées (par exemple, calories, protéines, glucides, lipides) seront générées ici par l\'IA en fonction des ingrédients et des instructions.',
        dietPlanPlaceholder: 'Exemple d\'intégration : Cette recette s\'intègre bien dans une alimentation équilibrée. Envisagez de l\'accompagner d\'une salade pour un repas complet. Des recommandations spécifiques de plan alimentaire (Keto, Paleo, etc.) pourraient être générées ici.',
        imagePromptLabel: 'Prompt d\'Image',
