@@ -8,5 +8,6 @@ export const ai = genkit({
       apiKey: process.env.GOOGLE_GENAI_API_KEY,
     }),
   ],
-  model: 'googleai/gemini-2.0-flash',
+  // Use a standard text model as default. Image generation will specify its model.
+  model: 'googleai/gemini-1.5-flash-latest',
 });
