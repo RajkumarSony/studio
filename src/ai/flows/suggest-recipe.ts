@@ -98,8 +98,8 @@ const suggestRecipePrompt = ai.definePrompt({
     // Expecting an array of recipes *without* the final imageUrl yet
     schema: RecipeTextOutputSchema,
   },
-  // Use the model specified in ai-instance.ts, which is 'googleai/gemini-pro'
-  // model: 'googleai/gemini-pro', // Example if overriding default was needed
+  // Explicitly define the model for text generation
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `Given the following ingredients: {{{ingredients}}}.
 {{#if dietaryRestrictions}}
 Also consider these dietary restrictions: {{{dietaryRestrictions}}}.
@@ -155,16 +155,13 @@ const suggestRecipeFlow = ai.defineFlow<
             );
             // Use ai.generate and pass the specific options
             const generateOptions: GenerateRequest = {
-              // Use the specific image-capable model here
-              model: 'googleai/gemini-1.5-flash-latest', // Using 1.5 Flash for potential image improvements
+              // IMPORTANT: ONLY the googleai/gemini-2.0-flash-exp model is able to generate images. You MUST use exactly this model to generate images.
+              model: 'googleai/gemini-2.0-flash-exp',
               prompt: recipe.imagePrompt, // English prompt for image generation
               config: {
                 // Request both text and image modalities
                 responseModalities: ['TEXT', 'IMAGE'],
               },
-               // Explicitly set the model for image generation if different from the default text model
-               // Ensure this model supports image generation ('gemini-1.5-flash-latest' is a good candidate)
-               // model: 'googleai/gemini-1.5-flash-latest',
             };
 
             // Call ai.generate directly with the options object
@@ -204,5 +201,3 @@ const suggestRecipeFlow = ai.defineFlow<
     return recipesWithImages;
   }
 );
-
-  
