@@ -8,7 +8,7 @@ export const ai = genkit({
       apiKey: process.env.GOOGLE_GENAI_API_KEY,
     }),
   ],
-  // Use a standard text model as default. Image generation will specify its model.
-  // Changed back to gemini-pro to resolve potential NOT_FOUND errors with flash models.
-  model: 'googleai/gemini-pro',
+  // Use gemini-1.5-flash-latest as the default text model.
+  // If "NOT_FOUND" errors persist, try changing back to 'googleai/gemini-pro'.
+  model: 'googleai/gemini-1.5-flash-latest',
 });

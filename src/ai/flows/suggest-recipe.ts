@@ -11,7 +11,7 @@
  */
 
 import {ai} from '@/ai/ai-instance';
-import {z} from 'zod'; // Corrected import path
+import {z} from 'zod';
 import type {GenerateRequest} from 'genkit'; // Import GenerateRequest type if needed for options object, otherwise remove
 
 const SuggestRecipesInputSchema = z.object({
@@ -91,6 +91,7 @@ const suggestRecipePrompt = ai.definePrompt({
     // Expecting an array of recipes *without* the final imageUrl yet
     schema: RecipeTextOutputSchema,
   },
+  // This prompt uses the default model specified in ai-instance.ts
   prompt: `Given the following ingredients: {{{ingredients}}}.
 {{#if dietaryRestrictions}}
 Also consider these dietary restrictions: {{{dietaryRestrictions}}}.
@@ -138,7 +139,8 @@ const suggestRecipeFlow = ai.defineFlow<
             );
             // Use ai.generate and pass the specific options
             const generateOptions: GenerateRequest = {
-              model: 'googleai/gemini-2.0-flash-exp', // Use the image-capable model
+              // Use the specific image-capable model here
+              model: 'googleai/gemini-2.0-flash-exp',
               prompt: recipe.imagePrompt,
               config: {
                 // Request both text and image modalities
