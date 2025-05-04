@@ -19,16 +19,16 @@ body {
     --primary-foreground: 0 0% 100%; /* White */
     --secondary: 0 0% 86.7%; /* Light Gray (#DDD) */
     --secondary-foreground: 0 0% 20%; /* Dark Gray (#333) */
-    --muted: 0 0% 86.7%; /* Light Gray (#DDD) */
+    --muted: 0 0% 95%; /* Slightly lighter gray for muted bg */
     --muted-foreground: 0 0% 45.1%; /* Slightly darker gray */
     --accent: 180 100% 90%; /* Lighter Teal for hover/selection */
     --accent-foreground: 180 100% 25.1%; /* Teal (#008080) */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 80%; /* Slightly darker than secondary */
-    --input: 0 0% 80%; /* Slightly darker than secondary */
+    --border: 0 0% 88%; /* Slightly lighter border */
+    --input: 0 0% 88%; /* Matching border */
     --ring: 180 100% 25.1%; /* Teal (#008080) */
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Slightly larger radius */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -45,25 +45,26 @@ body {
   }
   .dark {
     /* Midnight Dark Theme */
-    --background: 0 0% 20%; /* Dark Gray (#333) */
+    --background: 240 10% 3.9%; /* Very dark blue-gray */
     --foreground: 0 0% 98%; /* White */
-    --card: 0 0% 20%; /* Dark Gray (#333) */
+    --card: 240 10% 7%; /* Slightly lighter dark */
     --card-foreground: 0 0% 98%; /* White */
-    --popover: 0 0% 20%; /* Dark Gray (#333) */
+    --popover: 240 10% 5%; /* Darker popover */
     --popover-foreground: 0 0% 98%; /* White */
-    --primary: 180 100% 25.1%; /* Teal (#008080) */
-    --primary-foreground: 0 0% 98%; /* White */
-    --secondary: 0 0% 33.3%; /* Darker Gray (#555) */
-    --secondary-foreground: 0 0% 98%; /* White */
-    --muted: 0 0% 33.3%; /* Darker Gray (#555) */
+    --primary: 180 80% 35%; /* Brighter Teal */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 240 5% 15%; /* Dark Gray (#262626) */
+    --secondary-foreground: 0 0% 90%; /* Lighter Gray */
+    --muted: 240 5% 12%; /* Even darker gray */
     --muted-foreground: 0 0% 63.9%; /* Lighter gray */
-    --accent: 180 100% 20%; /* Darker Teal for hover/selection */
+    --accent: 180 60% 25%; /* Darker Teal for hover/selection */
     --accent-foreground: 0 0% 98%; /* White */
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 45%; /* Slightly brighter red */
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 40%; /* Slightly lighter than secondary */
-    --input: 0 0% 40%; /* Slightly lighter than secondary */
-    --ring: 180 100% 25.1%; /* Teal (#008080) */
+    --border: 240 5% 18%; /* Slightly lighter than secondary */
+    --input: 240 5% 18%; /* Matching border */
+    --ring: 180 80% 35%; /* Brighter Teal */
+    --radius: 0.75rem; /* Slightly larger radius */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -86,5 +87,26 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+     /* Smoother font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* Add custom keyframes for animations */
+@layer utilities {
+   @keyframes slide-in-from-top {
+      0% { transform: translateY(-20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes slide-in-from-bottom {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slide-in-from-top {
+      animation: slide-in-from-top 0.5s ease-out forwards;
+    }
+    .animate-slide-in-from-bottom {
+       animation: slide-in-from-bottom 0.5s ease-out forwards;
+     }
 }
