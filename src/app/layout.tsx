@@ -5,7 +5,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-import { AuthProvider } from '@/context/AuthContext'; // Import AuthProvider
+import NextAuthProvider from '@/context/NextAuthProvider'; // Import NextAuth provider
 
 // Load Noto Sans variants for different scripts
 const notoSans = Noto_Sans({
@@ -88,11 +88,11 @@ export default function RootLayout({
               notoSansTamil.variable,
               notoSansTelugu.variable
           )}
-          suppressHydrationWarning // Still needed for ThemeProvider and potentially AuthProvider client-side logic
+          suppressHydrationWarning // Still needed for ThemeProvider and potentially SessionProvider client-side logic
     >
        {/* Body inherits font-family from html via globals.css */}
       <body suppressHydrationWarning> {/* Suppress warning on body too if needed */}
-        <AuthProvider> {/* Wrap with AuthProvider */}
+        <NextAuthProvider> {/* Wrap with NextAuth SessionProvider */}
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -102,7 +102,7 @@ export default function RootLayout({
             {children}
             <Toaster />
           </ThemeProvider>
-        </AuthProvider>
+        </NextAuthProvider>
       </body>
     </html>
   );
