@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
+import { Loader2 } from 'lucide-react'; // Import Loader for Suspense fallback
 
 // Helper function to get translations based on language code
 const getTranslations = (lang: LanguageCode) => translations[lang] || translations.en;
@@ -40,11 +41,11 @@ function RecipeDetailContent() {
   const instructions = searchParams.get('instructions') ?? 'No instructions provided.';
   const estimatedTime = searchParams.get('estimatedTime') ?? 'N/A';
   const difficulty = searchParams.get('difficulty') ?? 'N/A';
-  const imageUrl = searchParams.get('imageUrl');
-  const imagePrompt = searchParams.get('imagePrompt') ?? '';
-  const lang = (searchParams.get('language') as LanguageCode) || 'en'; // Get language
-  const nutritionFacts = searchParams.get('nutritionFacts'); // Get nutrition facts
-  const dietPlanSuitability = searchParams.get('dietPlanSuitability'); // Get diet plan suitability
+  const imageUrl = searchParams.get('imageUrl'); // Will be null if not present
+  const imagePrompt = searchParams.get('imagePrompt'); // Will be null if not present
+  const lang = (searchParams.get('language') as LanguageCode) || 'en'; // Get language, default to 'en'
+  const nutritionFacts = searchParams.get('nutritionFacts'); // Will be null if not present
+  const dietPlanSuitability = searchParams.get('dietPlanSuitability'); // Will be null if not present
 
 
   const t = getTranslations(lang); // Get translation function for the current language
@@ -216,8 +217,9 @@ function RecipeDetailContent() {
 
 export default function RecipeDetailPage() {
   // Wrap the component using searchParams with Suspense
+  // The key={Date.now()} forces remount when query params change, ensuring data refresh
   return (
-    <Suspense fallback={<RecipeDetailLoading />}>
+    <Suspense fallback={<RecipeDetailLoading />} key={Date.now()}>
       <RecipeDetailContent />
     </Suspense>
   );

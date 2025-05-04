@@ -202,23 +202,38 @@ export default function Home() {
 
   // Function to navigate to recipe detail page
   const handleViewRecipe = (recipe: RecipeItem) => {
-    const queryParams = new URLSearchParams({
-        name: recipe.recipeName,
-        ingredients: recipe.ingredients,
-        instructions: recipe.instructions,
-        estimatedTime: recipe.estimatedTime,
-        difficulty: recipe.difficulty,
-        imageUrl: recipe.imageUrl ?? '', // Pass imageUrl if available
-        imagePrompt: recipe.imagePrompt ?? '', // Pass imagePrompt
-        language: selectedLanguage, // Pass current language
-        // Add the nutrition/diet fields
-        nutritionFacts: recipe.nutritionFacts ?? '',
-        dietPlanSuitability: recipe.dietPlanSuitability ?? '',
-    });
+    // Create URLSearchParams object
+    const queryParams = new URLSearchParams();
 
-    // Encode recipe name for URL safety
+    // Add parameters, ensuring empty strings for undefined/null optional fields
+    queryParams.set('name', recipe.recipeName);
+    queryParams.set('ingredients', recipe.ingredients);
+    queryParams.set('instructions', recipe.instructions);
+    queryParams.set('estimatedTime', recipe.estimatedTime);
+    queryParams.set('difficulty', recipe.difficulty);
+    queryParams.set('language', selectedLanguage); // Pass current language
+
+    // Optional fields - add only if they have a value
+    if (recipe.imageUrl) {
+        queryParams.set('imageUrl', recipe.imageUrl);
+    }
+    if (recipe.imagePrompt) {
+        queryParams.set('imagePrompt', recipe.imagePrompt);
+    }
+    if (recipe.nutritionFacts) {
+        queryParams.set('nutritionFacts', recipe.nutritionFacts);
+    }
+    if (recipe.dietPlanSuitability) {
+        queryParams.set('dietPlanSuitability', recipe.dietPlanSuitability);
+    }
+
+    // Encode recipe name for URL safety (replace spaces with dashes, convert to lowercase)
     const encodedName = encodeURIComponent(recipe.recipeName.replace(/\s+/g, '-').toLowerCase());
-    router.push(`/recipe/${encodedName}?${queryParams.toString()}`);
+
+    // Construct the final URL and navigate
+    const url = `/recipe/${encodedName}?${queryParams.toString()}`;
+    console.log("Navigating to:", url); // Log the URL for debugging
+    router.push(url);
   };
 
 
@@ -803,7 +818,7 @@ export default function Home() {
                             variant="outline"
                             size="sm"
                             className="w-full transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
-                            onClick={() => handleViewRecipe(recipe)}
+                            onClick={() => handleViewRecipe(recipe)} // Ensure this calls the handler
                           >
                             {t('results.viewRecipeButton')}
                             <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
