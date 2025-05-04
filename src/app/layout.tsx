@@ -1,9 +1,11 @@
+// src/app/layout.tsx
 import type { Metadata } from 'next';
 import { Noto_Sans, Noto_Sans_JP, Noto_Sans_KR, Noto_Sans_SC, Noto_Sans_Bengali, Noto_Sans_Devanagari, Noto_Sans_Gujarati, Noto_Sans_Gurmukhi, Noto_Sans_Kannada, Noto_Sans_Malayalam, Noto_Sans_Oriya, Noto_Sans_Tamil, Noto_Sans_Telugu } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
+import { AuthProvider } from '@/context/AuthContext'; // Import AuthProvider
 
 // Load Noto Sans variants for different scripts
 const notoSans = Noto_Sans({
@@ -86,19 +88,21 @@ export default function RootLayout({
               notoSansTamil.variable,
               notoSansTelugu.variable
           )}
-          suppressHydrationWarning // Still needed for ThemeProvider
+          suppressHydrationWarning // Still needed for ThemeProvider and potentially AuthProvider client-side logic
     >
        {/* Body inherits font-family from html via globals.css */}
-      <body suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+      <body suppressHydrationWarning> {/* Suppress warning on body too if needed */}
+        <AuthProvider> {/* Wrap with AuthProvider */}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -19,12 +19,16 @@ import {
   Info, // Icon for additional info/tips
   Scale, // Example: Icon for difficulty/serving size?
   Soup, // Example: Icon for recipe type?
-  Heart, // Example: Icon for saving/favoriting?
+  Heart, // Icon for saving/favoriting? Filled Heart when saved
   BookOpen, // For Ingredients/Instructions titles
   AlertTriangle, // For Warnings
   ArrowRight, // Icon for navigation
   FileText, // Icon for including details
   RotateCcw, // Icon for reset button
+  User, // User icon for profile/auth area
+  LogIn, // Login icon
+  LogOut, // Logout icon
+  HeartCrack, // Icon for unsave
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -77,6 +81,9 @@ import {Label} from '@/components/ui/label';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
 import Link from 'next/link'; // Import Link for navigation
 import { useRouter } from 'next/navigation'; // Import useRouter
+import AuthButton from '@/components/AuthButton'; // Import the AuthButton
+import { useAuth } from '@/context/AuthContext'; // Import useAuth hook
+import { saveRecipeToFirestore, isRecipeSaved, removeRecipeFromFirestore } from '@/lib/firebase/firestore'; // Import Firestore functions
 
 // Define supported languages and their corresponding CSS font variables
 const supportedLanguages: { value: LanguageCode; label: string; fontVariable: string }[] = [
@@ -112,41 +119,51 @@ export default function Home() {
   const {setTheme} = useTheme();
   const {toast} = useToast();
   const router = useRouter();
+  const { user, loading: authLoading, signInWithGoogle } = useAuth(); // Get user and loading state from AuthContext
   const [recipes, setRecipes] = useState<RecipeItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
   const [isClient, setIsClient] = useState(false);
+  const [savedRecipeNames, setSavedRecipeNames] = useState<Set<string>>(new Set()); // Track saved recipe names
 
-  // Translation function
-  const t = useCallback((key: string, options?: { [key: string]: string | number }) => {
-     // Split key for nested access, e.g., "form.ingredientsLabel"
-    const keys = key.split('.');
-    let result: any = translations[selectedLanguage] || translations.en; // Fallback to English
+   // Translation function
+   const t = useCallback(
+     (key: string, options?: { [key: string]: string | number }) => {
+       // Determine the translation object based on selectedLanguage, fallback to 'en'
+       const messages = translations[selectedLanguage] || translations.en;
 
-    for (const k of keys) {
-      result = result?.[k];
-      if (result === undefined) {
-        // Fallback to English if key not found in selected language
-        let fallbackResult: any = translations.en;
-        for (const fk of keys) {
-            fallbackResult = fallbackResult?.[fk];
-            if (fallbackResult === undefined) {
-                 console.warn(`Translation key "${key}" not found in language "${selectedLanguage}" or fallback "en".`);
-                 return key; // Return key itself if not found anywhere
-            }
-        }
-         result = fallbackResult || key;
-      }
-    }
-    // Replace placeholders like {count}
-    if (typeof result === 'string' && options) {
-       Object.keys(options).forEach((placeholder) => {
-         result = result.replace(`{${placeholder}}`, String(options[placeholder]));
-       });
-     }
+       // Split key for nested access, e.g., "form.ingredientsLabel"
+       const keys = key.split('.');
+       let result: any = messages;
 
-    return typeof result === 'string' ? result : key; // Ensure we return a string
-  }, [selectedLanguage]);
+       for (const k of keys) {
+         result = result?.[k];
+         if (result === undefined) {
+           // Fallback to English if key not found in selected language
+           let fallbackResult: any = translations.en;
+           for (const fk of keys) {
+             fallbackResult = fallbackResult?.[fk];
+             if (fallbackResult === undefined) {
+               console.warn(`Translation key "${key}" not found in language "${selectedLanguage}" or fallback "en".`);
+               return key; // Return key itself if not found anywhere
+             }
+           }
+           result = fallbackResult || key;
+           break; // Stop searching once found in fallback
+         }
+       }
+
+       // Replace placeholders like {count} or {recipeName}
+       if (typeof result === 'string' && options) {
+         Object.keys(options).forEach((placeholder) => {
+           result = result.replace(`{${placeholder}}`, String(options[placeholder]));
+         });
+       }
+
+       return typeof result === 'string' ? result : key; // Ensure we return a string
+     },
+     [selectedLanguage] // Recreate `t` only when selectedLanguage changes
+   );
 
   // Memoize the form schema generation based on the translation function `t`
   const currentFormSchema = React.useMemo(() => formSchema(t as any), [t]);
@@ -187,7 +204,7 @@ export default function Home() {
     const fontVariable = selectedLangData ? selectedLangData.fontVariable : 'var(--font-noto-sans)'; // Default fallback
     document.documentElement.style.setProperty('--font-dynamic', fontVariable);
     document.documentElement.lang = selectedLanguage;
-    // Persist language choice to localStorage
+    // Persist language choice to localStorage only on client
     if (typeof window !== 'undefined') {
         localStorage.setItem('selectedLanguage', selectedLanguage);
     }
@@ -206,6 +223,24 @@ export default function Home() {
   }, []);
 
 
+   // Fetch saved recipe names when user logs in or changes
+    useEffect(() => {
+        const fetchSavedStatus = async () => {
+          if (user?.uid && recipes) {
+            const savedSet = new Set<string>();
+            for (const recipe of recipes) {
+              if (await isRecipeSaved(user.uid, recipe.recipeName)) {
+                savedSet.add(recipe.recipeName);
+              }
+            }
+            setSavedRecipeNames(savedSet);
+          } else {
+             setSavedRecipeNames(new Set()); // Clear saved status if logged out or no recipes
+          }
+        };
+        fetchSavedStatus();
+      }, [user, recipes]); // Re-check when user or recipes change
+
    // Handle form reset
    const handleReset = () => {
     form.reset(); // Resets to defaultValues defined in useForm
@@ -218,16 +253,58 @@ export default function Home() {
     });
   };
 
-  // Handle saving a recipe (placeholder)
-  const handleSaveRecipe = (recipe: RecipeItem) => {
-    console.log('Saving recipe:', recipe.recipeName);
-    // Implement actual saving logic here (e.g., localStorage, API call)
-    toast({
-      title: t('toast.recipeSavedTitle'),
-      description: t('toast.recipeSavedDesc', { recipeName: recipe.recipeName }),
-      variant: 'default',
-    });
-  };
+  // Handle saving/unsaving a recipe
+   const handleToggleSaveRecipe = async (recipe: RecipeItem) => {
+     if (!user) {
+       toast({
+         title: t('toast.authRequiredTitle'),
+         description: t('toast.authRequiredDesc'),
+         variant: 'destructive',
+         // Optionally add an action to trigger sign-in
+         // action: <ToastAction altText="Sign In" onClick={signInWithGoogle}>Sign In</ToastAction>,
+       });
+        // Trigger Google sign-in popup
+       await signInWithGoogle(); // Wait for sign-in attempt
+       return;
+     }
+
+     const recipeName = recipe.recipeName;
+     const isCurrentlySaved = savedRecipeNames.has(recipeName);
+
+     try {
+       if (isCurrentlySaved) {
+         // Remove the recipe
+         await removeRecipeFromFirestore(user.uid, recipeName);
+         setSavedRecipeNames(prev => {
+           const newSet = new Set(prev);
+           newSet.delete(recipeName);
+           return newSet;
+         });
+         toast({
+           title: t('toast.recipeRemovedTitle'),
+           description: t('toast.recipeRemovedDesc', { recipeName }),
+           variant: 'default',
+         });
+       } else {
+         // Save the recipe
+         await saveRecipeToFirestore(user.uid, recipe);
+          setSavedRecipeNames(prev => new Set(prev).add(recipeName));
+         toast({
+           title: t('toast.recipeSavedTitle'),
+           description: t('toast.recipeSavedDesc', { recipeName }),
+           variant: 'default',
+         });
+       }
+     } catch (error) {
+       console.error(`Error ${isCurrentlySaved ? 'removing' : 'saving'} recipe:`, error);
+       toast({
+         title: t('toast.saveErrorTitle'),
+         description: t('toast.saveErrorDesc'),
+         variant: 'destructive',
+       });
+     }
+   };
+
 
  // Function to navigate to recipe detail page
   const handleViewRecipe = (recipe: RecipeItem) => {
@@ -243,7 +320,14 @@ export default function Home() {
         // or rely on sessionStorage entirely
       };
       const serializedRecipe = JSON.stringify(recipeDataToStore);
-      sessionStorage.setItem(`recipe-${recipe.recipeName}`, serializedRecipe);
+
+      // Generate a safe key for session storage
+      // Replace problematic characters for keys
+      const storageKey = `recipe-${recipe.recipeName.replace(/[^a-zA-Z0-9-_]/g, '_')}`;
+
+
+      sessionStorage.setItem(storageKey, serializedRecipe);
+      console.log("Recipe data stored in session storage with key:", storageKey);
 
       // Create URLSearchParams object for essential/smaller params
       const queryParams = new URLSearchParams();
@@ -253,9 +337,17 @@ export default function Home() {
           }
       };
 
-      // Add essential identifiers and language
-      addParam('name', recipe.recipeName);
+      // Encode recipe name for the path segment (slug) and also pass as query for lookup
+      const encodedSlug = encodeURIComponent(recipe.recipeName.replace(/\s+/g, '-').toLowerCase())
+        .replace(/%/g, '') // Remove percentage signs
+        .replace(/\?/g, '') // Remove question marks
+        .replace(/#/g, '') // Remove hash symbols
+        .substring(0, 100); // Limit slug length if necessary
+
+       // Use the sanitized storage key in the query params for reliable lookup
+      addParam('key', storageKey); // Pass the storage key
       addParam('lang', selectedLanguage);
+
       // Add image URL only if it's NOT a data URI or is reasonably short
       if (recipe.imageUrl && !recipe.imageUrl.startsWith('data:image')) {
          addParam('imageUrl', recipe.imageUrl);
@@ -267,24 +359,27 @@ export default function Home() {
       }
 
 
-      // Encode recipe name for the path segment (slug)
-      const encodedSlug = encodeURIComponent(recipe.recipeName.replace(/\s+/g, '-').toLowerCase())
-        .replace(/%/g, '') // Remove percentage signs
-        .replace(/\?/g, '') // Remove question marks
-        .replace(/#/g, ''); // Remove hash symbols
-
       // Construct the final URL and navigate
       const url = `/recipe/${encodedSlug}?${queryParams.toString()}`;
       console.log("Navigating to URL:", url); // Log the final URL
       router.push(url);
 
     } catch (error) {
-      console.error("Error saving recipe to session storage:", error);
-      toast({
-        title: "Navigation Error",
-        description: "Could not prepare recipe details for viewing.",
-        variant: "destructive",
-      });
+      console.error("Error saving recipe to session storage or navigating:", error);
+       // Check for QuotaExceededError specifically
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+           toast({
+               title: "Storage Full",
+               description: "Cannot save recipe details for viewing as browser storage is full. Try clearing some space.",
+               variant: "destructive",
+           });
+       } else {
+            toast({
+              title: "Navigation Error",
+              description: "Could not prepare recipe details for viewing.",
+              variant: "destructive",
+            });
+       }
       // Fallback or alternative navigation if needed
     }
   };
@@ -457,7 +552,7 @@ export default function Home() {
             </Link>
           </motion.div>
 
-           {/* Controls: Language and Theme */}
+           {/* Controls: Language, Theme, and Auth */}
            <motion.div
              initial={{ y: -20, opacity: 0 }}
              animate={{ y: 0, opacity: 1 }}
@@ -486,7 +581,8 @@ export default function Home() {
                         <Languages className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground transition-colors" />
                         {/* Display short code for selected language */}
                          <SelectValue aria-label={`Selected language: ${selectedLanguage.toUpperCase()}`}>
-                            {selectedLanguage.toUpperCase()}
+                            {/* Ensure SelectValue is updated when language changes */}
+                            {isClient ? selectedLanguage.toUpperCase() : 'EN'}
                          </SelectValue>
                       </SelectTrigger>
                     </TooltipTrigger>
@@ -542,6 +638,8 @@ export default function Home() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </TooltipProvider>
+            {/* Auth Button */}
+             {isClient && <AuthButton />} {/* Render AuthButton only on client */}
           </motion.div>
         </div>
       </header>
@@ -787,7 +885,7 @@ export default function Home() {
                       <Button
                         type="submit"
                         className="w-full py-3 text-base font-semibold transition-all duration-300 ease-out bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 active:scale-[0.98] rounded-md" // Standard rounding
-                        disabled={isLoading}
+                        disabled={isLoading || authLoading} // Disable if recipe loading or auth state is loading
                         aria-live="polite"
                       >
                         {isLoading ? (
@@ -808,7 +906,7 @@ export default function Home() {
                         variant="outline"
                         onClick={handleReset}
                         className="w-full sm:w-auto transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-muted/20 border-border/70 rounded-md" // Standard rounding
-                        disabled={isLoading}
+                        disabled={isLoading || authLoading}
                       >
                          <RotateCcw className="mr-2 h-4 w-4"/> {t('form.resetButton')}
                        </Button>
@@ -859,118 +957,124 @@ export default function Home() {
                  exit="exit"
                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8" // Use grid layout
                >
-                {recipes.map((recipe, index) => (
-                  <motion.div key={recipe.recipeName + index} variants={itemVariants}>
-                    <motion.div whileHover="hover" initial="rest" animate="rest" variants={cardHoverEffect}>
-                     <Card
-                       className={cn(
-                          'w-full h-full flex flex-col shadow-md border border-border/50 overflow-hidden transition-all duration-300 group bg-card backdrop-blur-sm rounded-xl' // More rounded
-                        )}
-                     >
-                      {/* Recipe Image Header */}
-                      <CardHeader className="p-0 relative aspect-[16/10] overflow-hidden group"> {/* Slightly taller aspect ratio */}
-                         <div className="absolute inset-0 bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20 flex items-center justify-center">
-                            {recipe.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={recipe.imageUrl}
-                                alt={t('results.imageAlt', { recipeName: recipe.recipeName })}
-                                width={400}
-                                height={250} // Adjust height for 16:10
-                                className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                                loading="lazy"
-                                // Optional: Add error handling for image loading
-                                // onError={(e) => { e.currentTarget.style.display = 'none'; /* Hide broken image */ }}
-                              />
-                            ) : (
-                              <ImageOff className="h-12 w-12 text-muted-foreground/40" />
+                {recipes.map((recipe, index) => {
+                    const isSaved = savedRecipeNames.has(recipe.recipeName);
+                    return (
+                      <motion.div key={recipe.recipeName + index} variants={itemVariants}>
+                        <motion.div whileHover="hover" initial="rest" animate="rest" variants={cardHoverEffect}>
+                         <Card
+                           className={cn(
+                              'w-full h-full flex flex-col shadow-md border border-border/50 overflow-hidden transition-all duration-300 group bg-card backdrop-blur-sm rounded-xl' // More rounded
                             )}
-                         </div>
-                        {/* Gradient overlay for text contrast */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none"></div>
-                        {/* Title positioned at the bottom */}
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <CardTitle className="text-lg font-bold text-white drop-shadow-md line-clamp-2 leading-snug">
-                            {recipe.recipeName}
-                          </CardTitle>
-                        </div>
-                         {/* Save Button */}
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 text-white hover:bg-primary hover:text-primary-foreground transition-all opacity-80 group-hover:opacity-100 backdrop-blur-sm focus:ring-1 focus:ring-primary/50"
-                                  onClick={() => handleSaveRecipe(recipe)}
-                                  aria-label={t('results.saveButtonAriaLabel')}
-                                >
-                                  <Heart className="h-4 w-4" />
-                                </Button>
-                                </motion.div>
-                              </TooltipTrigger>
-                               <TooltipContent side="left">
-                                  <p>{t('results.saveButtonTooltip')}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                      </CardHeader>
-                      {/* Recipe Details Content */}
-                      <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                        <motion.div
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: 0.1 }}
-                            className="flex flex-wrap gap-2 items-center">
-                           {/* Time Badge */}
-                          <Badge
-                            variant="outline"
-                            className="flex items-center gap-1 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-0.5 px-2 text-xs font-medium rounded-full" // Rounded pill shape
-                          >
-                            <Clock className="h-3 w-3" />
-                            {recipe.estimatedTime}
-                          </Badge>
-                          {/* Difficulty Badge */}
-                          <Badge
-                             variant="outline"
-                             className="flex items-center gap-1 border-secondary-foreground/40 text-secondary-foreground bg-secondary/50 dark:bg-secondary/20 backdrop-blur-sm py-0.5 px-2 text-xs font-medium rounded-full" // Rounded pill shape
-                          >
-                            <BarChart className="h-3 w-3 -rotate-90" />
-                            {recipe.difficulty}
-                          </Badge>
-                        </motion.div>
+                         >
+                          {/* Recipe Image Header */}
+                          <CardHeader className="p-0 relative aspect-[16/10] overflow-hidden group"> {/* Slightly taller aspect ratio */}
+                             <div className="absolute inset-0 bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20 flex items-center justify-center">
+                                {recipe.imageUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={recipe.imageUrl}
+                                    alt={t('results.imageAlt', { recipeName: recipe.recipeName })}
+                                    width={400}
+                                    height={250} // Adjust height for 16:10
+                                    className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                                    loading="lazy"
+                                    // Optional: Add error handling for image loading
+                                    // onError={(e) => { e.currentTarget.style.display = 'none'; /* Hide broken image */ }}
+                                  />
+                                ) : (
+                                  <ImageOff className="h-12 w-12 text-muted-foreground/40" />
+                                )}
+                             </div>
+                            {/* Gradient overlay for text contrast */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none"></div>
+                            {/* Title positioned at the bottom */}
+                            <div className="absolute bottom-0 left-0 right-0 p-4">
+                              <CardTitle className="text-lg font-bold text-white drop-shadow-md line-clamp-2 leading-snug">
+                                {recipe.recipeName}
+                              </CardTitle>
+                            </div>
+                             {/* Save/Unsave Button */}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className={cn(
+                                          "absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 text-white hover:bg-primary hover:text-primary-foreground transition-all opacity-80 group-hover:opacity-100 backdrop-blur-sm focus:ring-1 focus:ring-primary/50",
+                                           isSaved && "bg-primary text-primary-foreground hover:bg-destructive hover:text-destructive-foreground" // Style when saved
+                                      )}
+                                      onClick={() => handleToggleSaveRecipe(recipe)}
+                                      aria-label={isSaved ? t('results.unsaveButtonAriaLabel') : t('results.saveButtonAriaLabel')}
+                                    >
+                                       {isSaved ? <HeartCrack className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
+                                    </Button>
+                                    </motion.div>
+                                  </TooltipTrigger>
+                                   <TooltipContent side="left">
+                                      <p>{isSaved ? t('results.unsaveButtonTooltip') : t('results.saveButtonTooltip')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                          </CardHeader>
+                          {/* Recipe Details Content */}
+                          <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                            <motion.div
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: 0.1 }}
+                                className="flex flex-wrap gap-2 items-center">
+                               {/* Time Badge */}
+                              <Badge
+                                variant="outline"
+                                className="flex items-center gap-1 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-0.5 px-2 text-xs font-medium rounded-full" // Rounded pill shape
+                              >
+                                <Clock className="h-3 w-3" />
+                                {recipe.estimatedTime}
+                              </Badge>
+                              {/* Difficulty Badge */}
+                              <Badge
+                                 variant="outline"
+                                 className="flex items-center gap-1 border-secondary-foreground/40 text-secondary-foreground bg-secondary/50 dark:bg-secondary/20 backdrop-blur-sm py-0.5 px-2 text-xs font-medium rounded-full" // Rounded pill shape
+                              >
+                                <BarChart className="h-3 w-3 -rotate-90" />
+                                {recipe.difficulty}
+                              </Badge>
+                            </motion.div>
 
-                       {/* Short description/preview */}
-                       <motion.p
-                           initial={{ opacity: 0, y: 5 }}
-                           animate={{ opacity: 1, y: 0 }}
-                           transition={{ duration: 0.3, delay: 0.2 }}
-                           className="text-sm text-muted-foreground line-clamp-3 leading-snug flex-grow" // Use flex-grow
-                        >
-                           {/* Display first part of instructions or a default text */}
-                           {recipe.instructions?.split('\n')[0]?.replace(/^\s*(\d+\.|-)\s*/, '').trim() || t('results.defaultDescription')}
-                         </motion.p>
-
-                      </CardContent>
-                       {/* View Recipe Button */}
-                       <CardFooter className="p-4 pt-0">
-                         <motion.div {...buttonHoverEffect} className="w-full">
-                           <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary border-border/70 rounded-md" // Standard rounding
-                              onClick={() => handleViewRecipe(recipe)}
+                           {/* Short description/preview */}
+                           <motion.p
+                               initial={{ opacity: 0, y: 5 }}
+                               animate={{ opacity: 1, y: 0 }}
+                               transition={{ duration: 0.3, delay: 0.2 }}
+                               className="text-sm text-muted-foreground line-clamp-3 leading-snug flex-grow" // Use flex-grow
                             >
-                              {t('results.viewRecipeButton')}
-                              <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                            </Button>
-                          </motion.div>
-                        </CardFooter>
-                    </Card>
-                   </motion.div>
-                  </motion.div>
-                ))}
+                               {/* Display first part of instructions or a default text */}
+                               {recipe.instructions?.split('\n')[0]?.replace(/^\s*(\d+\.|-)\s*/, '').trim() || t('results.defaultDescription')}
+                             </motion.p>
+
+                          </CardContent>
+                           {/* View Recipe Button */}
+                           <CardFooter className="p-4 pt-0">
+                             <motion.div {...buttonHoverEffect} className="w-full">
+                               <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary border-border/70 rounded-md" // Standard rounding
+                                  onClick={() => handleViewRecipe(recipe)}
+                                >
+                                  {t('results.viewRecipeButton')}
+                                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                                </Button>
+                              </motion.div>
+                            </CardFooter>
+                        </Card>
+                       </motion.div>
+                      </motion.div>
+                    );
+                })}
               </motion.div>
             </motion.section>
           )}

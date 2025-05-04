@@ -55,6 +55,8 @@ interface TranslationMessages {
     imageAlt: string; // Use {recipeName} placeholder
     saveButtonAriaLabel: string;
     saveButtonTooltip: string;
+    unsaveButtonAriaLabel: string; // New for unsave
+    unsaveButtonTooltip: string; // New for unsave
     ingredientsTitle: string;
     instructionsTitle: string;
     noRecipesFoundTitle: string;
@@ -79,6 +81,8 @@ interface TranslationMessages {
     formClearedDesc: string;
     recipeSavedTitle: string;
     recipeSavedDesc: string; // Use {recipeName} placeholder
+    recipeRemovedTitle: string; // New toast for removal
+    recipeRemovedDesc: string; // New toast for removal
     noRecipesTitle: string;
     noRecipesDesc: string;
     recipesFoundTitle: string;
@@ -86,6 +90,10 @@ interface TranslationMessages {
     errorTitle: string;
     genericError: string; // Default error if specific message isn't available
     validationError: string; // Error for form validation issues
+    authRequiredTitle: string; // New: Auth needed
+    authRequiredDesc: string; // New: Auth needed description
+    saveErrorTitle: string; // New: Error during save/unsave
+    saveErrorDesc: string; // New: Error during save/unsave description
   };
   footer: {
     builtWith: string; // Includes "Built with ❤️ by "
@@ -132,10 +140,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'Quick mode (under 30 minutes)',
       servingSizeLabel: 'Servings',
       servingSizePlaceholder: 'e.g., 2',
-      cuisineTypeLabel: 'Cuisine Type', // New field
-      cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai', // New field
-      cookingMethodLabel: 'Cooking Method', // New field
-      cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling', // New field
+      cuisineTypeLabel: 'Cuisine Type',
+      cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai',
+      cookingMethodLabel: 'Cooking Method',
+      cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling',
       includeDetailsLabel: 'Include Details?',
       includeDetailsHint: '(Nutrition/Diet)',
       includeDetailsAriaLabel: 'Include nutrition facts and diet plan suitability',
@@ -149,6 +157,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       imageAlt: 'Generated image for {recipeName}',
       saveButtonAriaLabel: 'Save recipe',
       saveButtonTooltip: 'Save Recipe',
+      unsaveButtonAriaLabel: 'Remove saved recipe', // New
+      unsaveButtonTooltip: 'Remove Saved Recipe', // New
       ingredientsTitle: 'Ingredients',
       instructionsTitle: 'Instructions',
       noRecipesFoundTitle: 'No recipes found matching your criteria.',
@@ -172,7 +182,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       formClearedTitle: 'Form Cleared',
       formClearedDesc: 'Ready for new ingredients!',
       recipeSavedTitle: 'Recipe Saved!',
-      recipeSavedDesc: '{recipeName} has been added to your favorites (simulation).',
+      recipeSavedDesc: '{recipeName} has been saved.', // Updated
+      recipeRemovedTitle: 'Recipe Removed', // New
+      recipeRemovedDesc: '{recipeName} has been removed from saved recipes.', // New
       noRecipesTitle: 'No Recipes Found',
       noRecipesDesc: 'Couldn\'t find any recipes with the given ingredients and preferences. Try adjusting your input.',
       recipesFoundTitle: 'Recipes Found!',
@@ -180,6 +192,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Error',
       genericError: 'Failed to suggest recipes. Please try again later.',
       validationError: 'Input validation failed. Please check your entries.',
+      authRequiredTitle: 'Authentication Required', // New
+      authRequiredDesc: 'Please sign in to save recipes.', // New
+      saveErrorTitle: 'Save Error', // New
+      saveErrorDesc: 'Could not save or remove the recipe. Please try again.', // New
     },
     footer: {
       builtWith: 'Built with ❤️ by ',
@@ -187,6 +203,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       copyright: '© {year} RecipeSage. All rights reserved (not really).',
     },
   },
+  // Add translations for other languages below, mirroring the structure of 'en'
+  // ... (Hindi, Bengali, Marathi, Tamil, Telugu, Odia, Punjabi, Japanese, Spanish, French)
   hi: {
     appTitle: 'रेसिपीसेज',
     loadingMessage: 'स्वादिष्ट विचार उत्पन्न हो रहे हैं...',
@@ -223,10 +241,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'त्वरित मोड (30 मिनट से कम)',
       servingSizeLabel: 'सर्विंग्स',
       servingSizePlaceholder: 'जैसे, 2',
-      cuisineTypeLabel: 'व्यंजन प्रकार', // New field
-      cuisineTypePlaceholder: 'जैसे, भारतीय, मैक्सिकन, थाई', // New field
-      cookingMethodLabel: 'खाना पकाने की विधि', // New field
-      cookingMethodPlaceholder: 'जैसे, बेकिंग, स्टिर-फ्राई, ग्रिलिंग', // New field
+      cuisineTypeLabel: 'व्यंजन प्रकार',
+      cuisineTypePlaceholder: 'जैसे, भारतीय, मैक्सिकन, थाई',
+      cookingMethodLabel: 'खाना पकाने की विधि',
+      cookingMethodPlaceholder: 'जैसे, बेकिंग, स्टिर-फ्राई, ग्रिलिंग',
       includeDetailsLabel: 'विवरण शामिल करें?',
       includeDetailsHint: '(पोषण/आहार)',
       includeDetailsAriaLabel: 'पोषण तथ्य और आहार योजना उपयुक्तता शामिल करें',
@@ -240,6 +258,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       imageAlt: '{recipeName} के लिए उत्पन्न छवि',
       saveButtonAriaLabel: 'रेसिपी सहेजें',
       saveButtonTooltip: 'रेसिपी सहेजें',
+      unsaveButtonAriaLabel: 'सहेजी गई रेसिपी हटाएं', // New
+      unsaveButtonTooltip: 'सहेजी गई रेसिपी हटाएं', // New
       ingredientsTitle: 'सामग्री',
       instructionsTitle: 'निर्देश',
       noRecipesFoundTitle: 'आपके मानदंडों से मेल खाने वाली कोई रेसिपी नहीं मिली।',
@@ -263,7 +283,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       formClearedTitle: 'फॉर्म साफ़ किया गया',
       formClearedDesc: 'नई सामग्री के लिए तैयार!',
       recipeSavedTitle: 'रेसिपी सहेजी गई!',
-      recipeSavedDesc: '{recipeName} को आपके पसंदीदा में जोड़ा गया है (सिमुलेशन)।',
+      recipeSavedDesc: '{recipeName} सहेजा गया है।', // Updated
+      recipeRemovedTitle: 'रेसिपी हटाई गई', // New
+      recipeRemovedDesc: '{recipeName} को सहेजी गई रेसिपी से हटा दिया गया है।', // New
       noRecipesTitle: 'कोई रेसिपी नहीं मिली',
       noRecipesDesc: 'दी गई सामग्री और प्राथमिकताओं के साथ कोई रेसिपी नहीं मिल सकी। अपना इनपुट समायोजित करने का प्रयास करें।',
       recipesFoundTitle: 'रेसिपी मिलीं!',
@@ -271,6 +293,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'त्रुटि',
       genericError: 'रेसिपी सुझाने में विफल। कृपया बाद में पुनः प्रयास करें।',
       validationError: 'इनपुट सत्यापन विफल रहा। कृपया अपनी प्रविष्टियाँ जांचें।',
+      authRequiredTitle: 'प्रमाणीकरण आवश्यक', // New
+      authRequiredDesc: 'रेसिपी सहेजने के लिए कृपया साइन इन करें।', // New
+      saveErrorTitle: 'सहेजने में त्रुटि', // New
+      saveErrorDesc: 'रेसिपी को सहेजा या हटाया नहीं जा सका। कृपया पुनः प्रयास करें।', // New
     },
     footer: {
       builtWith: '❤️ द्वारा निर्मित ',
@@ -314,10 +340,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         quickModeAriaLabel: 'দ্রুত মোড (৩০ মিনিটের নিচে)',
         servingSizeLabel: 'পরিবেশন সংখ্যা',
         servingSizePlaceholder: 'যেমন, ২',
-        cuisineTypeLabel: 'রন্ধনশৈলী', // New field
-        cuisineTypePlaceholder: 'যেমন, ভারতীয়, মেক্সিকান, থাই', // New field
-        cookingMethodLabel: 'রান্নার পদ্ধতি', // New field
-        cookingMethodPlaceholder: 'যেমন, বেকিং, স্টার-ফ্রাই, গ্রিলিং', // New field
+        cuisineTypeLabel: 'রন্ধনশৈলী',
+        cuisineTypePlaceholder: 'যেমন, ভারতীয়, মেক্সিকান, থাই',
+        cookingMethodLabel: 'রান্নার পদ্ধতি',
+        cookingMethodPlaceholder: 'যেমন, বেকিং, স্টার-ফ্রাই, গ্রিলিং',
         includeDetailsLabel: 'বিস্তারিত অন্তর্ভুক্ত?',
         includeDetailsHint: '(পুষ্টি/খাদ্য)',
         includeDetailsAriaLabel: 'পুষ্টি তথ্য এবং খাদ্য পরিকল্পনার উপযুক্ততা অন্তর্ভুক্ত করুন',
@@ -331,6 +357,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         imageAlt: '{recipeName} এর জন্য জেনারেট করা ছবি',
         saveButtonAriaLabel: 'রেসিপি সংরক্ষণ করুন',
         saveButtonTooltip: 'রেসিপি সংরক্ষণ করুন',
+        unsaveButtonAriaLabel: 'সংরক্ষিত রেসিপি সরান', // New
+        unsaveButtonTooltip: 'সংরক্ষিত রেসিপি সরান', // New
         ingredientsTitle: 'উপকরণ',
         instructionsTitle: 'নির্দেশাবলী',
         noRecipesFoundTitle: 'আপনার মানদণ্ডের সাথে মিলে যাওয়া কোনও রেসিপি পাওয়া যায়নি।',
@@ -354,7 +382,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         formClearedTitle: 'ফর্ম পরিষ্কার করা হয়েছে',
         formClearedDesc: 'নতুন উপকরণের জন্য প্রস্তুত!',
         recipeSavedTitle: 'রেসিপি সংরক্ষিত হয়েছে!',
-        recipeSavedDesc: '{recipeName} আপনার পছন্দের তালিকায় যুক্ত করা হয়েছে (সিমুলেশন)।',
+        recipeSavedDesc: '{recipeName} সংরক্ষিত হয়েছে।', // Updated
+        recipeRemovedTitle: 'রেসিপি সরানো হয়েছে', // New
+        recipeRemovedDesc: '{recipeName} সংরক্ষিত রেসিপি থেকে সরানো হয়েছে।', // New
         noRecipesTitle: 'কোনও রেসিপি পাওয়া যায়নি',
         noRecipesDesc: 'প্রদত্ত উপকরণ এবং পছন্দগুলির সাথে কোনও রেসিপি খুঁজে পাওয়া যায়নি। আপনার ইনপুট সামঞ্জস্য করার চেষ্টা করুন।',
         recipesFoundTitle: 'রেসিপি পাওয়া গেছে!',
@@ -362,6 +392,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         errorTitle: 'ত্রুটি',
         genericError: 'রেসিপি পরামর্শ দিতে ব্যর্থ হয়েছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।',
         validationError: 'ইনপুট যাচাইকরণ ব্যর্থ হয়েছে। অনুগ্রহ করে আপনার এন্ট্রি চেক করুন।',
+        authRequiredTitle: 'প্রমাণীকরণ প্রয়োজন', // New
+        authRequiredDesc: 'রেসিপি সংরক্ষণ করতে অনুগ্রহ করে সাইন ইন করুন।', // New
+        saveErrorTitle: 'সংরক্ষণে ত্রুটি', // New
+        saveErrorDesc: 'রেসিপি সংরক্ষণ বা সরাতে முடியவில்லை। অনুগ্রহ করে আবার চেষ্টা করুন।', // New
     },
     footer: {
         builtWith: '❤️ দিয়ে তৈরি ',
@@ -405,10 +439,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'झटपट मोड (३० मिनिटांपेक्षा कमी)',
           servingSizeLabel: 'सर्व्हिंग्ज',
           servingSizePlaceholder: 'उदा. २',
-          cuisineTypeLabel: 'पाककृती प्रकार', // New field
-          cuisineTypePlaceholder: 'उदा. भारतीय, मेक्सिकन, थाई', // New field
-          cookingMethodLabel: 'शिजवण्याची पद्धत', // New field
-          cookingMethodPlaceholder: 'उदा. बेकिंग, स्टिर-फ्राय, ग्रिलिंग', // New field
+          cuisineTypeLabel: 'पाककृती प्रकार',
+          cuisineTypePlaceholder: 'उदा. भारतीय, मेक्सिकन, थाई',
+          cookingMethodLabel: 'शिजवण्याची पद्धत',
+          cookingMethodPlaceholder: 'उदा. बेकिंग, स्टिर-फ्राय, ग्रिलिंग',
           includeDetailsLabel: 'तपशील समाविष्ट करायचे?',
           includeDetailsHint: '(पोषण/आहार)',
           includeDetailsAriaLabel: 'पोषण तथ्ये आणि आहार योजना योग्यता समाविष्ट करा',
@@ -422,6 +456,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           imageAlt: '{recipeName} साठी तयार केलेली प्रतिमा',
           saveButtonAriaLabel: 'रेसिपी जतन करा',
           saveButtonTooltip: 'रेसिपी जतन करा',
+          unsaveButtonAriaLabel: 'जतन केलेली रेसिपी काढा', // New
+          unsaveButtonTooltip: 'जतन केलेली रेसिपी काढा', // New
           ingredientsTitle: 'साहित्य',
           instructionsTitle: 'कृती',
           noRecipesFoundTitle: 'तुमच्या निकषांशी जुळणारी कोणतीही रेसिपी आढळली नाही.',
@@ -445,7 +481,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           formClearedTitle: 'फॉर्म साफ केला',
           formClearedDesc: 'नवीन साहित्यासाठी तयार!',
           recipeSavedTitle: 'रेसिपी जतन केली!',
-          recipeSavedDesc: '{recipeName} तुमच्या आवडींमध्ये जोडले आहे (सिम्युलेशन).',
+          recipeSavedDesc: '{recipeName} जतन केले आहे.', // Updated
+          recipeRemovedTitle: 'रेसिपी काढली', // New
+          recipeRemovedDesc: '{recipeName} जतन केलेल्या रेसिपीमधून काढले आहे.', // New
           noRecipesTitle: 'कोणतीही रेसिपी आढळली नाही',
           noRecipesDesc: 'दिलेल्या साहित्य आणि प्राधान्यांसह कोणतीही रेसिपी सापडली नाही. तुमचे इनपुट समायोजित करण्याचा प्रयत्न करा.',
           recipesFoundTitle: 'रेसिपी सापडल्या!',
@@ -453,6 +491,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'त्रुटी',
           genericError: 'रेसिपी सुचवण्यात अयशस्वी. कृपया नंतर पुन्हा प्रयत्न करा.',
           validationError: 'इनपुट प्रमाणीकरण अयशस्वी. कृपया आपल्या नोंदी तपासा.',
+          authRequiredTitle: 'प्रमाणीकरण आवश्यक', // New
+          authRequiredDesc: 'रेसिपी जतन करण्यासाठी कृपया साइन इन करा.', // New
+          saveErrorTitle: 'जतन करण्यात त्रुटी', // New
+          saveErrorDesc: 'रेसिपी जतन किंवा काढता आली नाही. कृपया पुन्हा प्रयत्न करा.', // New
       },
       footer: {
           builtWith: '❤️ ने बनवले आहे ',
@@ -496,10 +538,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'விரைவு பயன்முறை (30 நிமிடங்களுக்குள்)',
           servingSizeLabel: 'பரிமாறும் அளவு',
           servingSizePlaceholder: 'எ.கா., 2',
-          cuisineTypeLabel: 'சமையல் வகை', // New field
-          cuisineTypePlaceholder: 'எ.கா., இந்தியன், மெக்சிகன், தாய்', // New field
-          cookingMethodLabel: 'சமையல் முறை', // New field
-          cookingMethodPlaceholder: 'எ.கா., பேக்கிங், ஸ்டிர்-ஃப்ரை, கிரில்லிங்', // New field
+          cuisineTypeLabel: 'சமையல் வகை',
+          cuisineTypePlaceholder: 'எ.கா., இந்தியன், மெக்சிகன், தாய்',
+          cookingMethodLabel: 'சமையல் முறை',
+          cookingMethodPlaceholder: 'எ.கா., பேக்கிங், ஸ்டிர்-ஃப்ரை, கிரில்லிங்',
           includeDetailsLabel: 'விவரங்களைச் சேர்க்கவா?',
           includeDetailsHint: '(ஊட்டச்சத்து/உணவு)',
           includeDetailsAriaLabel: 'ஊட்டச்சத்து உண்மைகள் மற்றும் உணவுத் திட்டப் பொருத்தத்தைச் சேர்க்கவும்',
@@ -513,6 +555,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           imageAlt: '{recipeName} க்கான உருவாக்கப்பட்ட படம்',
           saveButtonAriaLabel: 'சமையல் குறிப்பைச் சேமி',
           saveButtonTooltip: 'சமையல் குறிப்பைச் சேமி',
+          unsaveButtonAriaLabel: 'சேமித்த செய்முறையை அகற்று', // New
+          unsaveButtonTooltip: 'சேமித்த செய்முறையை அகற்று', // New
           ingredientsTitle: 'பொருட்கள்',
           instructionsTitle: 'செய்முறை',
           noRecipesFoundTitle: 'உங்கள் நிபந்தனைகளுடன் பொருந்தக்கூடிய சமையல் குறிப்புகள் எதுவும் இல்லை.',
@@ -536,7 +580,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           formClearedTitle: 'படிவம் அழிக்கப்பட்டது',
           formClearedDesc: 'புதிய பொருட்களுக்குத் தயார்!',
           recipeSavedTitle: 'சமையல் குறிப்பு சேமிக்கப்பட்டது!',
-          recipeSavedDesc: '{recipeName} உங்கள் விருப்பங்களில் சேர்க்கப்பட்டது (simulation).',
+          recipeSavedDesc: '{recipeName} சேமிக்கப்பட்டது.', // Updated
+          recipeRemovedTitle: 'செய்முறை அகற்றப்பட்டது', // New
+          recipeRemovedDesc: '{recipeName} சேமித்த செய்முறைகளிலிருந்து அகற்றப்பட்டது.', // New
           noRecipesTitle: 'சமையல் குறிப்புகள் எதுவும் இல்லை',
           noRecipesDesc: 'கொடுக்கப்பட்ட பொருட்கள் மற்றும் விருப்பங்களுடன் எந்த சமையல் குறிப்புகளையும் கண்டுபிடிக்க முடியவில்லை. உங்கள் உள்ளீட்டைச் சரிசெய்ய முயற்சிக்கவும்.',
           recipesFoundTitle: 'சமையல் குறிப்புகள் கிடைத்தன!',
@@ -544,6 +590,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'பிழை',
           genericError: 'சமையல் குறிப்புகளைப் பரிந்துரைக்க முடியவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.',
           validationError: 'உள்ளீட்டு சரிபார்ப்பு தோல்வியடைந்தது. உங்கள் உள்ளீடுகளை சரிபார்க்கவும்.',
+          authRequiredTitle: 'அங்கீகாரம் தேவை', // New
+          authRequiredDesc: 'செய்முறைகளைச் சேமிக்க தயவுசெய்து உள்நுழையவும்.', // New
+          saveErrorTitle: 'சேமிப்பதில் பிழை', // New
+          saveErrorDesc: 'செய்முறையைச் சேமிக்கவோ அல்லது அகற்றவோ முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.', // New
       },
       footer: {
           builtWith: '❤️ ஆல் உருவாக்கப்பட்டது ',
@@ -587,10 +637,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'త్వరిత మోడ్ (30 నిమిషాలలోపు)',
           servingSizeLabel: 'సర్వింగ్‌లు',
           servingSizePlaceholder: 'ఉదా., 2',
-          cuisineTypeLabel: 'వంటకం రకం', // New field
-          cuisineTypePlaceholder: 'ఉదా., ఇండియన్, మెక్సికన్, థాయ్', // New field
-          cookingMethodLabel: 'వంట పద్ధతి', // New field
-          cookingMethodPlaceholder: 'ఉదా., బేకింగ్, స్టర్-ఫ్రై, గ్రిల్లింగ్', // New field
+          cuisineTypeLabel: 'వంటకం రకం',
+          cuisineTypePlaceholder: 'ఉదా., ఇండియన్, మెక్సికన్, థాయ్',
+          cookingMethodLabel: 'వంట పద్ధతి',
+          cookingMethodPlaceholder: 'ఉదా., బేకింగ్, స్టర్-ఫ్రై, గ్రిల్లింగ్',
           includeDetailsLabel: 'వివరాలను చేర్చాలా?',
           includeDetailsHint: '(పోషకాహారం/ఆహారం)',
           includeDetailsAriaLabel: 'పోషకాహార వాస్తవాలు మరియు ఆహార ప్రణాళిక అనుకూలతను చేర్చండి',
@@ -604,6 +654,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           imageAlt: '{recipeName} కోసం రూపొందించిన చిత్రం',
           saveButtonAriaLabel: 'వంటకాన్ని సేవ్ చేయండి',
           saveButtonTooltip: 'వంటకాన్ని సేవ్ చేయండి',
+          unsaveButtonAriaLabel: 'సేవ్ చేసిన రెసిపీని తీసివేయండి', // New
+          unsaveButtonTooltip: 'సేవ్ చేసిన రెసిపీని తీసివేయండి', // New
           ingredientsTitle: 'పదార్థాలు',
           instructionsTitle: 'సూచనలు',
           noRecipesFoundTitle: 'మీ ప్రమాణాలకు సరిపోయే వంటకాలు ఏవీ కనుగొనబడలేదు.',
@@ -627,7 +679,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           formClearedTitle: 'ఫారమ్ క్లియర్ చేయబడింది',
           formClearedDesc: 'కొత్త పదార్థాల కోసం సిద్ధంగా ఉంది!',
           recipeSavedTitle: 'వంటకం సేవ్ చేయబడింది!',
-          recipeSavedDesc: '{recipeName} మీ ఇష్టమైన వాటికి జోడించబడింది (simulation).',
+          recipeSavedDesc: '{recipeName} సేవ్ చేయబడింది.', // Updated
+          recipeRemovedTitle: 'రెసిపీ తీసివేయబడింది', // New
+          recipeRemovedDesc: '{recipeName} సేవ్ చేసిన రెసిపీల నుండి తీసివేయబడింది.', // New
           noRecipesTitle: 'వంటకాలు ఏవీ కనుగొనబడలేదు',
           noRecipesDesc: 'ఇచ్చిన పదార్థాలు మరియు ప్రాధాన్యతలతో ఏ వంటకాలను కనుగొనలేకపోయాము. మీ ఇన్‌పుట్‌ను సర్దుబాటు చేయడానికి ప్రయత్నించండి.',
           recipesFoundTitle: 'వంటకాలు కనుగొనబడ్డాయి!',
@@ -635,6 +689,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'లోపం',
           genericError: 'వంటకాలను సూచించడంలో విఫలమైంది. దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి.',
           validationError: 'ఇన్‌పుట్ ధ్రువీకరణ విఫలమైంది. దయచేసి మీ ఎంట్రీలను తనిఖీ చేయండి.',
+          authRequiredTitle: 'ప్రామాణీకరణ అవసరం', // New
+          authRequiredDesc: 'వంటకాలను సేవ్ చేయడానికి దయచేసి సైన్ ఇన్ చేయండి.', // New
+          saveErrorTitle: 'సేవ్ చేయడంలో లోపం', // New
+          saveErrorDesc: 'వంటకాన్ని సేవ్ చేయడం లేదా తీసివేయడం సాధ్యపడలేదు. దయచేసి మళ్లీ ప్రయత్నించండి.', // New
       },
       footer: {
           builtWith: '❤️ ద్వారా నిర్మించబడింది ',
@@ -678,10 +736,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'ଶୀଘ୍ର ମୋଡ୍ (୩୦ ମିନିଟ୍ ତଳେ)',
           servingSizeLabel: 'ସର୍ଭିଙ୍ଗ୍ ସଂଖ୍ୟା',
           servingSizePlaceholder: 'ଯେପରି, ୨',
-          cuisineTypeLabel: 'ରନ୍ଧନ ପ୍ରକାର', // New field
-          cuisineTypePlaceholder: 'ଯେପରି, ଭାରତୀୟ, ମେକ୍ସିକାନ୍, ଥାଇ', // New field
-          cookingMethodLabel: 'ରାନ୍ଧିବା ପଦ୍ଧତି', // New field
-          cookingMethodPlaceholder: 'ଯେପରି, ବେକିଙ୍ଗ୍, ଷ୍ଟିର୍-ଫ୍ରାଏ, ଗ୍ରିଲିଙ୍ଗ୍', // New field
+          cuisineTypeLabel: 'ରନ୍ଧନ ପ୍ରକାର',
+          cuisineTypePlaceholder: 'ଯେପରି, ଭାରତୀୟ, ମେକ୍ସିକାନ୍, ଥାଇ',
+          cookingMethodLabel: 'ରାନ୍ଧିବା ପଦ୍ଧତି',
+          cookingMethodPlaceholder: 'ଯେପରି, ବେକିଙ୍ଗ୍, ଷ୍ଟିର୍-ଫ୍ରାଏ, ଗ୍ରିଲିଙ୍ଗ୍',
           includeDetailsLabel: 'ବିବରଣୀ ସାମିଲ କରନ୍ତୁ?',
           includeDetailsHint: '(ପୋଷଣ/ଆହାର)',
           includeDetailsAriaLabel: 'ପୋଷଣ ତଥ୍ୟ ଏବଂ ଆହାର ଯୋଜନା ଉପଯୁକ୍ତତା ସାମିଲ କରନ୍ତୁ',
@@ -695,6 +753,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           imageAlt: '{recipeName} ପାଇଁ ଜେନେରେଟ୍ ହୋଇଥିବା ଚିତ୍ର',
           saveButtonAriaLabel: 'ରେସିପି ସଂରକ୍ଷଣ କରନ୍ତୁ',
           saveButtonTooltip: 'ରେସିପି ସଂରକ୍ଷଣ କରନ୍ତୁ',
+          unsaveButtonAriaLabel: 'ସଂରକ୍ଷିତ ରେସିପି ଅପସାରଣ କରନ୍ତୁ', // New
+          unsaveButtonTooltip: 'ସଂରକ୍ଷିତ ରେସିପି ଅପସାରଣ କରନ୍ତୁ', // New
           ingredientsTitle: 'ଉପାଦାନ',
           instructionsTitle: 'ନିର୍ଦ୍ଦେଶାବଳୀ',
           noRecipesFoundTitle: 'ଆପଣଙ୍କ ମାନଦଣ୍ଡ ସହିତ ମେଳ ଖାଉଥିବା କୌଣସି ରେସିପି ମିଳିଲା ନାହିଁ।',
@@ -718,7 +778,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           formClearedTitle: 'ଫର୍ମ ସଫା କରାଗଲା',
           formClearedDesc: 'ନୂଆ ଉପାଦାନ ପାଇଁ ପ୍ରସ୍ତୁତ!',
           recipeSavedTitle: 'ରେସିପି ସଂରକ୍ଷିତ ହେଲା!',
-          recipeSavedDesc: '{recipeName} ଆପଣଙ୍କ ପସନ୍ଦ ତାଲିକାରେ ଯୋଡା ଯାଇଛି (ସିମୁଲେସନ୍)।',
+          recipeSavedDesc: '{recipeName} ସଂରକ୍ଷିତ ହୋଇଛି।', // Updated
+          recipeRemovedTitle: 'ରେସିପି ଅପସାରିତ ହେଲା', // New
+          recipeRemovedDesc: '{recipeName} ସଂରକ୍ଷିତ ରେସିପିରୁ ଅପସାରିତ ହୋଇଛି।', // New
           noRecipesTitle: 'କୌଣସି ରେସିପି ମିଳିଲା ନାହିଁ',
           noRecipesDesc: 'ପ୍ରଦତ୍ତ ଉପାଦାନ ଏବଂ ପସନ୍ଦଗୁଡିକ ସହିତ କୌଣସି ରେସିପି ମିଳିଲା ନାହିଁ। ଆପଣଙ୍କ ଇନପୁଟ୍ ସଜାଡିବାକୁ ଚେଷ୍ଟା କରନ୍ତୁ।',
           recipesFoundTitle: 'ରେସିପି ମିଳିଲା!',
@@ -726,6 +788,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'ତ୍ରୁଟି',
           genericError: 'ରେସିପି ପରାମର୍ଶ ଦେବାରେ ବିଫଳ। ଦୟାକରି ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।',
           validationError: 'ଇନପୁଟ୍ ବୈଧତା ବିଫଳ ହେଲା। ଦୟାକରି ଆପଣଙ୍କର ପ୍ରବିଷ୍ଟିଗୁଡିକ ଯାଞ୍ଚ କରନ୍ତୁ।',
+          authRequiredTitle: 'ପ୍ରମାଣୀକରଣ ଆବଶ୍ୟକ', // New
+          authRequiredDesc: 'ରେସିପି ସଂରକ୍ଷଣ କରିବାକୁ ଦୟାକରି ସାଇନ୍ ଇନ୍ କରନ୍ତୁ।', // New
+          saveErrorTitle: 'ସଂରକ୍ଷଣ ତ୍ରୁଟି', // New
+          saveErrorDesc: 'ରେସିପି ସଂରକ୍ଷଣ କିମ୍ବା ଅପସାରଣ କରାଯାଇପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।', // New
       },
       footer: {
           builtWith: '❤️ ଦ୍ୱାରା ନିର୍ମିତ ',
@@ -769,10 +835,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'ਤੁਰੰਤ ਮੋਡ (੩੦ ਮਿੰਟ ਤੋਂ ਘੱਟ)',
           servingSizeLabel: 'ਸਰਵਿੰਗਜ਼',
           servingSizePlaceholder: 'ਜਿਵੇਂ ਕਿ, ੨',
-          cuisineTypeLabel: 'ਪਕਵਾਨ ਦੀ ਕਿਸਮ', // New field
-          cuisineTypePlaceholder: 'ਜਿਵੇਂ ਕਿ, ਭਾਰਤੀ, ਮੈਕਸੀਕਨ, ਥਾਈ', // New field
-          cookingMethodLabel: 'ਖਾਣਾ ਪਕਾਉਣ ਦਾ ਢੰਗ', // New field
-          cookingMethodPlaceholder: 'ਜਿਵੇਂ ਕਿ, ਬੇਕਿੰਗ, ਸਟਰ-ਫਰਾਈ, ਗ੍ਰਿਲਿੰਗ', // New field
+          cuisineTypeLabel: 'ਪਕਵਾਨ ਦੀ ਕਿਸਮ',
+          cuisineTypePlaceholder: 'ਜਿਵੇਂ ਕਿ, ਭਾਰਤੀ, ਮੈਕਸੀਕਨ, ਥਾਈ',
+          cookingMethodLabel: 'ਖਾਣਾ ਪਕਾਉਣ ਦਾ ਢੰਗ',
+          cookingMethodPlaceholder: 'ਜਿਵੇਂ ਕਿ, ਬੇਕਿੰਗ, ਸਟਰ-ਫਰਾਈ, ਗ੍ਰਿਲਿੰਗ',
           includeDetailsLabel: 'ਵੇਰਵੇ ਸ਼ਾਮਲ ਕਰੀਏ?',
           includeDetailsHint: '(ਪੋਸ਼ਣ/ਖੁਰਾਕ)',
           includeDetailsAriaLabel: 'ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਤੱਥ ਅਤੇ ਖੁਰਾਕ ਯੋਜਨਾ ਦੀ ਯੋਗਤਾ ਸ਼ਾਮਲ ਕਰੋ',
@@ -786,6 +852,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           imageAlt: '{recipeName} ਲਈ ਤਿਆਰ ਕੀਤੀ ਗਈ ਤਸਵੀਰ',
           saveButtonAriaLabel: 'ਵਿਅੰਜਨ ਸੁਰੱਖਿਅਤ ਕਰੋ',
           saveButtonTooltip: 'ਵਿਅੰਜਨ ਸੁਰੱਖਿਅਤ ਕਰੋ',
+          unsaveButtonAriaLabel: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਹਟਾਓ', // New
+          unsaveButtonTooltip: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਹਟਾਓ', // New
           ingredientsTitle: 'ਸਮੱਗਰੀ',
           instructionsTitle: 'ਨਿਰਦੇਸ਼',
           noRecipesFoundTitle: 'ਤੁਹਾਡੇ ਮਾਪਦੰਡਾਂ ਨਾਲ ਮੇਲ ਖਾਂਦਾ ਕੋਈ ਵਿਅੰਜਨ ਨਹੀਂ ਮਿਲਿਆ।',
@@ -809,7 +877,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           formClearedTitle: 'ਫਾਰਮ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ',
           formClearedDesc: 'ਨਵੀਂ ਸਮੱਗਰੀ ਲਈ ਤਿਆਰ!',
           recipeSavedTitle: 'ਵਿਅੰਜਨ ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ!',
-          recipeSavedDesc: '{recipeName} ਤੁਹਾਡੇ ਮਨਪਸੰਦਾਂ ਵਿੱਚ ਸ਼ਾਮਲ ਕੀਤਾ ਗਿਆ ਹੈ (ਸਿਮੂਲੇਸ਼ਨ)।',
+          recipeSavedDesc: '{recipeName} ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ ਹੈ।', // Updated
+          recipeRemovedTitle: 'ਵਿਅੰਜਨ ਹਟਾਇਆ ਗਿਆ', // New
+          recipeRemovedDesc: '{recipeName} ਨੂੰ ਸੁਰੱਖਿਅਤ ਕੀਤੇ ਵਿਅੰਜਨਾਂ ਵਿੱਚੋਂ ਹਟਾ ਦਿੱਤਾ ਗਿਆ ਹੈ।', // New
           noRecipesTitle: 'ਕੋਈ ਵਿਅੰਜਨ ਨਹੀਂ ਮਿਲਿਆ',
           noRecipesDesc: 'ਦਿੱਤੀ ਗਈ ਸਮੱਗਰੀ ਅਤੇ ਤਰਜੀਹਾਂ ਨਾਲ ਕੋਈ ਵਿਅੰਜਨ ਨਹੀਂ ਲੱਭ ਸਕਿਆ। ਆਪਣੇ ਇਨਪੁਟ ਨੂੰ ਵਿਵਸਥਿਤ ਕਰਨ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
           recipesFoundTitle: 'ਵਿਅੰਜਨ ਮਿਲੇ!',
@@ -817,6 +887,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'ਗਲਤੀ',
           genericError: 'ਵਿਅੰਜਨ ਸੁਝਾਉਣ ਵਿੱਚ ਅਸਫਲ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
           validationError: 'ਇਨਪੁਟ ਪ੍ਰਮਾਣਿਕਤਾ ਅਸਫਲ ਰਹੀ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੀਆਂ ਐਂਟਰੀਆਂ ਦੀ ਜਾਂਚ ਕਰੋ।',
+          authRequiredTitle: 'ਪ੍ਰਮਾਣਿਕਤਾ ਲੋੜੀਂਦੀ ਹੈ', // New
+          authRequiredDesc: 'ਵਿਅੰਜਨਾਂ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕਰਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਸਾਈਨ ਇਨ ਕਰੋ।', // New
+          saveErrorTitle: 'ਸੁਰੱਖਿਅਤ ਕਰਨ ਵਿੱਚ ਗਲਤੀ', // New
+          saveErrorDesc: 'ਵਿਅੰਜਨ ਨੂੰ ਸੁਰੱਖਿਅਤ ਜਾਂ ਹਟਾਇਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।', // New
       },
       footer: {
           builtWith: '❤️ ਦੁਆਰਾ ਬਣਾਇਆ ਗਿਆ ',
@@ -860,10 +934,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           quickModeAriaLabel: 'クイックモード（30分未満）',
           servingSizeLabel: 'サービング',
           servingSizePlaceholder: '例：2',
-          cuisineTypeLabel: '料理の種類', // New field
-          cuisineTypePlaceholder: '例：インド料理、メキシコ料理、タイ料理', // New field
-          cookingMethodLabel: '調理法', // New field
-          cookingMethodPlaceholder: '例：焼く、炒める、グリルする', // New field
+          cuisineTypeLabel: '料理の種類',
+          cuisineTypePlaceholder: '例：インド料理、メキシコ料理、タイ料理',
+          cookingMethodLabel: '調理法',
+          cookingMethodPlaceholder: '例：焼く、炒める、グリルする',
           includeDetailsLabel: '詳細を含める？',
           includeDetailsHint: '（栄養/食事）',
           includeDetailsAriaLabel: '栄養成分表示と食事プランの適合性を含める',
@@ -877,6 +951,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           imageAlt: '{recipeName} の生成画像',
           saveButtonAriaLabel: 'レシピを保存',
           saveButtonTooltip: 'レシピを保存',
+          unsaveButtonAriaLabel: '保存したレシピを削除', // New
+          unsaveButtonTooltip: '保存したレシピを削除', // New
           ingredientsTitle: '材料',
           instructionsTitle: '作り方',
           noRecipesFoundTitle: 'あなたの基準に一致するレシピは見つかりませんでした。',
@@ -900,7 +976,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           formClearedTitle: 'フォームがクリアされました',
           formClearedDesc: '新しい材料の準備ができました！',
           recipeSavedTitle: 'レシピが保存されました！',
-          recipeSavedDesc: '{recipeName} がお気に入りに追加されました（シミュレーション）。',
+          recipeSavedDesc: '{recipeName} が保存されました。', // Updated
+          recipeRemovedTitle: 'レシピが削除されました', // New
+          recipeRemovedDesc: '{recipeName} が保存されたレシピから削除されました。', // New
           noRecipesTitle: 'レシピが見つかりません',
           noRecipesDesc: '指定された材料と好みでレシピが見つかりませんでした。入力を調整してみてください。',
           recipesFoundTitle: 'レシピが見つかりました！',
@@ -908,6 +986,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'エラー',
           genericError: 'レシピの提案に失敗しました。後でもう一度お試しください。',
           validationError: '入力検証に失敗しました。エントリを確認してください。',
+          authRequiredTitle: '認証が必要です', // New
+          authRequiredDesc: 'レシピを保存するにはサインインしてください。', // New
+          saveErrorTitle: '保存エラー', // New
+          saveErrorDesc: 'レシピを保存または削除できませんでした。もう一度お試しください。', // New
       },
       footer: {
           builtWith: '❤️ で作成 ',
@@ -951,10 +1033,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'Modo rápido (menos de 30 minutos)',
       servingSizeLabel: 'Porciones',
       servingSizePlaceholder: 'ej., 2',
-      cuisineTypeLabel: 'Tipo de Cocina', // New field
-      cuisineTypePlaceholder: 'ej., india, mexicana, tailandesa', // New field
-      cookingMethodLabel: 'Método de Cocción', // New field
-      cookingMethodPlaceholder: 'ej., hornear, saltear, asar a la parrilla', // New field
+      cuisineTypeLabel: 'Tipo de Cocina',
+      cuisineTypePlaceholder: 'ej., india, mexicana, tailandesa',
+      cookingMethodLabel: 'Método de Cocción',
+      cookingMethodPlaceholder: 'ej., hornear, saltear, asar a la parrilla',
       includeDetailsLabel: '¿Incluir Detalles?',
       includeDetailsHint: '(Nutrición/Dieta)',
       includeDetailsAriaLabel: 'Incluir información nutricional y adecuación al plan de dieta',
@@ -968,6 +1050,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       imageAlt: 'Imagen generada para {recipeName}',
       saveButtonAriaLabel: 'Guardar receta',
       saveButtonTooltip: 'Guardar Receta',
+      unsaveButtonAriaLabel: 'Eliminar receta guardada', // New
+      unsaveButtonTooltip: 'Eliminar Receta Guardada', // New
       ingredientsTitle: 'Ingredientes',
       instructionsTitle: 'Instrucciones',
       noRecipesFoundTitle: 'No se encontraron recetas que coincidan con tus criterios.',
@@ -991,7 +1075,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       formClearedTitle: 'Formulario Limpiado',
       formClearedDesc: '¡Listo para nuevos ingredientes!',
       recipeSavedTitle: '¡Receta Guardada!',
-      recipeSavedDesc: '{recipeName} ha sido añadida a tus favoritos (simulación).',
+      recipeSavedDesc: '{recipeName} ha sido guardada.', // Updated
+      recipeRemovedTitle: 'Receta Eliminada', // New
+      recipeRemovedDesc: '{recipeName} ha sido eliminada de las recetas guardadas.', // New
       noRecipesTitle: 'No se Encontraron Recetas',
       noRecipesDesc: 'No se pudieron encontrar recetas con los ingredientes y preferencias dados. Intenta ajustar tu entrada.',
       recipesFoundTitle: '¡Recetas Encontradas!',
@@ -999,6 +1085,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Error',
       genericError: 'Fallo al sugerir recetas. Por favor, inténtalo de nuevo más tarde.',
       validationError: 'Falló la validación de entrada. Por favor, revisa tus entradas.',
+      authRequiredTitle: 'Autenticación Requerida', // New
+      authRequiredDesc: 'Por favor, inicia sesión para guardar recetas.', // New
+      saveErrorTitle: 'Error al Guardar', // New
+      saveErrorDesc: 'No se pudo guardar o eliminar la receta. Por favor, inténtalo de nuevo.', // New
     },
     footer: {
       builtWith: 'Hecho con ❤️ por ',
@@ -1042,10 +1132,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'Mode rapide (moins de 30 minutes)',
       servingSizeLabel: 'Portions',
       servingSizePlaceholder: 'ex: 2',
-      cuisineTypeLabel: 'Type de Cuisine', // New field
-      cuisineTypePlaceholder: 'ex: indienne, mexicaine, thaïlandaise', // New field
-      cookingMethodLabel: 'Méthode de Cuisson', // New field
-      cookingMethodPlaceholder: 'ex: cuisson au four, sauté, grill', // New field
+      cuisineTypeLabel: 'Type de Cuisine',
+      cuisineTypePlaceholder: 'ex: indienne, mexicaine, thaïlandaise',
+      cookingMethodLabel: 'Méthode de Cuisson',
+      cookingMethodPlaceholder: 'ex: cuisson au four, sauté, grill',
       includeDetailsLabel: 'Inclure les Détails ?',
       includeDetailsHint: '(Nutrition/Régime)',
       includeDetailsAriaLabel: 'Inclure les informations nutritionnelles et la compatibilité avec le régime alimentaire',
@@ -1059,6 +1149,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       imageAlt: 'Image générée pour {recipeName}',
       saveButtonAriaLabel: 'Enregistrer la recette',
       saveButtonTooltip: 'Enregistrer la Recette',
+      unsaveButtonAriaLabel: 'Supprimer la recette enregistrée', // New
+      unsaveButtonTooltip: 'Supprimer la Recette Enregistrée', // New
       ingredientsTitle: 'Ingrédients',
       instructionsTitle: 'Instructions',
       noRecipesFoundTitle: 'Aucune recette correspondant à vos critères n\'a été trouvée.',
@@ -1082,7 +1174,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       formClearedTitle: 'Formulaire Effacé',
       formClearedDesc: 'Prêt pour de nouveaux ingrédients !',
       recipeSavedTitle: 'Recette Enregistrée !',
-      recipeSavedDesc: '{recipeName} a été ajoutée à vos favoris (simulation).',
+      recipeSavedDesc: '{recipeName} a été enregistrée.', // Updated
+      recipeRemovedTitle: 'Recette Supprimée', // New
+      recipeRemovedDesc: '{recipeName} a été supprimée des recettes enregistrées.', // New
       noRecipesTitle: 'Aucune Recette Trouvée',
       noRecipesDesc: 'Impossible de trouver des recettes avec les ingrédients et préférences donnés. Essayez d\'ajuster votre saisie.',
       recipesFoundTitle: 'Recettes Trouvées !',
@@ -1090,6 +1184,10 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Erreur',
       genericError: 'Échec de la suggestion de recettes. Veuillez réessayer plus tard.',
       validationError: 'La validation de l\'entrée a échoué. Veuillez vérifier vos saisies.',
+      authRequiredTitle: 'Authentification Requise', // New
+      authRequiredDesc: 'Veuillez vous connecter pour enregistrer des recettes.', // New
+      saveErrorTitle: 'Erreur d\'Enregistrement', // New
+      saveErrorDesc: 'Impossible d\'enregistrer ou de supprimer la recette. Veuillez réessayer.', // New
     },
     footer: {
       builtWith: 'Construit avec ❤️ par ',
