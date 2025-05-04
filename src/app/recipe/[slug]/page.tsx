@@ -108,12 +108,14 @@ function RecipeDetailContent() {
   const [recipeData, setRecipeData] = useState<RecipeItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [error, setError] = useState<string | null>(null); // State for errors
 
   // Get essential data from query params
   const queryRecipeName = useMemo(() => searchParams.get('name') ? decodeURIComponent(searchParams.get('name')!) : null, [searchParams]);
   const queryLang = useMemo(() => (searchParams.get('lang') as LanguageCode) || 'en', [searchParams]);
   const queryImageUrl = useMemo(() => searchParams.get('imageUrl') ? decodeURIComponent(searchParams.get('imageUrl')!) : null, [searchParams]);
   const queryImageStored = useMemo(() => searchParams.get('imageStored') === 'true', [searchParams]);
+  const queryStorageKey = useMemo(() => searchParams.get('storageKey'), [searchParams]); // Get the storage key
 
   // Define the translation function 't' using useCallback
   const t = useCallback((key: string, options?: { [key: string]: string | number }) => {
@@ -152,51 +154,93 @@ function RecipeDetailContent() {
   useEffect(() => {
     setIsClient(true); // Indicate component has mounted on the client
 
-    if (queryRecipeName) {
+    // Need storageKey to retrieve data from sessionStorage
+    if (queryStorageKey) {
       try {
-        const storageKey = `recipe-${queryRecipeName}`;
-        console.log("Attempting to load from session storage with key:", storageKey);
-        const storedData = sessionStorage.getItem(storageKey);
-        if (storedData) {
-          const parsedData: Omit<RecipeItem, 'language'> = JSON.parse(storedData); // Language comes from query
+        console.log("Attempting to load from session storage with key:", queryStorageKey);
+        const storedData = sessionStorage.getItem(queryStorageKey);
 
-           // Decode fields that might have been URI encoded
-          const decodedData: RecipeItem = {
-            ...parsedData,
-             recipeName: queryRecipeName, // Use decoded name from query
-             language: queryLang, // Use language from query
-             // Use image URL from query if present (and decoded), otherwise use stored one
-             imageUrl: queryImageStored ? parsedData.imageUrl : (queryImageUrl || parsedData.imageUrl),
-             // Decode other potentially encoded text fields if necessary
-             // e.g., ingredients: decodeURIComponent(parsedData.ingredients || ''),
-             // instructions: decodeURIComponent(parsedData.instructions || ''),
-             // estimatedTime: decodeURIComponent(parsedData.estimatedTime || ''),
-             // ... etc. for other text fields passed via storage
-             // For simplicity, we assume essential text fields were handled okay by JSON stringify/parse
+        if (storedData) {
+          // Use Partial<RecipeItem> as imageUrl might be missing if omitted during storage
+          const parsedData: Partial<RecipeItem> = JSON.parse(storedData);
+          console.log("Parsed data from storage:", parsedData);
+
+           // Combine query param data (guaranteed essentials) with stored data
+           // Query params take precedence for things passed explicitly in URL
+           const combinedData: RecipeItem = {
+             // Defaults from parsed data (might be incomplete)
+             recipeName: parsedData.recipeName || t('recipeDetail.errorLoadingTitle'), // Fallback name
+             ingredients: parsedData.ingredients || '',
+             instructions: parsedData.instructions || '',
+             estimatedTime: parsedData.estimatedTime || 'N/A',
+             difficulty: parsedData.difficulty || 'N/A',
+             imagePrompt: parsedData.imagePrompt,
+             nutritionFacts: parsedData.nutritionFacts,
+             dietPlanSuitability: parsedData.dietPlanSuitability,
+             language: queryLang, // Language always from query param
+
+             // Override with data from query params if available
+             recipeName: queryRecipeName || parsedData.recipeName || t('recipeDetail.errorLoadingTitle'),
+             estimatedTime: searchParams.get('time') ? decodeURIComponent(searchParams.get('time')!) : parsedData.estimatedTime || 'N/A',
+             difficulty: searchParams.get('difficulty') ? decodeURIComponent(searchParams.get('difficulty')!) : parsedData.difficulty || 'N/A',
+             nutritionFacts: searchParams.get('nutrition') ? decodeURIComponent(searchParams.get('nutrition')!) : parsedData.nutritionFacts,
+             dietPlanSuitability: searchParams.get('diet') ? decodeURIComponent(searchParams.get('diet')!) : parsedData.dietPlanSuitability,
+
+             // Handle image URL carefully
+             // Use queryImageUrl if present, otherwise use stored URL if available
+             imageUrl: queryImageUrl || parsedData.imageUrl,
            };
 
-          setRecipeData(decodedData);
-          console.log("Recipe data loaded and combined:", decodedData);
+            // Handle case where image was deliberately omitted or too large
+            if (searchParams.get('imageUnavailable') === 'true' && !combinedData.imageUrl) {
+               console.warn(`Image for recipe ${combinedData.recipeName} was marked as unavailable or too large.`);
+               // Ensure imageUrl is undefined or handled appropriately by UI
+               combinedData.imageUrl = undefined;
+           } else if (searchParams.get('imageStored') === 'true' && !combinedData.imageUrl && parsedData.imageUrl) {
+               // If query says imageStored but queryImageUrl is missing, use the stored one (it might be a long URL/data URI)
+               combinedData.imageUrl = parsedData.imageUrl;
+           }
+
+           if (!combinedData.recipeName) {
+              console.error("Critical error: Recipe name is missing after combining data.");
+              setError(t('recipeDetail.errorLoadingMessage'));
+              setRecipeData(null);
+           } else {
+              setRecipeData(combinedData);
+              console.log("Recipe data loaded and combined:", combinedData);
+              setError(null); // Clear previous errors on success
+           }
+
         } else {
-           console.warn("Recipe data not found in session storage for key:", storageKey);
-          // Fallback or error display logic could go here if storage fails
+           console.warn("Recipe data not found in session storage for key:", queryStorageKey);
+           setError(t('recipeDetail.errorLoadingMessage')); // Set error state
+           setRecipeData(null); // Ensure no stale data is shown
         }
-      } catch (error) {
-        console.error("Error loading recipe from session storage:", error);
+      } catch (err) {
+        console.error("Error loading or parsing recipe from session storage:", err);
+         if (err instanceof Error) {
+             setError(`${t('recipeDetail.errorLoadingTitle')}: ${err.message}`);
+           } else {
+             setError(t('recipeDetail.errorLoadingMessage'));
+           }
+        setRecipeData(null); // Ensure no stale data on error
       } finally {
         setIsLoading(false);
       }
     } else {
-        console.error("Recipe name not found in query parameters.");
-        setIsLoading(false); // Stop loading if no name is provided
+        console.error("Storage key not found in query parameters. Cannot load recipe details.");
+        setError(t('recipeDetail.errorLoadingMessage'));
+        setIsLoading(false); // Stop loading if no key is provided
     }
-    // Clear the specific item from session storage after loading to prevent buildup? Optional.
+
+    // Optional: Clear the specific item from session storage after loading to prevent buildup?
+    // Can be risky if user navigates back/forth quickly. Consider TTL instead if needed.
     // return () => {
-    //   if (queryRecipeName) {
-    //     sessionStorage.removeItem(`recipe-${queryRecipeName}`);
+    //   if (queryStorageKey) {
+    //     sessionStorage.removeItem(queryStorageKey);
     //   }
     // };
-  }, [queryRecipeName, queryLang, queryImageUrl, queryImageStored]); // Depend on query params
+  }, [queryStorageKey, queryRecipeName, queryLang, queryImageUrl, searchParams, t]); // Add dependencies
 
 
   // Function to safely render text with line breaks
@@ -264,8 +308,8 @@ function RecipeDetailContent() {
        return <RecipeDetailLoading />;
    }
 
-   // Handle case where recipe data couldn't be loaded
-   if (!recipeData) {
+   // Handle case where recipe data couldn't be loaded (due to error or missing data)
+   if (error || !recipeData) {
        return (
            <div className="container mx-auto py-12 px-4 md:px-6 max-w-4xl text-center">
                 <motion.div
@@ -276,7 +320,6 @@ function RecipeDetailContent() {
                    <Button asChild variant="outline" size="sm" className="mb-6 group transition-all hover:bg-accent hover:shadow-sm">
                      <Link href="/">
                        <ArrowLeft className="mr-2 h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
-                       {/* Use the translation function t here */}
                        {t('recipeDetail.backButton')}
                      </Link>
                    </Button>
@@ -285,14 +328,15 @@ function RecipeDetailContent() {
                          <AlertTriangle className="h-12 w-12 text-destructive" />
                        </div>
                         <CardTitle className="text-destructive text-xl mb-2">{t('recipeDetail.errorLoadingTitle')}</CardTitle>
-                        <p className="text-muted-foreground">{t('recipeDetail.errorLoadingMessage')}</p>
+                        {/* Display the specific error message */}
+                        <p className="text-muted-foreground">{error || t('recipeDetail.errorLoadingMessage')}</p>
                     </Card>
                 </motion.div>
            </div>
        );
    }
 
-  // Destructure loaded recipe data
+  // Destructure loaded recipe data (now we know it's not null)
   const {
       recipeName,
       ingredients,
@@ -506,3 +550,4 @@ export default function RecipeDetailPage() {
     </Suspense>
   );
 }
+
