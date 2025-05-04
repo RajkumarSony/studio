@@ -105,17 +105,28 @@ function RecipeDetailLoading() {
 
 function RecipeDetailContent() {
   const searchParams = useSearchParams();
-  const [recipeData, setRecipeData] = useState<RecipeItem | null>(null);
+  // State for storing the complete RecipeItem, including potentially omitted image URL
+  const [recipeData, setRecipeData] = useState<(RecipeItem & { imageOmitted?: boolean }) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState<string | null>(null); // State for errors
 
   // Get essential data from query params
   const queryRecipeName = useMemo(() => searchParams.get('name') ? decodeURIComponent(searchParams.get('name')!) : null, [searchParams]);
-  const queryLang = useMemo(() => (searchParams.get('lang') as LanguageCode) || 'en', [searchParams]);
+  // Correctly parse language from query or default
+  const queryLang = useMemo(() => {
+    const langParam = searchParams.get('lang');
+    // Validate if the langParam is a valid LanguageCode before using it
+    if (langParam && Object.keys(translations).includes(langParam)) {
+      return langParam as LanguageCode;
+    }
+    return 'en'; // Default to English if invalid or missing
+  }, [searchParams]);
   const queryImageUrl = useMemo(() => searchParams.get('imageUrl') ? decodeURIComponent(searchParams.get('imageUrl')!) : null, [searchParams]);
   const queryImageStored = useMemo(() => searchParams.get('imageStored') === 'true', [searchParams]);
   const queryStorageKey = useMemo(() => searchParams.get('storageKey'), [searchParams]); // Get the storage key
+  const queryImageUnavailable = useMemo(() => searchParams.get('imageUnavailable') === 'true', [searchParams]); // Check if image was unavailable
+
 
   // Define the translation function 't' using useCallback
   const t = useCallback((key: string, options?: { [key: string]: string | number }) => {
@@ -156,69 +167,84 @@ function RecipeDetailContent() {
 
     // Need storageKey to retrieve data from sessionStorage
     if (queryStorageKey) {
+      console.log("Attempting to load from session storage with key:", queryStorageKey);
+      let storedData = null;
       try {
-        console.log("Attempting to load from session storage with key:", queryStorageKey);
-        const storedData = sessionStorage.getItem(queryStorageKey);
+        storedData = sessionStorage.getItem(queryStorageKey);
 
         if (storedData) {
-          // Use Partial<RecipeItem> as imageUrl might be missing if omitted during storage
-          const parsedData: Partial<RecipeItem> = JSON.parse(storedData);
-          console.log("Parsed data from storage:", parsedData);
+           console.log("Raw data retrieved from storage:", storedData.substring(0, 100) + '...'); // Log snippet
+           // Use Partial<RecipeItem> as imageUrl might be missing if omitted during storage
+           const parsedData: Partial<RecipeItem> & { imageOmitted?: boolean, language?: LanguageCode } = JSON.parse(storedData);
+           console.log("Parsed data from storage:", parsedData);
+
+            // **Data Validation and Combination Logic:**
+            if (!parsedData.recipeName) {
+                console.error("Critical error: Recipe name missing in stored data for key:", queryStorageKey);
+                setError(t('recipeDetail.errorLoadingMessage') + " (Missing recipe name in stored data)");
+                setRecipeData(null);
+                setIsLoading(false);
+                return; // Stop processing if name is missing
+            }
 
            // Combine query param data (guaranteed essentials) with stored data
-           // Query params take precedence for things passed explicitly in URL
-           const combinedData: RecipeItem = {
-             // Defaults from parsed data (might be incomplete)
-             recipeName: parsedData.recipeName || t('recipeDetail.errorLoadingTitle'), // Fallback name
-             ingredients: parsedData.ingredients || '',
-             instructions: parsedData.instructions || '',
-             estimatedTime: parsedData.estimatedTime || 'N/A',
-             difficulty: parsedData.difficulty || 'N/A',
-             imagePrompt: parsedData.imagePrompt,
-             nutritionFacts: parsedData.nutritionFacts,
-             dietPlanSuitability: parsedData.dietPlanSuitability,
-             language: queryLang, // Language always from query param
+           // Use defaults from stored data, override with query params if present.
+            const combinedData: RecipeItem & { imageOmitted?: boolean } = {
+               // Essential fields from stored data (validated above)
+               recipeName: parsedData.recipeName,
+               ingredients: parsedData.ingredients || '',
+               instructions: parsedData.instructions || '',
 
-             // Override with data from query params if available
-             recipeName: queryRecipeName || parsedData.recipeName || t('recipeDetail.errorLoadingTitle'),
-             estimatedTime: searchParams.get('time') ? decodeURIComponent(searchParams.get('time')!) : parsedData.estimatedTime || 'N/A',
-             difficulty: searchParams.get('difficulty') ? decodeURIComponent(searchParams.get('difficulty')!) : parsedData.difficulty || 'N/A',
-             nutritionFacts: searchParams.get('nutrition') ? decodeURIComponent(searchParams.get('nutrition')!) : parsedData.nutritionFacts,
-             dietPlanSuitability: searchParams.get('diet') ? decodeURIComponent(searchParams.get('diet')!) : parsedData.dietPlanSuitability,
+               // Fields potentially overridden by query params or using stored fallback
+               estimatedTime: searchParams.get('time') ? decodeURIComponent(searchParams.get('time')!) : parsedData.estimatedTime || 'N/A',
+               difficulty: searchParams.get('difficulty') ? decodeURIComponent(searchParams.get('difficulty')!) : parsedData.difficulty || 'N/A',
+               nutritionFacts: searchParams.get('nutrition') ? decodeURIComponent(searchParams.get('nutrition')!) : parsedData.nutritionFacts,
+               dietPlanSuitability: searchParams.get('diet') ? decodeURIComponent(searchParams.get('diet')!) : parsedData.dietPlanSuitability,
 
-             // Handle image URL carefully
-             // Use queryImageUrl if present, otherwise use stored URL if available
-             imageUrl: queryImageUrl || parsedData.imageUrl,
+               // Other fields from stored data
+               imagePrompt: parsedData.imagePrompt,
+               language: parsedData.language || queryLang, // Use language from storage if present, else queryLang
+
+               // Image handling (complex part)
+               imageUrl: queryImageUrl || parsedData.imageUrl, // Prioritize query URL, then stored URL
+               imageOmitted: parsedData.imageOmitted || false,
            };
 
-            // Handle case where image was deliberately omitted or too large
-            if (searchParams.get('imageUnavailable') === 'true' && !combinedData.imageUrl) {
-               console.warn(`Image for recipe ${combinedData.recipeName} was marked as unavailable or too large.`);
-               // Ensure imageUrl is undefined or handled appropriately by UI
+            // Correct image logic based on query params
+            if (queryImageUnavailable) {
+               console.warn(`Image for recipe ${combinedData.recipeName} was marked as unavailable.`);
                combinedData.imageUrl = undefined;
-           } else if (searchParams.get('imageStored') === 'true' && !combinedData.imageUrl && parsedData.imageUrl) {
-               // If query says imageStored but queryImageUrl is missing, use the stored one (it might be a long URL/data URI)
+               combinedData.imageOmitted = true;
+            } else if (queryImageStored && !queryImageUrl && parsedData.imageUrl) {
+               // If query says stored, but no query URL, use stored one (might be long/data URI)
+               console.log(`Using stored image URL for ${combinedData.recipeName} as indicated by imageStored flag.`);
                combinedData.imageUrl = parsedData.imageUrl;
-           }
+               combinedData.imageOmitted = parsedData.imageOmitted || false; // Ensure omitted flag is correct
+            } else if (!combinedData.imageUrl && parsedData.imageOmitted) {
+               // If no URL and marked omitted in storage, ensure it stays that way
+                console.log(`Image for ${combinedData.recipeName} confirmed as omitted.`);
+                combinedData.imageUrl = undefined;
+            } else if (combinedData.imageUrl && combinedData.imageOmitted) {
+                // If somehow we have a URL but it's marked omitted, warn and clear URL
+                console.warn(`Contradiction: Image URL present but marked as omitted for ${combinedData.recipeName}. Clearing URL.`);
+                combinedData.imageUrl = undefined;
+            }
 
-           if (!combinedData.recipeName) {
-              console.error("Critical error: Recipe name is missing after combining data.");
-              setError(t('recipeDetail.errorLoadingMessage'));
-              setRecipeData(null);
-           } else {
-              setRecipeData(combinedData);
-              console.log("Recipe data loaded and combined:", combinedData);
-              setError(null); // Clear previous errors on success
-           }
+
+            setRecipeData(combinedData);
+            console.log("Recipe data successfully loaded and combined:", combinedData);
+            setError(null); // Clear previous errors on success
 
         } else {
            console.warn("Recipe data not found in session storage for key:", queryStorageKey);
-           setError(t('recipeDetail.errorLoadingMessage')); // Set error state
+           setError(t('recipeDetail.errorLoadingMessage') + " (Data not found in session)"); // Set specific error
            setRecipeData(null); // Ensure no stale data is shown
         }
       } catch (err) {
-        console.error("Error loading or parsing recipe from session storage:", err);
-         if (err instanceof Error) {
+         console.error(`Error processing sessionStorage data for key "${queryStorageKey}". Raw data: ${storedData ? storedData.substring(0,100)+'...' : 'null'}`, err);
+          if (err instanceof SyntaxError) {
+              setError(t('recipeDetail.errorLoadingMessage') + " (Corrupted data in session)");
+          } else if (err instanceof Error) {
              setError(`${t('recipeDetail.errorLoadingTitle')}: ${err.message}`);
            } else {
              setError(t('recipeDetail.errorLoadingMessage'));
@@ -229,18 +255,10 @@ function RecipeDetailContent() {
       }
     } else {
         console.error("Storage key not found in query parameters. Cannot load recipe details.");
-        setError(t('recipeDetail.errorLoadingMessage'));
+        setError(t('recipeDetail.errorLoadingMessage') + " (Missing storage key)");
         setIsLoading(false); // Stop loading if no key is provided
     }
-
-    // Optional: Clear the specific item from session storage after loading to prevent buildup?
-    // Can be risky if user navigates back/forth quickly. Consider TTL instead if needed.
-    // return () => {
-    //   if (queryStorageKey) {
-    //     sessionStorage.removeItem(queryStorageKey);
-    //   }
-    // };
-  }, [queryStorageKey, queryRecipeName, queryLang, queryImageUrl, searchParams, t]); // Add dependencies
+  }, [queryStorageKey, queryRecipeName, queryLang, queryImageUrl, queryImageStored, queryImageUnavailable, searchParams, t]); // Add dependencies
 
 
   // Function to safely render text with line breaks
@@ -346,7 +364,8 @@ function RecipeDetailContent() {
       imageUrl,
       imagePrompt,
       nutritionFacts,
-      dietPlanSuitability
+      dietPlanSuitability,
+      imageOmitted // Use the flag from state
   } = recipeData;
 
   return (
@@ -370,35 +389,37 @@ function RecipeDetailContent() {
 
         <Card className="overflow-hidden shadow-xl border border-border/60 bg-card rounded-xl">
           <CardHeader className="p-0 relative aspect-[16/8] sm:aspect-[16/7] overflow-hidden group">
-            {imageUrl ? (
-                // Use next/image for optimization if URL is not a data URI
-                 imageUrl.startsWith('http') ? (
-                    <Image
-                        src={imageUrl}
-                         alt={t('results.imageAlt', { recipeName })}
-                         width={1000}
-                         height={562}
-                         className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                         priority // Load main image faster
-                         unoptimized={false} // Allow optimization for HTTP URLs
-                     />
-                 ) : (
-                     // Fallback to img tag for data URIs (no Next.js optimization)
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                          src={imageUrl}
+             {/* Conditional rendering based on image availability */}
+             {imageUrl ? (
+                 // Use next/image for optimization if URL is not a data URI
+                  imageUrl.startsWith('http') ? (
+                     <Image
+                         src={imageUrl}
                           alt={t('results.imageAlt', { recipeName })}
-                          width={1000} // Set width/height for layout consistency
+                          width={1000}
                           height={562}
                           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                          loading="lazy"
+                          priority // Load main image faster
+                          unoptimized={false} // Allow optimization for HTTP URLs
                       />
-                 )
-             ) : (
-               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20">
-                 <ImageOff className="h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground/40" />
-               </div>
-             )}
+                  ) : (
+                      // Fallback to img tag for data URIs (no Next.js optimization)
+                       // eslint-disable-next-line @next/next/no-img-element
+                       <img
+                           src={imageUrl}
+                           alt={t('results.imageAlt', { recipeName })}
+                           width={1000} // Set width/height for layout consistency
+                           height={562}
+                           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                           loading="lazy"
+                       />
+                  )
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20">
+                  <ImageOff className="h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground/40" />
+                   {imageOmitted && <p className="absolute bottom-2 text-xs text-muted-foreground/60">Image omitted (too large)</p>}
+                </div>
+              )}
             {/* Subtle gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/70 to-transparent">
@@ -550,4 +571,3 @@ export default function RecipeDetailPage() {
     </Suspense>
   );
 }
-

@@ -90,6 +90,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // 
 // Constants for sessionStorage keys
 const FORM_STATE_KEY = 'recipeSageFormState';
 const RECIPE_RESULTS_KEY = 'recipeSageResults';
+const MAX_STORAGE_IMAGE_SIZE = 500000; // 500KB limit for image data URIs in storage
 
 
 // Define supported languages and their corresponding CSS font variables
@@ -249,14 +250,29 @@ export default function Home() {
 
       if (storedResults) {
         const parsedResults: RecipeItem[] = JSON.parse(storedResults);
-        setRecipes(parsedResults); // Restore previous results
-        console.log("Restored recipe results from sessionStorage.");
+         // Rehydrate potentially omitted large image URLs from the full recipes state if it exists
+         // This assumes `recipes` state might still hold the full data from the last API call
+         // or if the `recipes` state was also persisted elsewhere (which it isn't currently).
+         // A more robust approach might involve storing image URLs separately if they are too large.
+         const rehydratedResults = parsedResults.map(storedRecipe => {
+             const fullRecipe = recipes?.find(r => r.recipeName === storedRecipe.recipeName);
+             if (storedRecipe.imageOmitted && fullRecipe?.imageUrl) {
+                 console.log(`Rehydrating omitted image URL for ${storedRecipe.recipeName}`);
+                 return { ...storedRecipe, imageUrl: fullRecipe.imageUrl, imageOmitted: false };
+             }
+             return storedRecipe;
+         });
+
+         setRecipes(rehydratedResults); // Restore previous results
+         console.log(`Restored ${rehydratedResults.length} recipe results from sessionStorage.`);
+      } else {
+         console.log("No previous results found in sessionStorage.");
       }
     } catch (error) {
       console.warn("Could not restore state from sessionStorage:", error);
       // Optionally clear potentially corrupted storage
-      // sessionStorage.removeItem(FORM_STATE_KEY);
-      // sessionStorage.removeItem(RECIPE_RESULTS_KEY);
+      sessionStorage.removeItem(FORM_STATE_KEY);
+      sessionStorage.removeItem(RECIPE_RESULTS_KEY);
     } finally {
         setInitialLoadComplete(true); // Mark initial load as complete
     }
@@ -280,9 +296,9 @@ export default function Home() {
           } catch (err) {
             console.error(`Error checking saved status for recipe "${recipe.recipeName}":`, err);
              if (err instanceof Error) {
-               setError(`Error checking saved status: ${err.message}`);
+               setError(`${t('toast.saveErrorTitle')}: ${err.message}`);
              } else {
-               setError('An unknown error occurred while checking saved status.');
+               setError(t('toast.saveErrorDesc'));
              }
           }
         }
@@ -293,7 +309,7 @@ export default function Home() {
       }
     };
     fetchSavedStatus();
-  }, [userId, recipes, initialLoadComplete]); // Add initialLoadComplete dependency
+  }, [userId, recipes, initialLoadComplete, t]); // Add initialLoadComplete and t dependencies
 
 
    // Handle form reset
@@ -310,9 +326,9 @@ export default function Home() {
       } catch (err) {
         console.warn("Could not clear sessionStorage:", err);
           if (err instanceof Error) {
-             setError(`Error clearing session: ${err.message}`);
+             setError(`${t('toast.storageErrorTitle')}: ${err.message}`); // Use t()
            } else {
-             setError('An unknown error occurred while clearing session.');
+             setError(t('toast.storageErrorDesc')); // Use t()
            }
       }
     // Log instead of toast
@@ -323,7 +339,7 @@ export default function Home() {
    const handleToggleSaveRecipe = async (recipe: RecipeItem) => {
      if (!userId) {
         console.warn(t('toast.authRequiredTitle'), t('toast.authRequiredDesc'));
-        setError(t('toast.authRequiredDesc'));
+        setError(t('toast.authRequiredDesc')); // Use t()
         // Trigger Google sign-in popup using NextAuth signIn
         signIn('google'); // No need to await here, redirects or shows popup
        return;
@@ -371,9 +387,9 @@ export default function Home() {
             return newSet;
         });
          if (err instanceof Error) {
-           setError(`${t('toast.saveErrorTitle')}: ${err.message}`);
+           setError(`${t('toast.saveErrorTitle')}: ${err.message}`); // Use t()
          } else {
-           setError(t('toast.saveErrorDesc'));
+           setError(t('toast.saveErrorDesc')); // Use t()
          }
      }
    };
@@ -382,11 +398,12 @@ export default function Home() {
  // Function to navigate to recipe detail page
   const handleViewRecipe = (recipe: RecipeItem) => {
     setError(null); // Clear error before navigation
+    console.log(`Initiating navigation for recipe: "${recipe.recipeName}"`);
     try {
       const queryParams = new URLSearchParams();
       const addParam = (key: string, value: string | undefined | null | number | boolean) => {
           if (value !== undefined && value !== null && value !== '') { // Ensure empty strings are not added
-              // Convert boolean to string explicitly for query params
+              // Convert boolean/number to string explicitly for query params
               queryParams.set(key, String(value));
           }
       };
@@ -410,7 +427,7 @@ export default function Home() {
       addParam('diet', recipe.dietPlanSuitability);
 
       // Prepare data for sessionStorage (exclude large image URI by default)
-      const dataToStore: Partial<RecipeItem> = {
+      const dataToStore: Partial<RecipeItem> & { imageOmitted?: boolean } = {
         recipeName: recipe.recipeName, // Keep name for matching
         ingredients: recipe.ingredients,
         instructions: recipe.instructions,
@@ -419,72 +436,93 @@ export default function Home() {
         imagePrompt: recipe.imagePrompt,
         nutritionFacts: recipe.nutritionFacts,
         dietPlanSuitability: recipe.dietPlanSuitability,
-        // Omit imageUrl initially to avoid storage limits
+        language: selectedLanguage, // Include language used to generate this
+        // Omit imageUrl initially
+        imageUrl: undefined,
+        imageOmitted: false,
       };
 
       // Handle image URL storage conditionally
       const isDataUri = recipe.imageUrl?.startsWith('data:');
       const MAX_URL_LENGTH = 1500; // Max length for query param
-      const MAX_DATA_URI_STORAGE_LENGTH = 500000; // Limit for sessionStorage (adjust as needed)
 
       if (recipe.imageUrl) {
           if (!isDataUri && recipe.imageUrl.length < MAX_URL_LENGTH) {
               addParam('imageUrl', recipe.imageUrl); // Pass short URLs in query
-          } else if (isDataUri && recipe.imageUrl.length < MAX_DATA_URI_STORAGE_LENGTH) {
+              dataToStore.imageUrl = recipe.imageUrl; // Also store it for consistency
+              console.log("Passing short image URL in query params.");
+          } else if (isDataUri && recipe.imageUrl.length < MAX_STORAGE_IMAGE_SIZE) {
               dataToStore.imageUrl = recipe.imageUrl; // Store manageable data URIs
               addParam('imageStored', 'true'); // Indicate image is in storage
+              console.log("Storing manageable image data URI in sessionStorage.");
           } else if (isDataUri) {
                // Image is too large for both query and storage
-               console.warn(`Image data URI for ${recipe.recipeName} is too large to store or pass in URL.`);
-               // Optionally add a param to indicate no image is available
-               addParam('imageUnavailable', 'true');
+               console.warn(`Image data URI for ${recipe.recipeName} is too large (${recipe.imageUrl.length} bytes) to store or pass in URL. Omitting.`);
+               dataToStore.imageOmitted = true; // Mark as omitted in storage
+               addParam('imageUnavailable', 'true'); // Indicate no image available via URL
           } else {
-              // Long HTTP URL - might still exceed overall header limits if other params are long
-              // Consider passing it via storage if query param approach risks 431 errors
+              // Long HTTP URL - pass via storage
               dataToStore.imageUrl = recipe.imageUrl; // Store long URLs
               addParam('imageStored', 'true');
+              console.log("Storing long image HTTP URL in sessionStorage.");
           }
+       } else {
+         console.log(`No image URL provided for ${recipe.recipeName}.`);
        }
 
 
       // Store potentially large/complex data in sessionStorage
       // Generate a unique key for this recipe's data
       const storageKey = `recipeDetail-${slug}`; // Use slug for a predictable key
+      let storageSuccess = false;
       try {
           const serializedRecipe = JSON.stringify(dataToStore);
           sessionStorage.setItem(storageKey, serializedRecipe);
-          addParam('storageKey', storageKey); // Pass the key to retrieve data
-          console.log("Recipe detail data stored in sessionStorage with key:", storageKey);
+          // **Verification Step:** Immediately read back to confirm write
+          const writtenData = sessionStorage.getItem(storageKey);
+          if (writtenData === serializedRecipe) {
+              storageSuccess = true;
+              addParam('storageKey', storageKey); // Pass the key to retrieve data
+              console.log("Recipe detail data successfully stored and verified in sessionStorage with key:", storageKey);
+          } else {
+              // This should ideally not happen if setItem doesn't throw
+              console.error("SessionStorage write verification failed! Data mismatch after write for key:", storageKey);
+              setError(t('toast.storageErrorDesc'));
+          }
       } catch (storageError) {
-          console.error("Error saving recipe details to sessionStorage:", storageError);
+          console.error("Error saving recipe details to sessionStorage for key", storageKey, ":", storageError);
           if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
               console.error(t('toast.storageQuotaExceededTitle'), t('toast.storageQuotaExceededDesc'));
-               setError(t('toast.storageQuotaExceededDesc'));
-              // Proceed without storage key if saving failed
+               setError(t('toast.storageQuotaExceededDesc')); // Use t()
           } else {
                console.error(t('toast.storageErrorTitle'), t('toast.storageErrorDesc'));
                if (storageError instanceof Error) {
-                  setError(`${t('toast.storageErrorTitle')}: ${storageError.message}`);
+                  setError(`${t('toast.storageErrorTitle')}: ${storageError.message}`); // Use t()
                 } else {
-                  setError(t('toast.storageErrorDesc'));
+                  setError(t('toast.storageErrorDesc')); // Use t()
                 }
-               // Proceed without storage key if saving failed
           }
-           // Remove the possibly incomplete storage item
-           sessionStorage.removeItem(storageKey);
-           // Remove the storageKey from queryParams if it was added
-           queryParams.delete('storageKey');
-           // Also remove imageStored flag if storage failed
-           queryParams.delete('imageStored');
+          // Ensure potentially corrupted item is removed
+          try { sessionStorage.removeItem(storageKey); } catch (_) { /* Ignore cleanup error */ }
+          // Do not add storageKey or imageStored params if storage failed
+          queryParams.delete('storageKey');
+          queryParams.delete('imageStored');
       }
 
-      // Construct the final URL and navigate
-      const url = `/recipe/${slug}?${queryParams.toString()}`;
-      console.log("Navigating to URL:", url); // Log the final URL
-      router.push(url);
+      // Only navigate if storage was successful (or if no storage was needed/attempted)
+      if (storageSuccess || !queryParams.has('storageKey')) {
+           // Construct the final URL and navigate
+           const url = `/recipe/${slug}?${queryParams.toString()}`;
+           console.log("Navigating to URL:", url); // Log the final URL
+           router.push(url);
+       } else {
+           console.error(`Navigation aborted for "${recipe.recipeName}" due to sessionStorage write failure.`);
+           // Error state should already be set from the catch block
+       }
+
 
     } catch (err) {
-      console.error("Error preparing recipe details for viewing:", err);
+      console.error(`Error preparing recipe details for viewing "${recipe.recipeName}":`, err);
        if (err instanceof Error) {
          setError(`Navigation Error: ${err.message}`);
        } else {
@@ -508,7 +546,7 @@ export default function Home() {
       console.warn("Could not clear sessionStorage before search:", err);
        if (err instanceof Error) {
          // Don't necessarily show this to the user, just log it
-         // setError(`Error clearing session before search: ${err.message}`);
+          console.error(`Error clearing session before search: ${err.message}`);
        }
     }
 
@@ -553,24 +591,25 @@ export default function Home() {
                const recipesForStorage = recipesArray.map(r => {
                    const { imageUrl, ...rest } = r;
                    const isDataUri = imageUrl?.startsWith('data:');
-                   const MAX_STORAGE_IMAGE_SIZE = 500000; // 500KB limit for storage
+                   const imageOmitted = !!(imageUrl && isDataUri && imageUrl.length >= MAX_STORAGE_IMAGE_SIZE);
 
                    return {
                        ...rest,
                        // Only include imageUrl if it's not a data URI or if it's small enough
-                       imageUrl: (imageUrl && (!isDataUri || imageUrl.length < MAX_STORAGE_IMAGE_SIZE)) ? imageUrl : undefined,
-                       imageOmitted: (imageUrl && isDataUri && imageUrl.length >= MAX_STORAGE_IMAGE_SIZE) // Flag if large image was omitted
+                       imageUrl: imageOmitted ? undefined : imageUrl,
+                       imageOmitted: imageOmitted, // Flag if large image was omitted
+                       language: selectedLanguage, // Store language context
                    };
                });
 
                // Attempt to store results and form state
                sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(recipesForStorage));
                sessionStorage.setItem(FORM_STATE_KEY, JSON.stringify(values));
-               console.log("Stored results and form state in sessionStorage.");
+               console.log(`Stored ${recipesForStorage.length} results and form state in sessionStorage.`);
 
            } catch (storageError) {
-              console.error("Error storing results in sessionStorage:", storageError);
-               if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
+               console.error("Error storing results in sessionStorage:", storageError);
+                if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
                    console.warn("SessionStorage quota exceeded. Clearing previous results/state and trying again with minimal data.");
                    // Attempt to clear and retry storing only form state
                    try {
@@ -586,14 +625,14 @@ export default function Home() {
                 } else {
                    console.error(t('toast.storageErrorTitle'), t('toast.storageErrorDesc'));
                     if (storageError instanceof Error) {
-                      setError(`${t('toast.storageErrorTitle')}: ${storageError.message}`);
+                      setError(`${t('toast.storageErrorTitle')}: ${storageError.message}`); // Use t()
                     } else {
-                      setError(t('toast.storageErrorDesc'));
+                      setError(t('toast.storageErrorDesc')); // Use t()
                     }
                 }
            }
        } else {
-           // If no recipes found, still clear previous storage
+           // If no recipes found, clear previous storage
            sessionStorage.removeItem(RECIPE_RESULTS_KEY);
            sessionStorage.removeItem(FORM_STATE_KEY);
            console.log("No recipes found, cleared previous state from sessionStorage.");
