@@ -2,9 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+/* Define font variables - values are set in layout.tsx */
+:root {
+  --font-noto-sans: '__Noto_Sans_variable_9d8854', '__Noto_Sans_Fallback_variable_9d8854';
+  --font-noto-sans-jp: '__Noto_Sans_JP_variable_cad6b3', '__Noto_Sans_JP_Fallback_variable_cad6b3';
+  --font-noto-sans-bengali: '__Noto_Sans_Bengali_variable_b58d4d', '__Noto_Sans_Bengali_Fallback_variable_b58d4d';
+  --font-noto-sans-devanagari: '__Noto_Sans_Devanagari_variable_6512f3', '__Noto_Sans_Devanagari_Fallback_variable_6512f3';
+  --font-noto-sans-gurmukhi: '__Noto_Sans_Gurmukhi_variable_73a93a', '__Noto_Sans_Gurmukhi_Fallback_variable_73a93a';
+  --font-noto-sans-oriya: '__Noto_Sans_Oriya_variable_26d123', '__Noto_Sans_Oriya_Fallback_variable_26d123';
+  --font-noto-sans-tamil: '__Noto_Sans_Tamil_variable_e42901', '__Noto_Sans_Tamil_Fallback_variable_e42901';
+  --font-noto-sans-telugu: '__Noto_Sans_Telugu_variable_f088b3', '__Noto_Sans_Telugu_Fallback_variable_f088b3';
+  /* Add other font variables here */
+
+  /* --font-dynamic will be set by page.tsx useEffect based on selectedLanguage */
+  --font-dynamic: var(--font-noto-sans);
 }
+
 
 @layer base {
   :root {
@@ -17,9 +30,9 @@ body {
     --popover-foreground: 0 0% 20%; /* Dark Gray (#333) */
     --primary: 180 100% 25.1%; /* Teal (#008080) */
     --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 0 0% 86.7%; /* Light Gray (#DDD) */
+    --secondary: 0 0% 93%; /* Lighter Gray for secondary elements */
     --secondary-foreground: 0 0% 20%; /* Dark Gray (#333) */
-    --muted: 0 0% 95%; /* Slightly lighter gray for muted bg */
+    --muted: 0 0% 96%; /* Even lighter gray for muted bg */
     --muted-foreground: 0 0% 45.1%; /* Slightly darker gray */
     --accent: 180 100% 90%; /* Lighter Teal for hover/selection */
     --accent-foreground: 180 100% 25.1%; /* Teal (#008080) */
@@ -85,11 +98,15 @@ body {
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
-     /* Smoother font rendering */
+  html {
+     /* Apply the dynamic font with fallbacks */
+    font-family: var(--font-dynamic), Arial, Helvetica, sans-serif;
+    /* Smoother font rendering */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
@@ -110,3 +127,12 @@ body {
        animation: slide-in-from-bottom 0.5s ease-out forwards;
      }
 }
+
+/* Language-specific font overrides if needed (example) */
+/* You might not need these if the variable approach works well */
+/* [lang="ja"] body {
+  font-family: var(--font-noto-sans-jp), Arial, sans-serif;
+}
+[lang="hi"] body {
+ font-family: var(--font-noto-sans-devanagari), Arial, sans-serif;
+} */

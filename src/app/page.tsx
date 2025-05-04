@@ -17,6 +17,9 @@ import {
   Sparkles, // Icon for AI features
   Palette, // Icon for theme switching
   Info, // Icon for additional info/tips
+  Scale, // Example: Icon for difficulty/serving size?
+  Soup, // Example: Icon for recipe type?
+  Heart, // Example: Icon for saving/favoriting?
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -44,9 +47,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'; // Import Select components
+} from '@/components/ui/select';
 import {useTheme} from 'next-themes';
-import type {SuggestRecipesInput, RecipeItem} from '@/ai/flows/suggest-recipe'; // Import updated types
+import type {SuggestRecipesInput, RecipeItem} from '@/ai/flows/suggest-recipe';
 import {suggestRecipes} from '@/ai/flows/suggest-recipe';
 import {useToast} from '@/hooks/use-toast';
 import {
@@ -54,27 +57,33 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {Badge} from '@/components/ui/badge';
-import {cn} from '@/lib/utils'; // Import cn utility
-import {motion, AnimatePresence} from 'framer-motion'; // Import animation library
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip'; // Import Tooltip
+import {cn} from '@/lib/utils';
+import {motion, AnimatePresence} from 'framer-motion';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
-// Define supported languages
-const supportedLanguages = [
-  {value: 'en', label: 'English'},
-  {value: 'hi', label: 'हिन्दी (Hindi)'},
-  {value: 'bn', label: 'বাংলা (Bengali)'},
-  {value: 'mr', label: 'मराठी (Marathi)'},
-  {value: 'ta', label: 'தமிழ் (Tamil)'},
-  {value: 'te', label: 'తెలుగు (Telugu)'},
-  {value: 'or', label: 'ଓଡ଼ିଆ (Odia)'},
-  {value: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)'},
-  {value: 'ja', label: '日本語 (Japanese)'},
-  {value: 'es', label: 'Español (Spanish)'},
-  {value: 'fr', label: 'Français (French)'},
+
+// Define supported languages and their corresponding CSS font variables
+const supportedLanguages: { value: string; label: string; fontVariable: string }[] = [
+  { value: 'en', label: 'English', fontVariable: 'var(--font-noto-sans)' },
+  { value: 'hi', label: 'हिन्दी (Hindi)', fontVariable: 'var(--font-noto-sans-devanagari)' },
+  { value: 'bn', label: 'বাংলা (Bengali)', fontVariable: 'var(--font-noto-sans-bengali)' },
+  { value: 'mr', label: 'मराठी (Marathi)', fontVariable: 'var(--font-noto-sans-devanagari)' }, // Uses Devanagari
+  { value: 'ta', label: 'தமிழ் (Tamil)', fontVariable: 'var(--font-noto-sans-tamil)' },
+  { value: 'te', label: 'తెలుగు (Telugu)', fontVariable: 'var(--font-noto-sans-telugu)' },
+  { value: 'or', label: 'ଓଡ଼ିଆ (Odia)', fontVariable: 'var(--font-noto-sans-oriya)' },
+  { value: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)', fontVariable: 'var(--font-noto-sans-gurmukhi)' },
+  { value: 'ja', label: '日本語 (Japanese)', fontVariable: 'var(--font-noto-sans-jp)' },
+  { value: 'es', label: 'Español (Spanish)', fontVariable: 'var(--font-noto-sans)' }, // Assuming default Noto Sans covers Spanish well
+  { value: 'fr', label: 'Français (French)', fontVariable: 'var(--font-noto-sans)' }, // Assuming default Noto Sans covers French well
 ];
 
 const formSchema = z.object({
@@ -83,6 +92,8 @@ const formSchema = z.object({
   }),
   dietaryRestrictions: z.string().optional(),
   preferences: z.string().optional(),
+  quickMode: z.boolean().optional(), // Added for quick mode
+  servingSize: z.number().int().min(1).optional(), // Added for serving size
 });
 
 export default function Home() {
@@ -90,14 +101,22 @@ export default function Home() {
   const {toast} = useToast();
   const [recipes, setRecipes] = useState<RecipeItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('en'); // Default language: English
-  const [isClient, setIsClient] = useState(false); // State to track client-side mount
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  const [isClient, setIsClient] = useState(false);
+
+  // Update CSS variable for dynamic font switching when language changes
+  useEffect(() => {
+    const selectedLangData = supportedLanguages.find(lang => lang.value === selectedLanguage);
+    const fontVariable = selectedLangData ? selectedLangData.fontVariable : 'var(--font-noto-sans)'; // Default fallback
+    document.documentElement.style.setProperty('--font-dynamic', fontVariable);
+    // Also set the lang attribute for potential CSS selectors (though variable is primary)
+    document.documentElement.lang = selectedLanguage;
+  }, [selectedLanguage]);
+
 
   useEffect(() => {
-    // Component did mount, safe to use browser-specific APIs/state
     setIsClient(true);
   }, []);
-
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -105,19 +124,56 @@ export default function Home() {
       ingredients: '',
       dietaryRestrictions: '',
       preferences: '',
+      quickMode: false,
+      servingSize: undefined,
     },
   });
 
+   // Handle form reset
+   const handleReset = () => {
+    form.reset();
+    setRecipes(null);
+    setIsLoading(false);
+    toast({
+      title: 'Form Cleared',
+      description: 'Ready for new ingredients!',
+      variant: 'default',
+    });
+  };
+
+  // Handle saving a recipe (placeholder)
+  const handleSaveRecipe = (recipe: RecipeItem) => {
+    console.log('Saving recipe:', recipe.recipeName);
+    // Implement actual saving logic here (e.g., localStorage, API call)
+    toast({
+      title: 'Recipe Saved!',
+      description: `${recipe.recipeName} has been added to your favorites (simulation).`,
+      variant: 'default',
+    });
+  };
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    setRecipes(null); // Clear previous recipes
+    setRecipes(null);
     try {
+      // Enhance preferences based on new inputs
+      let enhancedPreferences = values.preferences || '';
+      if (values.quickMode) {
+        enhancedPreferences += (enhancedPreferences ? ', ' : '') + 'quick meal (under 30 minutes)';
+      }
+      if (values.servingSize) {
+         enhancedPreferences += (enhancedPreferences ? ', ' : '') + `serves ${values.servingSize}`;
+      }
+
+
       const input: SuggestRecipesInput = {
         ingredients: values.ingredients,
         dietaryRestrictions: values.dietaryRestrictions || undefined,
-        preferences: values.preferences || undefined,
-        language: selectedLanguage, // Pass selected language to the flow
+        preferences: enhancedPreferences || undefined, // Use enhanced preferences
+        language: selectedLanguage,
       };
+
       const result = await suggestRecipes(input);
       setRecipes(result);
       if (result.length === 0) {
@@ -128,17 +184,18 @@ export default function Home() {
           variant: 'default',
         });
       } else {
-         toast({
-            title: 'Recipes Found!',
-            description: `We found ${result.length} recipe suggestion${result.length > 1 ? 's' : ''} for you.`,
-            variant: 'default',
-          });
+        toast({
+          title: 'Recipes Found!',
+          description: `We found ${result.length} recipe suggestion${result.length > 1 ? 's' : ''} for you.`,
+          variant: 'default',
+        });
       }
     } catch (error) {
       console.error('Error suggesting recipes:', error);
       toast({
         title: 'Error',
-        description: 'Failed to suggest recipes. Please try again later.',
+        description:
+          error instanceof Error ? error.message : 'Failed to suggest recipes. Please try again later.',
         variant: 'destructive',
       });
     } finally {
@@ -146,97 +203,119 @@ export default function Home() {
     }
   }
 
-   // Animation variants
-   const containerVariants = {
-      hidden: {opacity: 0},
-      visible: {
-       opacity: 1,
-       transition: {
-         staggerChildren: 0.1,
-         delayChildren: 0.3,
-       },
-     },
-   };
+  const containerVariants = {
+    hidden: {opacity: 0},
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15, // Slightly increased stagger
+        delayChildren: 0.3,
+      },
+    },
+  };
 
-   const itemVariants = {
-     hidden: {y: 20, opacity: 0},
-     visible: {
-       y: 0,
-       opacity: 1,
-       transition: {type: 'spring', stiffness: 100},
-     },
-     exit: { y: -20, opacity: 0 },
-   };
+  const itemVariants = {
+    hidden: {y: 25, opacity: 0}, // Increased initial Y offset
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {type: 'spring', stiffness: 90, damping: 15}, // Adjusted spring physics
+    },
+    exit: {y: -25, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } }, // Smoother exit
+  };
 
-   // Render loading skeleton only on client to avoid hydration mismatch
-   const LoadingSkeleton = () => (
-    <div className="flex justify-center items-center py-10 animate-pulse">
-      <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      <span className="ml-4 text-lg text-muted-foreground">
+  const LoadingSkeleton = () => (
+    <div className="flex flex-col items-center justify-center py-10 animate-pulse space-y-4">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <span className="text-lg text-muted-foreground">
         Generating delicious ideas...
       </span>
+      {/* Add skeleton card placeholders */}
+      <div className="w-full max-w-3xl space-y-6">
+        {[...Array(2)].map((_, i) => (
+            <Card key={i} className="w-full shadow-md border border-border/30 overflow-hidden">
+              <div className="h-40 bg-muted/30"></div>
+              <CardContent className="p-6 space-y-4">
+                <div className="h-6 w-3/4 bg-muted/40 rounded"></div>
+                <div className="flex gap-2">
+                  <div className="h-5 w-20 bg-muted/40 rounded-full"></div>
+                  <div className="h-5 w-24 bg-muted/40 rounded-full"></div>
+                </div>
+                <div className="h-4 w-1/4 bg-muted/40 rounded"></div>
+                 <div className="space-y-2">
+                   <div className="h-4 w-full bg-muted/40 rounded"></div>
+                   <div className="h-4 w-5/6 bg-muted/40 rounded"></div>
+                 </div>
+               </CardContent>
+            </Card>
+        ))}
+       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-muted/10 dark:from-background dark:to-black/20">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-background via-muted/5 to-background dark:from-background dark:via-black/10 dark:to-background/90">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/90 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60 shadow-sm transition-shadow duration-300 hover:shadow-md">
         <div className="container flex h-16 items-center px-4 md:px-6">
           <motion.div
-             initial={{ x: -20, opacity: 0 }}
-             animate={{ x: 0, opacity: 1 }}
-             transition={{ duration: 0.5, delay: 0.1 }}
-             className="mr-4 flex items-center flex-shrink-0">
-            <ChefHat className="h-7 w-7 mr-2 text-primary" />
-            <span className="text-lg font-bold tracking-tight whitespace-nowrap">
+            initial={{x: -20, opacity: 0}}
+            animate={{x: 0, opacity: 1}}
+            transition={{duration: 0.5, delay: 0.1}}
+            className="mr-auto flex items-center flex-shrink-0" // Use mr-auto to push others right
+          >
+            <ChefHat className="h-7 w-7 mr-2 text-primary drop-shadow-sm" />
+            <span className="text-xl font-bold tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 dark:from-primary/80 dark:to-primary/60">
               RecipeSage
             </span>
           </motion.div>
-          <div className="flex flex-1 items-center justify-end space-x-2 md:space-x-4">
-             <TooltipProvider>
-               {/* Language Selector */}
-               <motion.div
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}>
-               <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SelectTrigger
-                      className="w-auto h-9 px-2 gap-1 border-none shadow-none bg-transparent hover:bg-accent focus:ring-0"
-                      aria-label="Select language"
-                    >
-                      <Languages className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
-                      <SelectValue placeholder="Language" />
-                    </SelectTrigger>
-                   </TooltipTrigger>
-                   <TooltipContent>
-                     <p>Select Language</p>
-                   </TooltipContent>
-                 </Tooltip>
-                 <SelectContent className="max-h-60 overflow-y-auto">
-                   {supportedLanguages.map(lang => (
-                     <SelectItem key={lang.value} value={lang.value}>
-                       {lang.label}
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
-               </motion.div>
+          <div className="flex items-center justify-end space-x-2 md:space-x-3">
+            <TooltipProvider delayDuration={100}>
+              <motion.div
+                initial={{y: -20, opacity: 0}}
+                animate={{y: 0, opacity: 1}}
+                transition={{duration: 0.5, delay: 0.2}}
+              >
+                <Select
+                  value={selectedLanguage}
+                  onValueChange={setSelectedLanguage}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SelectTrigger
+                        className="w-auto h-9 px-2.5 gap-1.5 border-none shadow-none bg-transparent hover:bg-accent focus:ring-1 focus:ring-primary/50 transition-colors"
+                        aria-label="Select language"
+                      >
+                        <Languages className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
+                        <SelectValue placeholder="Language" />
+                      </SelectTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Select Language</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <SelectContent className="max-h-60 overflow-y-auto backdrop-blur-md bg-popover/90">
+                    {supportedLanguages.map(lang => (
+                      <SelectItem key={lang.value} value={lang.value}>
+                        {lang.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </motion.div>
 
-               {/* Theme Toggle */}
-               <motion.div
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}>
+              <motion.div
+                initial={{y: -20, opacity: 0}}
+                animate={{y: 0, opacity: 1}}
+                transition={{duration: 0.5, delay: 0.3}}
+              >
                 <DropdownMenu>
                   <Tooltip>
-                   <TooltipTrigger asChild>
+                    <TooltipTrigger asChild>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 transition-transform hover:scale-110"
+                          className="h-9 w-9 transition-transform hover:scale-110 focus:ring-1 focus:ring-primary/50"
                           aria-label="Toggle theme"
                         >
                           <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -245,305 +324,400 @@ export default function Home() {
                         </Button>
                       </DropdownMenuTrigger>
                     </TooltipTrigger>
-                     <TooltipContent>
-                       <p>Change Theme</p>
-                     </TooltipContent>
-                   </Tooltip>
+                    <TooltipContent side="bottom">
+                      <p>Change Theme</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent
                     align="end"
-                    className="animate-in fade-in zoom-in-95"
+                    className="animate-in fade-in zoom-in-95 backdrop-blur-md bg-popover/90"
                   >
                     <DropdownMenuItem onClick={() => setTheme('light')}>
-                      <Sun className="mr-2 h-4 w-4"/> Light
+                      <Sun className="mr-2 h-4 w-4" /> Light
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme('dark')}>
-                     <Moon className="mr-2 h-4 w-4"/> Dark
+                      <Moon className="mr-2 h-4 w-4" /> Dark
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme('system')}>
-                      <Palette className="mr-2 h-4 w-4"/> System
+                      <Palette className="mr-2 h-4 w-4" /> System
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-               </motion.div>
+              </motion.div>
             </TooltipProvider>
           </div>
         </div>
       </header>
       <main className="flex-1 container py-10 md:py-16 px-4 md:px-6">
         <motion.section
-           initial={{ opacity: 0, y: -20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ duration: 0.6, delay: 0.2 }}
-           className="mb-12 text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 dark:from-primary/80 dark:to-primary/60">
+          initial={{opacity: 0, y: -20}}
+          animate={{opacity: 1, y: 0}}
+          transition={{duration: 0.6, delay: 0.2}}
+          className="mb-12 text-center"
+        >
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60 dark:from-primary/90 dark:via-primary/70 dark:to-primary/50 py-2">
             Unlock Your Inner Chef!
           </h1>
-          <p className="text-muted-foreground mt-3 text-base md:text-lg max-w-xl mx-auto">
+          <p className="text-muted-foreground mt-4 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
             Enter ingredients you have, add preferences, and let RecipeSage find
-            your next delicious meal, just for you.
+            your next delicious meal, tailored just for you.
           </p>
         </motion.section>
 
-         <motion.div
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           transition={{ duration: 0.5, delay: 0.4 }}>
-           <Card className="w-full max-w-2xl mx-auto mb-12 shadow-lg border border-border/60 hover:shadow-xl transition-shadow duration-300 bg-card/80 backdrop-blur-sm">
-             <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent rounded-t-lg">
-               <CardTitle className="text-xl font-semibold text-primary flex items-center gap-2">
-                  <Sparkles className="h-5 w-5"/> Find Recipes
-               </CardTitle>
-               <CardDescription>
-                 Tell us what you have and what you like. We'll handle the rest!
-               </CardDescription>
-             </CardHeader>
-             <CardContent className="p-6">
-               <Form {...form}>
-                 <form
-                   onSubmit={form.handleSubmit(onSubmit)}
-                   className="space-y-6"
-                 >
-                   <motion.div variants={itemVariants}>
-                     <FormField
-                       control={form.control}
-                       name="ingredients"
-                       render={({field}) => (
-                         <FormItem>
-                           <FormLabel className="font-medium text-foreground/90">
-                             Available Ingredients *
-                           </FormLabel>
-                           <FormControl>
-                             <Textarea
-                               placeholder="e.g., chicken breast, broccoli, soy sauce, rice, garlic..."
-                               {...field}
-                               rows={4}
-                               className="resize-none focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/30 hover:bg-muted/40 dark:bg-background/40 dark:hover:bg-background/50"
-                               aria-required="true"
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
-                    </motion.div>
-                     <motion.div variants={itemVariants}>
-                     <FormField
-                       control={form.control}
-                       name="dietaryRestrictions"
-                       render={({field}) => (
-                         <FormItem>
-                           <FormLabel className="font-medium text-foreground/90">
-                             Dietary Restrictions (Optional)
-                           </FormLabel>
-                           <FormControl>
-                             <Input
-                               placeholder="e.g., vegetarian, gluten-free, dairy-free"
-                               {...field}
-                               className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/30 hover:bg-muted/40 dark:bg-background/40 dark:hover:bg-background/50"
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
-                     </motion.div>
-                      <motion.div variants={itemVariants}>
-                     <FormField
-                       control={form.control}
-                       name="preferences"
-                       render={({field}) => (
-                         <FormItem>
-                           <FormLabel className="font-medium text-foreground/90">
-                             Other Preferences (Optional)
-                           </FormLabel>
-                           <FormControl>
-                             <Input
-                               placeholder="e.g., spicy, quick (under 30 min), Italian"
-                               {...field}
-                               className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/30 hover:bg-muted/40 dark:bg-background/40 dark:hover:bg-background/50"
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
-                     </motion.div>
-                   <motion.div variants={itemVariants}>
-                     <Button
-                       type="submit"
-                       className="w-full py-3 text-base font-semibold transition-all duration-200 ease-out bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 active:scale-[0.98]"
-                       disabled={isLoading}
-                       aria-live="polite"
-                     >
-                       {isLoading ? (
-                         <>
-                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                           Finding Recipes...
-                         </>
-                       ) : (
-                         'Get Recipe Suggestions'
-                       )}
-                     </Button>
-                   </motion.div>
-                 </form>
-               </Form>
-             </CardContent>
-            <CardFooter className="p-4 bg-muted/20 dark:bg-background/20 rounded-b-lg border-t border-border/30">
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                   <Info className="h-3.5 w-3.5"/> AI generates suggestions based on your input. Results may vary.
-                </p>
-            </CardFooter>
-           </Card>
-         </motion.div>
+        <motion.div
+          initial={{opacity: 0, scale: 0.95}}
+          animate={{opacity: 1, scale: 1}}
+          transition={{duration: 0.5, delay: 0.4}}
+        >
+          <Card className="w-full max-w-2xl mx-auto mb-12 shadow-lg border border-border/60 hover:shadow-xl transition-shadow duration-300 bg-card/90 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="pb-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-t-lg border-b border-primary/10">
+              <CardTitle className="text-xl font-semibold text-primary flex items-center gap-2">
+                <Sparkles className="h-5 w-5" /> Find Recipes
+              </CardTitle>
+              <CardDescription>
+                Tell us what you have and what you like. We'll handle the rest!
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  <motion.div variants={itemVariants}>
+                    <FormField
+                      control={form.control}
+                      name="ingredients"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel className="font-medium text-foreground/90 flex items-center gap-1.5">
+                           <Soup size={16}/> Available Ingredients *
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="e.g., chicken breast, broccoli, soy sauce, rice, garlic..."
+                              {...field}
+                              rows={4}
+                              className="resize-none focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70"
+                              aria-required="true"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
 
-         {/* Loading Spinner (Client-side only) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <motion.div variants={itemVariants}>
+                       <FormField
+                         control={form.control}
+                         name="dietaryRestrictions"
+                         render={({field}) => (
+                           <FormItem>
+                             <FormLabel className="font-medium text-foreground/90">
+                               Dietary Restrictions
+                             </FormLabel>
+                             <FormControl>
+                               <Input
+                                 placeholder="e.g., vegetarian, gluten-free"
+                                 {...field}
+                                className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70"
+                               />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                     </motion.div>
+                     <motion.div variants={itemVariants}>
+                       <FormField
+                         control={form.control}
+                         name="preferences"
+                         render={({field}) => (
+                           <FormItem>
+                             <FormLabel className="font-medium text-foreground/90">
+                               Other Preferences
+                             </FormLabel>
+                             <FormControl>
+                               <Input
+                                 placeholder="e.g., spicy, Italian cuisine"
+                                 {...field}
+                                 className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70"
+                               />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                     </motion.div>
+                  </div>
+
+                  {/* New Form Fields */}
+                  <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
+                      <FormField
+                        control={form.control}
+                        name="quickMode"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                             <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                id="quick-mode"
+                                aria-label="Quick mode (under 30 minutes)"
+                              />
+                            </FormControl>
+                            <Label htmlFor="quick-mode" className="font-medium text-foreground/90 cursor-pointer">
+                              Quick Mode? <span className="text-xs text-muted-foreground">(Under 30 min)</span>
+                            </Label>
+                          </FormItem>
+                        )}
+                      />
+                     <FormField
+                       control={form.control}
+                       name="servingSize"
+                       render={({ field }) => (
+                         <FormItem className="flex-1 min-w-[120px]">
+                           <FormLabel className="font-medium text-foreground/90 flex items-center gap-1.5">
+                            <Scale size={16} /> Servings
+                           </FormLabel>
+                           <FormControl>
+                             <Input
+                               type="number"
+                               min="1"
+                               placeholder="e.g., 2"
+                               {...field}
+                               // Ensure value is handled correctly for number input
+                               value={field.value ?? ''}
+                               onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                               className="focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70 w-full"
+                              />
+                            </FormControl>
+                           <FormMessage />
+                         </FormItem>
+                       )}
+                     />
+                  </motion.div>
+
+
+                  <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 pt-4">
+                    <Button
+                      type="submit"
+                      className="w-full sm:flex-1 py-3 text-base font-semibold transition-all duration-300 ease-out bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 active:scale-[0.98]"
+                      disabled={isLoading}
+                      aria-live="polite"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Finding Recipes...
+                        </>
+                      ) : (
+                         <>
+                          <Sparkles className="mr-2 h-5 w-5"/> Get Suggestions
+                         </>
+                      )}
+                    </Button>
+                     <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleReset}
+                      className="w-full sm:w-auto transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-muted/20"
+                      disabled={isLoading}
+                    >
+                      Clear Form
+                    </Button>
+                  </motion.div>
+                </form>
+              </Form>
+            </CardContent>
+            <CardFooter className="p-4 bg-muted/30 dark:bg-background/30 rounded-b-lg border-t border-border/30">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Info className="h-3.5 w-3.5" /> AI generates suggestions based
+                on your input. Results may vary. Double-check allergies!
+              </p>
+            </CardFooter>
+          </Card>
+        </motion.div>
+
         {isLoading && isClient && <LoadingSkeleton />}
 
-         {/* Display multiple recipes */}
-         <AnimatePresence mode="wait">
-           {recipes && recipes.length > 0 && !isLoading && (
-             <motion.div
-               key="recipe-list" // Add key for AnimatePresence
-               variants={containerVariants}
-               initial="hidden"
-               animate="visible"
-               exit="exit"
-               className="space-y-10 mt-16"
-             >
-               <h2 className="text-2xl font-semibold text-center border-b pb-4 mb-10">
-                 Suggested Recipes
-               </h2>
-               {recipes.map((recipe, index) => (
-                 <motion.div key={recipe.recipeName + index} variants={itemVariants}>
-                   <Card
-                     className={cn(
-                       'w-full max-w-3xl mx-auto shadow-lg border border-border/60 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30 group bg-card'
-                     )}
-                     // Remove inline style for animation, handled by Framer Motion
-                   >
-                     <CardHeader className="bg-gradient-to-br from-muted/20 to-transparent dark:from-muted/10 dark:to-transparent p-0 relative aspect-[16/7] overflow-hidden">
-                        {/* Display Image or Placeholder */}
-                        {recipe.imageUrl ? (
-                           // eslint-disable-next-line @next/next/no-img-element
-                           <img
-                             src={recipe.imageUrl}
-                             alt={`Generated image for ${recipe.recipeName}`}
-                             width={800} // Provide width/height for layout stability
-                             height={350} // Adjusted height for aspect ratio
-                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                             loading="lazy" // Lazy load images
-                           />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/50 to-muted/30 dark:from-background/30 dark:to-background/10">
-                             <ImageOff className="h-16 w-16 text-muted-foreground/50" />
-                          </div>
-                        )}
-                        {/* Title Overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/70 via-black/50 to-transparent">
-                         <CardTitle className="text-xl font-bold text-white drop-shadow-md">
-                            {recipe.recipeName}
-                         </CardTitle>
+        <AnimatePresence mode="wait">
+          {recipes && recipes.length > 0 && !isLoading && (
+            <motion.div
+              key="recipe-list"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="space-y-10 mt-16"
+            >
+              <h2 className="text-3xl font-semibold text-center border-b pb-4 mb-10 text-foreground/90 dark:text-foreground/80">
+                Your Recipe Suggestions
+              </h2>
+              {recipes.map((recipe, index) => (
+                <motion.div key={recipe.recipeName + index} variants={itemVariants}>
+                  <Card
+                    className={cn(
+                      'w-full max-w-3xl mx-auto shadow-lg border border-border/60 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30 group bg-card/95 backdrop-blur-sm'
+                    )}
+                  >
+                    <CardHeader className="p-0 relative aspect-[16/7] overflow-hidden group">
+                      {recipe.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={recipe.imageUrl}
+                          alt={`Generated image for ${recipe.recipeName}`}
+                          width={800}
+                          height={350}
+                          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20">
+                          <ImageOff className="h-16 w-16 text-muted-foreground/40" />
                         </div>
-                     </CardHeader>
-                      <CardContent className="p-6 space-y-6">
-                       <div className="flex flex-wrap gap-3 items-center">
-                          <Badge
-                            variant="outline"
-                            className="flex items-center gap-1.5 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-1 px-2.5"
-                           >
-                             <Clock className="h-4 w-4" />
-                             {recipe.estimatedTime}
-                           </Badge>
-                          <Badge
-                             variant="outline"
-                            className="flex items-center gap-1.5 border-secondary-foreground/40 bg-secondary/30 dark:bg-secondary/10 backdrop-blur-sm py-1 px-2.5"
-                           >
-                             <BarChart className="h-4 w-4 -rotate-90" />
-                             {recipe.difficulty}
-                           </Badge>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300"></div>
+                      <div className="absolute bottom-0 left-0 right-0 p-5">
+                        <CardTitle className="text-2xl font-bold text-white drop-shadow-lg">
+                          {recipe.recipeName}
+                        </CardTitle>
+                      </div>
+                      {/* Save Button */}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/40 text-white hover:bg-primary hover:text-primary-foreground transition-all opacity-70 group-hover:opacity-100 backdrop-blur-sm"
+                                onClick={() => handleSaveRecipe(recipe)}
+                                aria-label="Save recipe"
+                              >
+                                <Heart className="h-5 w-5" />
+                              </Button>
+                            </TooltipTrigger>
+                             <TooltipContent side="left">
+                                <p>Save Recipe</p>
+                              </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                      <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.1 }}
+                          className="flex flex-wrap gap-3 items-center">
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1.5 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-1 px-2.5 text-sm font-medium"
+                        >
+                          <Clock className="h-4 w-4" />
+                          {recipe.estimatedTime}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1.5 border-secondary-foreground/40 bg-secondary/50 dark:bg-secondary/20 backdrop-blur-sm py-1 px-2.5 text-sm font-medium"
+                        >
+                          <BarChart className="h-4 w-4 -rotate-90" />
+                          {recipe.difficulty}
+                        </Badge>
+                      </motion.div>
+
+                     <motion.div
+                       initial={{ opacity: 0, y: 10 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       transition={{ duration: 0.4, delay: 0.2 }}
+                       >
+                        <h3 className="text-lg font-semibold mb-3 text-foreground/90">Ingredients</h3>
+                        <ul className="list-disc list-outside pl-5 space-y-1.5 text-foreground/80 dark:text-foreground/75 whitespace-pre-line marker:text-primary/80 marker:text-lg">
+                          {recipe.ingredients.split('\n').map((item, idx) => {
+                            const cleanedItem = item.replace(/^- \s*/, '').trim();
+                            return cleanedItem ? <li key={idx}>{cleanedItem}</li> : null;
+                          })}
+                        </ul>
+                      </motion.div>
+                      <Separator className="my-6 bg-border/40" />
+                       <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.3 }}>
+                        <h3 className="text-lg font-semibold mb-4 text-foreground/90">Instructions</h3>
+                        <div className="space-y-5 text-foreground/80 dark:text-foreground/75 whitespace-pre-line">
+                          {recipe.instructions.split('\n').map((step, idx) => {
+                            const cleanedStep = step
+                              .replace(/^\s*(\d+\.|-)\s*/, '')
+                              .trim();
+                            return cleanedStep ? (
+                              <div key={idx} className="flex items-start">
+                                <span className="mr-3 mt-1 font-bold text-primary text-lg leading-tight bg-primary/10 rounded-full h-6 w-6 flex items-center justify-center">
+                                  {idx + 1}
+                                </span>
+                                <p className="flex-1 leading-relaxed pt-0.5">
+                                  {cleanedStep}
+                                </p>
+                              </div>
+                            ) : null;
+                          })}
                         </div>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                       <div>
-                         <h3 className="text-lg font-semibold mb-3 text-foreground/90">Ingredients</h3>
-                         <ul className="list-disc list-outside pl-5 space-y-1.5 text-foreground/80 dark:text-foreground/70 whitespace-pre-line marker:text-primary/80">
-                           {recipe.ingredients.split('\n').map((item, idx) => {
-                             const cleanedItem = item.replace(/^- \s*/, '').trim();
-                             return cleanedItem ? <li key={idx}>{cleanedItem}</li> : null;
-                           })}
-                         </ul>
-                       </div>
-                       <Separator className="my-6 bg-border/50" />
-                       <div>
-                         <h3 className="text-lg font-semibold mb-3 text-foreground/90">Instructions</h3>
-                         <div className="space-y-4 text-foreground/80 dark:text-foreground/70 whitespace-pre-line">
-                           {recipe.instructions.split('\n').map((step, idx) => {
-                             const cleanedStep = step
-                               .replace(/^\s*(\d+\.|-)\s*/, '')
-                               .trim();
-                             return cleanedStep ? (
-                               <div key={idx} className="flex items-start">
-                                 <span className="mr-3 mt-0.5 font-bold text-primary text-lg leading-tight">
-                                   {idx + 1}.
-                                 </span>
-                                 <p className="flex-1 leading-relaxed">
-                                   {cleanedStep}
-                                 </p>
-                               </div>
-                             ) : null;
-                           })}
-                         </div>
-                       </div>
-                     </CardContent>
-                   </Card>
-                 </motion.div>
-               ))}
-             </motion.div>
-           )}
-         </AnimatePresence>
-
-         {/* No Recipes Found Message */}
-         <AnimatePresence>
-           {recipes !== null && recipes.length === 0 && !isLoading && (
-             <motion.div
-               key="no-recipes" // Add key for AnimatePresence
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, y: -20 }}
-               transition={{ duration: 0.3 }}
-              >
-                 <Card className="w-full max-w-xl mx-auto text-center p-8 shadow-sm border bg-card mt-16">
-                   <ChefHat className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                   <p className="text-lg text-muted-foreground">
-                     No recipes found matching your criteria.
-                   </p>
-                   <p className="text-sm text-muted-foreground/80 mt-2">
-                     Try adjusting your ingredients or preferences.
-                   </p>
-                 </Card>
-              </motion.div>
-           )}
-         </AnimatePresence>
-       </main>
-       <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="py-6 md:px-8 border-t border-border/40 mt-20 bg-muted/30 dark:bg-background/10">
-         <div className="container flex flex-col items-center justify-center gap-2 md:h-16 md:flex-row">
-           <p className="text-center text-sm text-muted-foreground md:text-left">
-             Built by{' '}
-             <a
-               href="https://developers.google.com/studio" target="_blank" rel="noopener noreferrer"
-               className="font-medium underline underline-offset-4 hover:text-primary transition-colors"
-             >
-               Firebase Studio
-             </a>
+        <AnimatePresence>
+          {recipes !== null && recipes.length === 0 && !isLoading && (
+            <motion.div
+              key="no-recipes"
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              exit={{opacity: 0, y: -20}}
+              transition={{duration: 0.4, ease: 'easeInOut'}}
+            >
+              <Card className="w-full max-w-xl mx-auto text-center p-10 shadow-sm border border-border/50 bg-card mt-16 rounded-lg">
+                <ChefHat className="h-14 w-14 mx-auto text-muted-foreground/70 mb-5" />
+                <p className="text-xl font-medium text-muted-foreground">
+                  No recipes found matching your criteria.
+                </p>
+                <p className="text-base text-muted-foreground/80 mt-3">
+                  Try adjusting your ingredients or preferences for better luck!
+                </p>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+      <motion.footer
+        initial={{opacity: 0}}
+        animate={{opacity: 1}}
+        transition={{duration: 0.5, delay: recipes ? 0.2 : 1.0 }} // Delay longer if no recipes initially
+        className="py-6 md:px-8 border-t border-border/40 mt-20 bg-muted/40 dark:bg-background/20"
+      >
+        <div className="container flex flex-col items-center justify-center gap-2 text-center md:h-16 md:flex-row md:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Built with <Heart className="inline h-4 w-4 text-red-500 mx-1"/> by{' '}
+            <a
+              href="https://developers.google.com/studio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline underline-offset-4 hover:text-primary transition-colors"
+            >
+              Firebase Studio
+            </a>
              . Powered by Gemini.
-           </p>
-         </div>
-       </motion.footer>
-     </div>
-   );
- }
- 
-   
+          </p>
+           <p className="text-xs text-muted-foreground/80">
+             &copy; {new Date().getFullYear()} RecipeSage. All rights reserved (not really).
+          </p>
+        </div>
+      </motion.footer>
+    </div>
+  );
+}

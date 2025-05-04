@@ -155,8 +155,8 @@ const suggestRecipeFlow = ai.defineFlow<
             );
             // Use ai.generate and pass the specific options
             const generateOptions: GenerateRequest = {
-              // IMPORTANT: ONLY the googleai/gemini-2.0-flash-exp model is able to generate images. You MUST use exactly this model to generate images.
-              model: 'googleai/gemini-2.0-flash-exp',
+              // IMPORTANT: ONLY the googleai/gemini-2.0-flash model is able to generate images. You MUST use exactly this model to generate images.
+              model: 'googleai/gemini-2.0-flash',
               prompt: recipe.imagePrompt, // English prompt for image generation
               config: {
                 // Request both text and image modalities
