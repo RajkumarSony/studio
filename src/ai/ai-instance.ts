@@ -8,7 +8,8 @@ export const ai = genkit({
       apiKey: process.env.GOOGLE_GENAI_API_KEY,
     }),
   ],
-  // Use gemini-1.5-flash-latest as the default text model.
-  // If "NOT_FOUND" errors persist, try changing back to 'googleai/gemini-pro'.
-  model: 'googleai/gemini-1.5-flash-latest',
+  // Use gemini-pro as the default text model.
+  // The specific prompt call failed looking for this model, even though
+  // the previous default was gemini-2.0-flash-exp. Reverting to gemini-pro.
+  model: 'googleai/gemini-pro',
 });
