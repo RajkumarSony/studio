@@ -9,6 +9,6 @@ export const ai = genkit({
     }),
   ],
   // Use a standard text model as default. Image generation will specify its model.
-  // Changed from gemini-1.5-flash-latest to gemini-1.5-pro-latest
-  model: 'googleai/gemini-1.5-pro-latest',
+  // Changed from gemini-1.5-pro-latest back to gemini-1.5-flash-latest to fix NOT_FOUND error
+  model: 'googleai/gemini-1.5-flash-latest',
 });
