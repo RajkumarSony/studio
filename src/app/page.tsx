@@ -1,4 +1,3 @@
-{// src/app/page.tsx
 'use client';
 
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
@@ -515,7 +514,7 @@ export default function Home() {
            // Don't necessarily block the user, but log the error
        }
 
-      // --- Save each generated recipe detail to the general 'recipes' collection ---
+       // --- Save each generated recipe detail to the general 'recipes' collection ---
       if (recipesArray.length > 0) {
           console.log(`Attempting to save details for ${recipesArray.length} generated recipes to MongoDB...`);
           await Promise.all(recipesArray.map(async (recipe) => {

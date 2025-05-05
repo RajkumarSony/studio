@@ -1,4 +1,4 @@
-{// src/lib/redis/client.ts
+// src/lib/redis/client.ts
 import Redis from 'ioredis';
 
 // This file should only be imported on the server side.

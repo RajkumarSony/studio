@@ -1,4 +1,4 @@
-{// src/components/SavedRecipesDialog.tsx
+// src/components/SavedRecipesDialog.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
