@@ -25,11 +25,11 @@ import {
   ArrowRight, // Icon for navigation
   FileText, // Icon for including details
   RotateCcw, // Icon for reset button
-  User, // User icon for profile/auth area
-  LogIn, // Login icon
-  LogOut, // Logout icon
-  HeartCrack, // Icon for unsave
-  Database, // Icon for storage status
+  // User, // User icon for profile/auth area - Removed
+  // LogIn, // Login icon - Removed
+  // LogOut, // Logout icon - Removed
+  // HeartCrack, // Icon for unsave - Removed (or repurpose if saving locally)
+  // Database, // Icon for storage status - Removed
   CloudOff // Icon for network error
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -82,9 +82,12 @@ import {Label} from '@/components/ui/label';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
 import Link from 'next/link'; // Import Link for navigation
 import { useRouter } from 'next/navigation'; // Import useRouter
-import AuthButton from '@/components/AuthButton'; // Import the AuthButton
-import { useSession, signIn } from 'next-auth/react'; // Import useSession and signIn from next-auth/react
-import { saveRecipeToMongoDB, isRecipeSavedInMongoDB, removeRecipeFromMongoDB, saveRecipeHistory } from '@/lib/db/recipes'; // Import MongoDB functions
+// AuthButton import removed
+// import AuthButton from '@/components/AuthButton';
+// useSession and signIn imports removed
+// import { useSession, signIn } from 'next-auth/react';
+// DB functions related to user accounts removed or adapted
+import { saveRecipeToMongoDB, saveRecipeHistory } from '@/lib/db/recipes'; // Keep save functions if needed for guest history/saving
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
 
 // Constants for sessionStorage keys
@@ -129,16 +132,18 @@ type FormValues = z.infer<ReturnType<typeof formSchema>>;
 export default function Home() {
   const {setTheme} = useTheme();
   const router = useRouter();
-  const { data: session, status: authStatus } = useSession(); // Get session data and status
-  const authLoading = authStatus === 'loading';
-  const user = session?.user; // Get user object from session
-  const userId = user?.id; // Get user ID (MongoDB ObjectId as string)
+  // Session and auth status removed
+  // const { data: session, status: authStatus } = useSession();
+  // const authLoading = authStatus === 'loading';
+  // const user = session?.user;
+  // const userId = user?.id;
 
   const [recipes, setRecipes] = useState<RecipeItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
   const [isClient, setIsClient] = useState(false);
-  const [savedRecipeNames, setSavedRecipeNames] = useState<Set<string>>(new Set()); // Track saved recipe names
+  // Removed savedRecipeNames state as it depends on userId
+  // const [savedRecipeNames, setSavedRecipeNames] = useState<Set<string>>(new Set());
   const [initialLoadComplete, setInitialLoadComplete] = useState(false); // Track if initial load from sessionStorage is done
   const [error, setError] = useState<string | null>(null); // State for holding error messages
 
@@ -290,36 +295,13 @@ export default function Home() {
   }, [form]); // Only run once on mount
 
 
-   // Fetch saved recipe names when user logs in or changes, or when recipes load/change
-   useEffect(() => {
-    const fetchSavedStatus = async () => {
-      // Only fetch if user is logged in, recipes are loaded, and initial load is complete
-      if (userId && recipes && initialLoadComplete) {
-        console.log(`Fetching saved status for user ${userId} and ${recipes.length} recipes...`);
-        const savedSet = new Set<string>();
-        // Batch the checks if possible, but simple iteration is fine for moderate numbers
-        for (const recipe of recipes) {
-          try {
-             if (await isRecipeSavedInMongoDB(userId, recipe.recipeName)) {
-               savedSet.add(recipe.recipeName);
-             }
-          } catch (err) {
-            console.error(`Error checking saved status for recipe "${recipe.recipeName}":`, err);
-             if (err instanceof Error) {
-               setError(`${t('toast.saveErrorTitle')}: ${err.message}`);
-             } else {
-               setError(t('toast.saveErrorDesc'));
-             }
-          }
-        }
-        setSavedRecipeNames(savedSet);
-        console.log(`Fetched saved status. Saved recipes: ${[...savedSet].join(', ')}`);
-      } else {
-         setSavedRecipeNames(new Set()); // Clear saved status if logged out or no recipes
-      }
-    };
-    fetchSavedStatus();
-  }, [userId, recipes, initialLoadComplete, t]); // Add initialLoadComplete and t dependencies
+   // Fetch saved recipe names - REMOVED as it depends on userId
+   // useEffect(() => {
+   //   const fetchSavedStatus = async () => {
+   //     // ... removed logic dependent on userId ...
+   //   };
+   //   fetchSavedStatus();
+   // }, [userId, recipes, initialLoadComplete, t]);
 
 
    // Handle form reset
@@ -345,64 +327,10 @@ export default function Home() {
     console.log(t('toast.formClearedTitle'), t('toast.formClearedDesc'));
   };
 
-  // Handle saving/unsaving a recipe
-   const handleToggleSaveRecipe = async (recipe: RecipeItem) => {
-     if (!userId) {
-        console.warn(t('toast.authRequiredTitle'), t('toast.authRequiredDesc'));
-        setError(t('toast.authRequiredDesc')); // Use t()
-        // Trigger Google sign-in popup using NextAuth signIn
-        signIn('google'); // No need to await here, redirects or shows popup
-       return;
-     }
-
-     const recipeName = recipe.recipeName;
-     const isCurrentlySaved = savedRecipeNames.has(recipeName);
-
-     // Optimistic UI update
-     setSavedRecipeNames(prev => {
-         const newSet = new Set(prev);
-         if (isCurrentlySaved) {
-             newSet.delete(recipeName);
-         } else {
-             newSet.add(recipeName);
-         }
-         return newSet;
-     });
-
-
-     try {
-       if (isCurrentlySaved) {
-         // Remove the recipe using MongoDB function
-         await removeRecipeFromMongoDB(userId, recipeName);
-         console.log(t('toast.recipeRemovedTitle'), t('toast.recipeRemovedDesc', { recipeName }));
-         setError(null); // Clear error on success
-       } else {
-         // Save the recipe using MongoDB function
-         await saveRecipeToMongoDB(userId, recipe);
-         console.log(t('toast.recipeSavedTitle'), t('toast.recipeSavedDesc', { recipeName }));
-          setError(null); // Clear error on success
-       }
-     } catch (err) {
-       console.error(`Error ${isCurrentlySaved ? 'removing' : 'saving'} recipe:`, err);
-       // Revert optimistic UI update on error
-        setSavedRecipeNames(prev => {
-            const newSet = new Set(prev);
-            if (isCurrentlySaved) {
-                 // If removal failed, add it back
-                newSet.add(recipeName);
-            } else {
-                 // If save failed, remove it
-                newSet.delete(recipeName);
-            }
-            return newSet;
-        });
-         if (err instanceof Error) {
-           setError(`${t('toast.saveErrorTitle')}: ${err.message}`); // Use t()
-         } else {
-           setError(t('toast.saveErrorDesc')); // Use t()
-         }
-     }
-   };
+  // Handle saving/unsaving a recipe - REMOVED as it depends on userId
+   // const handleToggleSaveRecipe = async (recipe: RecipeItem) => {
+     // // ... removed logic dependent on userId and signIn ...
+   // };
 
 
  // Function to navigate to recipe detail page
@@ -489,17 +417,50 @@ export default function Home() {
       let storageSuccess = false;
       try {
           const serializedRecipe = JSON.stringify(dataToStore);
-          sessionStorage.setItem(storageKey, serializedRecipe);
-          // **Verification Step:** Immediately read back to confirm write
-          const writtenData = sessionStorage.getItem(storageKey);
-          if (writtenData === serializedRecipe) {
-              storageSuccess = true;
-              addParam('storageKey', storageKey); // Pass the key to retrieve data
-              console.log("Recipe detail data successfully stored and verified in sessionStorage with key:", storageKey);
+          // Check size before attempting to store
+          if (serializedRecipe.length > MAX_STORAGE_IMAGE_SIZE * 1.5) { // Add some buffer, adjust as needed
+             console.warn(`Serialized recipe data for ${recipe.recipeName} is too large (${serializedRecipe.length} bytes) for sessionStorage. Omitting image if possible.`);
+             // Attempt to store without image data URI if it's the large part
+             if(dataToStore.imageUrl?.startsWith('data:')) {
+                 const dataWithoutImage = {...dataToStore, imageUrl: undefined, imageOmitted: true };
+                 const smallerSerializedRecipe = JSON.stringify(dataWithoutImage);
+                 // Retry storing the smaller version
+                  try {
+                      sessionStorage.setItem(storageKey, smallerSerializedRecipe);
+                      const writtenData = sessionStorage.getItem(storageKey);
+                      if (writtenData === smallerSerializedRecipe) {
+                         storageSuccess = true;
+                         addParam('storageKey', storageKey); // Pass the key to retrieve data
+                         addParam('imageUnavailable', 'true'); // Indicate image was omitted
+                         console.log("Recipe detail data (without large image) successfully stored and verified in sessionStorage with key:", storageKey);
+                      } else {
+                         console.error("SessionStorage write verification failed after omitting image for key:", storageKey);
+                         setError(t('toast.storageErrorDesc'));
+                      }
+                  } catch (retryStorageError) {
+                      console.error("Error saving recipe details (without image) to sessionStorage for key", storageKey, ":", retryStorageError);
+                      setError(t('toast.storageErrorDesc')); // Generic storage error
+                      // Ensure potentially corrupted item is removed
+                      try { sessionStorage.removeItem(storageKey); } catch (_) { /* Ignore cleanup error */ }
+                  }
+             } else {
+                 // If the large size isn't from a data URI image, storage will likely fail
+                 setError(t('toast.storageQuotaExceededDesc'));
+             }
           } else {
-              // This should ideally not happen if setItem doesn't throw
-              console.error("SessionStorage write verification failed! Data mismatch after write for key:", storageKey);
-              setError(t('toast.storageErrorDesc'));
+             // Proceed with storing the original serialized data if size is acceptable
+             sessionStorage.setItem(storageKey, serializedRecipe);
+             // **Verification Step:** Immediately read back to confirm write
+             const writtenData = sessionStorage.getItem(storageKey);
+             if (writtenData === serializedRecipe) {
+                 storageSuccess = true;
+                 addParam('storageKey', storageKey); // Pass the key to retrieve data
+                 console.log("Recipe detail data successfully stored and verified in sessionStorage with key:", storageKey);
+             } else {
+                 // This should ideally not happen if setItem doesn't throw
+                 console.error("SessionStorage write verification failed! Data mismatch after write for key:", storageKey);
+                 setError(t('toast.storageErrorDesc'));
+             }
           }
       } catch (storageError) {
           console.error("Error saving recipe details to sessionStorage for key", storageKey, ":", storageError);
@@ -615,26 +576,61 @@ export default function Home() {
                });
 
                // Attempt to store results and form state
-               sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(recipesForStorage));
-               sessionStorage.setItem(FORM_STATE_KEY, JSON.stringify(values));
-               console.log(`Stored ${recipesForStorage.length} results and form state in sessionStorage.`);
+               const serializedResults = JSON.stringify(recipesForStorage);
+               const serializedFormState = JSON.stringify(values);
+
+                // Check combined size before storing
+                if (serializedResults.length + serializedFormState.length > 5 * 1024 * 1024 * 0.9) { // Check against ~90% of 5MB limit
+                     console.warn("SessionStorage quota likely exceeded. Attempting to store minimal data.");
+                     setError(t('toast.storageQuotaWarningDesc'));
+                      // Try storing only form state and results WITHOUT images/instructions
+                      const minimalRecipes = recipesArray.map(({ imageUrl, imageOmitted, instructions, ingredients, ...rest }) => ({
+                           ...rest,
+                           language: selectedLanguage,
+                           imageOmitted: true,
+                           // Omit large text fields too
+                           ingredients: ingredients.substring(0, 100) + '...', // Truncate
+                           instructions: instructions.substring(0, 100) + '...' // Truncate
+                        }));
+                     try {
+                         sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(minimalRecipes));
+                         sessionStorage.setItem(FORM_STATE_KEY, serializedFormState);
+                         console.log("Stored minimal results and form state due to size constraints.");
+                     } catch (minimalError) {
+                         console.error("Failed to save even minimal state to sessionStorage:", minimalError);
+                         setError(t('toast.storageErrorDesc')); // Generic storage error
+                          // Clear storage if even minimal save fails
+                          sessionStorage.removeItem(RECIPE_RESULTS_KEY);
+                          sessionStorage.removeItem(FORM_STATE_KEY);
+                     }
+                } else {
+                     // Store full data if size is acceptable
+                     sessionStorage.setItem(RECIPE_RESULTS_KEY, serializedResults);
+                     sessionStorage.setItem(FORM_STATE_KEY, serializedFormState);
+                     console.log(`Stored ${recipesForStorage.length} results and form state in sessionStorage.`);
+                }
 
            } catch (storageError) {
                console.error("Error storing results in sessionStorage:", storageError);
                 if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
                    console.warn("SessionStorage quota exceeded. Clearing previous results/state and trying again with minimal data.");
-                   // Attempt to clear and retry storing only form state and results WITHOUT images to reduce size
+                   setError(t('toast.storageQuotaWarningDesc')); // Inform user results might not persist
+                    // Attempt to clear and retry storing only form state and results WITHOUT images/large text
                    try {
                        sessionStorage.removeItem(RECIPE_RESULTS_KEY);
                        sessionStorage.removeItem(FORM_STATE_KEY);
-                        // Store only form state and results WITHOUT images to reduce size
-                        const recipesWithoutImages = recipesArray.map(({ imageUrl, imageOmitted, ...rest }) => ({ ...rest, language: selectedLanguage, imageOmitted: true }));
-                        sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(recipesWithoutImages));
+                        const minimalRecipes = recipesArray.map(({ imageUrl, imageOmitted, instructions, ingredients, ...rest }) => ({
+                           ...rest,
+                           language: selectedLanguage,
+                           imageOmitted: true,
+                           ingredients: ingredients.substring(0, 100) + '...',
+                           instructions: instructions.substring(0, 100) + '...'
+                        }));
+                        sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(minimalRecipes));
                        sessionStorage.setItem(FORM_STATE_KEY, JSON.stringify(values));
-                       console.warn(t('toast.storageQuotaWarningTitle'), t('toast.storageQuotaWarningDesc'));
-                       setError(t('toast.storageQuotaWarningDesc')); // Inform user results might not persist
+                       console.warn("Stored minimal data after clearing due to quota exceeded error.");
                    } catch (retryError) {
-                        console.error("Failed to save even minimal state to sessionStorage:", retryError);
+                        console.error("Failed to save even minimal state to sessionStorage after clearing:", retryError);
                         setError(t('toast.storageErrorDesc')); // Generic storage error
                    }
                 } else {
@@ -653,36 +649,26 @@ export default function Home() {
            console.log("No recipes found, cleared previous state from sessionStorage.");
        }
 
-       // --- Save search to history in MongoDB if user is logged in ---
-       if (userId && recipesArray.length > 0) {
-            try {
-                // Prepare history data
-                 // Prepare history data - DO NOT save large images in history
-                 const historyEntry = {
-                     userId: userId, // Pass string ID, DB function will convert it
-                     searchInput: input, // The input sent to the AI
-                     // Store simplified results (just names and key details, no large text fields like instructions)
-                     resultsSummary: recipesArray.map(r => ({
-                         recipeName: r.recipeName,
-                         estimatedTime: r.estimatedTime,
-                         difficulty: r.difficulty,
-                         // Optionally add ingredients list summary if needed
-                     })),
-                     resultCount: recipesArray.length,
-                     timestamp: new Date(), // Add timestamp
-                 };
-                await saveRecipeHistory(historyEntry);
-                console.log("Saved search to history for user:", userId);
-            } catch (dbError) {
-                 console.error("Failed to save search history to MongoDB:", dbError);
-                 if (dbError instanceof Error) {
-                    // Inform user history saving failed, but don't block recipe viewing
-                    setError(prevError => prevError ? `${prevError}. History Error: ${dbError.message}` : `History Error: ${dbError.message}`);
-                  } else {
-                    setError(prevError => prevError ? `${prevError}. Failed to save search history.` : 'Failed to save search history.');
-                  }
-            }
-        }
+       // --- Save search to history in MongoDB ---
+       // History saving is kept, but without userId, it's less useful unless you implement guest IDs or similar
+       // Consider removing history saving if no user context is available
+       // if (recipesArray.length > 0) {
+       //      try {
+       //          const historyEntry = {
+       //              // userId: undefined, // No user ID
+       //              searchInput: input,
+       //              resultsSummary: recipesArray.map(r => r.recipeName), // Only save names
+       //              resultCount: recipesArray.length,
+       //              timestamp: new Date(),
+       //          };
+       //          // Assume saveRecipeHistory is adapted or removed if userId is strictly required
+       //          await saveRecipeHistory(historyEntry);
+       //          console.log("Saved search to anonymous history.");
+       //      } catch (dbError) {
+       //           console.error("Failed to save search history to MongoDB:", dbError);
+       //           // Handle error appropriately, maybe just log for anonymous users
+       //      }
+       //  }
 
 
       if (recipesArray.length === 0) {
@@ -832,7 +818,7 @@ export default function Home() {
               </Link>
             </motion.div>
 
-             {/* Controls: Language, Theme, and Auth */}
+             {/* Controls: Language, Theme */}
              <motion.div
                initial={{ y: -20, opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
@@ -917,8 +903,8 @@ export default function Home() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TooltipProvider>
-              {/* Auth Button */}
-               {isClient && <AuthButton />} {/* Render AuthButton only on client */}
+              {/* Auth Button Removed */}
+              {/* {isClient && <AuthButton />} */}
             </motion.div>
           </div>
         </header>
@@ -1193,7 +1179,7 @@ export default function Home() {
                         <Button
                           type="submit"
                           className="w-full py-3 text-base font-semibold transition-all duration-300 ease-out bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 active:scale-[0.98] rounded-md" // Standard rounding
-                          disabled={isLoading || authLoading} // Disable if recipe loading or auth state is loading
+                          disabled={isLoading} // Disable only if recipe loading
                           aria-live="polite"
                         >
                           {isLoading ? (
@@ -1214,7 +1200,7 @@ export default function Home() {
                           variant="outline"
                           onClick={handleReset}
                           className="w-full sm:w-auto transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-muted/20 border-border/70 rounded-md" // Standard rounding
-                          disabled={isLoading || authLoading}
+                          disabled={isLoading}
                         >
                            <RotateCcw className="mr-2 h-4 w-4"/> {t('form.resetButton')}
                          </Button>
@@ -1266,7 +1252,8 @@ export default function Home() {
                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8" // Use grid layout
                  >
                   {recipes.map((recipe, index) => {
-                      const isSaved = savedRecipeNames.has(recipe.recipeName);
+                      // Removed isSaved logic
+                      // const isSaved = savedRecipeNames.has(recipe.recipeName);
                       return (
                         <motion.div
                             key={recipe.recipeName + index}
@@ -1307,8 +1294,8 @@ export default function Home() {
                                   {recipe.recipeName}
                                 </CardTitle>
                               </div>
-                               {/* Save/Unsave Button */}
-                                <TooltipProvider>
+                               {/* Save/Unsave Button Removed */}
+                                {/* <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
@@ -1331,7 +1318,7 @@ export default function Home() {
                                         <p>{isSaved ? t('results.unsaveButtonTooltip') : t('results.saveButtonTooltip')}</p>
                                       </TooltipContent>
                                   </Tooltip>
-                                </TooltipProvider>
+                                </TooltipProvider> */}
                             </CardHeader>
                             {/* Recipe Details Content */}
                             <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
