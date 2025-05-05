@@ -28,7 +28,8 @@ import {
   RotateCcw, // Icon for reset button
   CloudOff, // Icon for network error
   Save, // Icon for Saved Recipes button
-  Printer // Icon for Print button (added to recipe detail page, but maybe useful elsewhere)
+  Printer, // Icon for Print button
+  RefreshCw, // Icon for retry button
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -80,17 +81,17 @@ import {Label} from '@/components/ui/label';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
 import Link from 'next/link'; // Import Link for navigation
 import { useRouter } from 'next/navigation'; // Import useRouter
-// DB functions related to user accounts removed or adapted
-// import { saveRecipeToMongoDB, saveRecipeHistory } from '@/lib/db/recipes'; // Keep save functions if needed for guest history/saving - Removed DB interaction for now
+import { saveRecipeToMongoDB, saveRecipeHistory } from '@/lib/db/recipes'; // Import MongoDB functions
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
 import SavedRecipesDialog from '@/components/SavedRecipesDialog'; // Import SavedRecipesDialog
+import redisClient, { isRedisAvailable } from '@/lib/redis/client'; // Import Redis client
 
-// Constants for sessionStorage keys
-const FORM_STATE_KEY = 'recipeSageFormState';
-const RECIPE_RESULTS_KEY = 'recipeSageResults';
-const SAVED_RECIPES_KEY = 'recipeSageSavedRecipes'; // Key for localStorage
-const MAX_STORAGE_IMAGE_SIZE = 500000; // 500KB limit for image data URIs in storage
-
+// Constants for storage keys
+const FORM_STATE_KEY = 'recipeSageFormState'; // Redis key for form state
+const RECIPE_RESULTS_KEY = 'recipeSageResults'; // Redis key for results
+const SAVED_RECIPES_KEY = 'recipeSageSavedRecipes'; // localStorage key for saved recipes
+const SELECTED_LANGUAGE_KEY = 'selectedLanguage'; // localStorage key for language
+const MAX_STORAGE_IMAGE_SIZE = 500000; // 500KB limit for image data URIs in localStorage
 
 // Define supported languages and their corresponding CSS font variables
 const supportedLanguages: { value: LanguageCode; label: string; fontVariable: string }[] = [
@@ -120,6 +121,7 @@ const formSchema = (t: (key: keyof typeof translations.en.form) => string) => z.
   cuisineType: z.string().optional(), // Added cuisine type
   cookingMethod: z.string().optional(), // Added cooking method
   includeDetails: z.boolean().optional(), // Added field for nutrition/diet details
+  category: z.string().optional().default('All'), // Category field
 });
 
 // Type for form values
@@ -137,52 +139,45 @@ export default function Home() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false); // Track if initial load from storage is done
   const [error, setError] = useState<string | null>(null); // State for holding error messages
   const [isSavedRecipesDialogOpen, setIsSavedRecipesDialogOpen] = useState(false);
+  const [redisError, setRedisError] = useState<string | null>(null); // State for Redis specific errors
 
 
    // Translation function
    const t = useCallback(
      (key: string, options?: { [key: string]: string | number }) => {
-       // Determine the translation object based on selectedLanguage, fallback to 'en'
        const messages = translations[selectedLanguage] || translations.en;
-
-       // Split key for nested access, e.g., "form.ingredientsLabel"
        const keys = key.split('.');
        let result: any = messages;
 
        for (const k of keys) {
          result = result?.[k];
          if (result === undefined) {
-           // Fallback to English if key not found in selected language
            let fallbackResult: any = translations.en;
            for (const fk of keys) {
              fallbackResult = fallbackResult?.[fk];
              if (fallbackResult === undefined) {
                console.warn(`Translation key "${key}" not found in language "${selectedLanguage}" or fallback "en".`);
-               return key; // Return key itself if not found anywhere
+               return key;
              }
            }
            result = fallbackResult || key;
-           break; // Stop searching once found in fallback
+           break;
          }
        }
 
-       // Replace placeholders like {count} or {recipeName}
        if (typeof result === 'string' && options) {
          Object.keys(options).forEach((placeholder) => {
            result = result.replace(`{${placeholder}}`, String(options[placeholder]));
          });
        }
 
-       return typeof result === 'string' ? result : key; // Ensure we return a string
+       return typeof result === 'string' ? result : key;
      },
-     [selectedLanguage] // Recreate `t` only when selectedLanguage changes
+     [selectedLanguage]
    );
 
-  // Memoize the form schema generation based on the translation function `t`
   const currentFormSchema = React.useMemo(() => formSchema(t as any), [t]);
 
-
-  // Initialize form with the dynamic schema
   const form = useForm<FormValues>({
       resolver: zodResolver(currentFormSchema),
       defaultValues: {
@@ -193,48 +188,43 @@ export default function Home() {
         servingSize: undefined,
         cuisineType: '',
         cookingMethod: '',
-        includeDetails: false, // Default to false
+        includeDetails: false,
+        category: 'All',
       },
-      // Re-validate on language change might be needed if error messages depend on language
-      // mode: "onChange", // Or "onBlur"
     });
 
-  // Update form resolver and reset validation state when language changes
   useEffect(() => {
-      form.reset(form.getValues(), { // Keep current values
-          keepErrors: false, // Clear previous validation errors
+      form.reset(form.getValues(), {
+          keepErrors: false,
           keepDirty: true,
           keepTouched: false,
-          keepIsValid: false, // Force revalidation with new schema/translations
+          keepIsValid: false,
           keepSubmitCount: false,
       });
   }, [currentFormSchema, form]);
 
-
-  // Update CSS variable for dynamic font switching when language changes
   useEffect(() => {
     const selectedLangData = supportedLanguages.find(lang => lang.value === selectedLanguage);
-    const fontVariable = selectedLangData ? selectedLangData.fontVariable : 'var(--font-noto-sans)'; // Default fallback
+    const fontVariable = selectedLangData ? selectedLangData.fontVariable : 'var(--font-noto-sans)';
     document.documentElement.style.setProperty('--font-dynamic', fontVariable);
     document.documentElement.lang = selectedLanguage;
-    // Persist language choice to localStorage only on client
     if (typeof window !== 'undefined') {
-        localStorage.setItem('selectedLanguage', selectedLanguage);
+        localStorage.setItem(SELECTED_LANGUAGE_KEY, selectedLanguage);
     }
   }, [selectedLanguage]);
 
-
   // Load state from storage on initial client mount
   useEffect(() => {
-    setIsClient(true); // Indicate client-side rendering
+    setIsClient(true);
+    setRedisError(null); // Reset Redis error on mount
 
-    // Load selected language from localStorage
-    const storedLanguage = localStorage.getItem('selectedLanguage');
+    // Load language from localStorage
+    const storedLanguage = localStorage.getItem(SELECTED_LANGUAGE_KEY);
     if (storedLanguage && supportedLanguages.some(l => l.value === storedLanguage)) {
       setSelectedLanguage(storedLanguage as LanguageCode);
     }
 
-    // Load saved recipe names from localStorage
+    // Load saved recipes from localStorage
     try {
        const storedSavedRecipes = localStorage.getItem(SAVED_RECIPES_KEY);
        if (storedSavedRecipes) {
@@ -251,104 +241,93 @@ export default function Home() {
        setSavedRecipeNames(new Set());
      }
 
+    // Load form state and results from Redis (if available)
+    const loadFromRedis = async () => {
+        if (!isRedisAvailable()) {
+            console.warn("Redis is not available. Skipping state restoration from Redis.");
+            setInitialLoadComplete(true);
+            return;
+        }
+        try {
+            const [storedFormState, storedResults] = await Promise.all([
+                redisClient?.get(FORM_STATE_KEY),
+                redisClient?.get(RECIPE_RESULTS_KEY)
+            ]);
 
-    // Load previous form state and results from sessionStorage
-    try {
-      const storedFormState = sessionStorage.getItem(FORM_STATE_KEY);
-      const storedResults = sessionStorage.getItem(RECIPE_RESULTS_KEY);
+            if (storedFormState) {
+                const parsedFormState: FormValues = JSON.parse(storedFormState);
+                form.reset(parsedFormState);
+                console.log("Restored form state from Redis.");
+            }
 
-      if (storedFormState) {
-        const parsedFormState: FormValues = JSON.parse(storedFormState);
-        form.reset(parsedFormState); // Restore form values
-        console.log("Restored form state from sessionStorage.");
-      }
+            if (storedResults) {
+                const parsedResults: RecipeItem[] = JSON.parse(storedResults);
+                setRecipes(parsedResults);
+                console.log(`Restored ${parsedResults.length} recipe results from Redis.`);
+            } else {
+                setRecipes(null); // Set to null if nothing found
+                console.log("No previous results found in Redis.");
+            }
 
-      if (storedResults) {
-        const parsedResults: RecipeItem[] & { imageOmitted?: boolean }[] = JSON.parse(storedResults);
-         // Rehydrate potentially omitted large image URLs from the full recipes state if it exists
-         // This assumes `recipes` state might still hold the full data from the last API call
-         // or if the `recipes` state was also persisted elsewhere (which it isn't currently).
-         // A more robust approach might involve storing image URLs separately if they are too large.
-         const rehydratedResults = parsedResults.map(storedRecipe => {
-             // Find the full recipe data if it's still in the main 'recipes' state
-             const fullRecipe = recipes?.find(r => r.recipeName === storedRecipe.recipeName);
+        } catch (redisErr: any) {
+            console.error("Could not restore state from Redis:", redisErr);
+            setRedisError(`${t('toast.storageErrorTitle')}: ${redisErr.message || 'Failed to connect to Redis'}`);
+            // Optionally clear potentially corrupted Redis keys
+            // await redisClient?.del(FORM_STATE_KEY, RECIPE_RESULTS_KEY);
+            setRecipes(null);
+            form.reset();
+        } finally {
+            setInitialLoadComplete(true); // Mark load complete even if Redis failed
+        }
+    };
 
-             if (storedRecipe.imageOmitted && fullRecipe?.imageUrl) {
-                 console.log(`Rehydrating omitted image URL for ${storedRecipe.recipeName}`);
-                 // Merge the stored data (which might have language) with the full image URL
-                 return { ...storedRecipe, imageUrl: fullRecipe.imageUrl, imageOmitted: false };
-             } else if (storedRecipe.imageOmitted) {
-                 // Ensure imageUrl is undefined if image was omitted
-                 return { ...storedRecipe, imageUrl: undefined };
-             }
-             return storedRecipe; // Return as is if not omitted or no full recipe found
-         });
-
-         setRecipes(rehydratedResults as RecipeItem[]); // Restore previous results
-         console.log(`Restored ${rehydratedResults.length} recipe results from sessionStorage.`);
-      } else {
-         console.log("No previous results found in sessionStorage.");
-         setRecipes(null); // Explicitly set to null if nothing found
-      }
-    } catch (error) {
-      console.warn("Could not restore state from sessionStorage:", error);
-      // Optionally clear potentially corrupted storage
-      sessionStorage.removeItem(FORM_STATE_KEY);
-      sessionStorage.removeItem(RECIPE_RESULTS_KEY);
-      setRecipes(null); // Set to null on error
-      form.reset(); // Reset form on error
-    } finally {
-        setInitialLoadComplete(true); // Mark initial load as complete
-    }
+    loadFromRedis();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
-
+  }, [t]); // Add t to dependency array
 
    // Handle form reset
-   const handleReset = () => {
-    form.reset(); // Resets to defaultValues defined in useForm
-    setRecipes(null);
-    setIsLoading(false);
-    setError(null); // Clear any previous errors
-     // Clear sessionStorage
-     try {
-        sessionStorage.removeItem(FORM_STATE_KEY);
-        sessionStorage.removeItem(RECIPE_RESULTS_KEY);
-        console.log("Cleared form state and results from sessionStorage.");
-      } catch (err) {
-        console.warn("Could not clear sessionStorage:", err);
-          if (err instanceof Error) {
-             setError(`${t('toast.storageErrorTitle')}: ${err.message}`); // Use t()
-           } else {
-             setError(t('toast.storageErrorDesc')); // Use t()
-           }
-      }
-    // Log instead of toast
-    console.log(t('toast.formClearedTitle'), t('toast.formClearedDesc'));
-  };
+   const handleReset = async () => {
+     form.reset();
+     setRecipes(null);
+     setIsLoading(false);
+     setError(null);
+     setRedisError(null);
 
-  // Handle saving/unsaving a recipe using localStorage
+     // Clear Redis keys if available
+     if (isRedisAvailable()) {
+         try {
+             await redisClient?.del(FORM_STATE_KEY, RECIPE_RESULTS_KEY);
+             console.log("Cleared form state and results from Redis.");
+         } catch (redisErr: any) {
+             console.warn("Could not clear Redis state:", redisErr);
+             setRedisError(`${t('toast.storageErrorTitle')}: ${redisErr.message || 'Failed to clear Redis data'}`);
+         }
+     } else {
+         console.log("Redis not available, state was not stored in Redis.");
+     }
+     console.log(t('toast.formClearedTitle'), t('toast.formClearedDesc'));
+   };
+
+  // Handle saving/unsaving a recipe using localStorage (remains unchanged)
   const handleToggleSaveRecipe = (recipe: RecipeItem) => {
     if (!recipe || !recipe.recipeName) return;
 
     try {
-      const savedRecipes = localStorage.getItem(SAVED_RECIPES_KEY);
-      let currentSaved: RecipeItem[] = savedRecipes ? JSON.parse(savedRecipes) : [];
+      const savedRecipesData = localStorage.getItem(SAVED_RECIPES_KEY);
+      let currentSaved: RecipeItem[] = savedRecipesData ? JSON.parse(savedRecipesData) : [];
       const recipeIndex = currentSaved.findIndex(r => r.recipeName === recipe.recipeName);
 
       let updatedSavedRecipes: RecipeItem[];
       let newSavedNames = new Set(savedRecipeNames);
 
       if (recipeIndex > -1) {
-        // Recipe exists, unsave it
         updatedSavedRecipes = currentSaved.filter((_, index) => index !== recipeIndex);
         newSavedNames.delete(recipe.recipeName);
         console.log(t('toast.recipeRemovedTitle'), t('toast.recipeRemovedDesc', { recipeName: recipe.recipeName }));
       } else {
-        // Recipe doesn't exist, save it
         // Prepare recipe for storage (omit large image)
-        const recipeToSave: RecipeItem & { imageOmitted?: boolean } = {
+        const recipeToSave: RecipeItem & { imageOmitted?: boolean; language?: LanguageCode } = {
           ...recipe,
           imageUrl: (recipe.imageUrl && recipe.imageUrl.startsWith('data:') && recipe.imageUrl.length >= MAX_STORAGE_IMAGE_SIZE)
             ? undefined // Omit large data URI
@@ -359,11 +338,25 @@ export default function Home() {
         updatedSavedRecipes = [...currentSaved, recipeToSave];
         newSavedNames.add(recipe.recipeName);
         console.log(t('toast.recipeSavedTitle'), t('toast.recipeSavedDesc', { recipeName: recipe.recipeName }));
+
+        // Also save to MongoDB
+         saveRecipeToMongoDB(recipe).then(result => {
+             if (result) {
+                 console.log(`Recipe "${recipe.recipeName}" also saved to MongoDB with ID: ${result}`);
+             } else {
+                 console.error(`Failed to save recipe "${recipe.recipeName}" to MongoDB.`);
+                 // Optionally revert localStorage save or show user error
+             }
+         }).catch(dbError => {
+             console.error(`Error saving recipe "${recipe.recipeName}" to MongoDB:`, dbError);
+             setError(t('toast.saveErrorDesc') + ' (DB)');
+         });
+
       }
 
       // Save updated list to localStorage
       localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(updatedSavedRecipes));
-      setSavedRecipeNames(newSavedNames); // Update the state for UI feedback
+      setSavedRecipeNames(newSavedNames);
 
     } catch (err) {
       console.error("Error saving/unsaving recipe to localStorage:", err);
@@ -379,203 +372,105 @@ export default function Home() {
 
 
  // Function to navigate to recipe detail page
-  const handleViewRecipe = (recipe: RecipeItem) => {
-    setError(null); // Clear error before navigation
+ // Use Redis for temporary storage of recipe details for navigation
+ const handleViewRecipe = async (recipe: RecipeItem) => {
+    setError(null);
+    setRedisError(null);
     console.log(`Initiating navigation for recipe: "${recipe.recipeName}"`);
     try {
-      const queryParams = new URLSearchParams();
-      const addParam = (key: string, value: string | undefined | null | number | boolean) => {
-          if (value !== undefined && value !== null && value !== '') { // Ensure empty strings are not added
-              // Convert boolean/number to string explicitly for query params
-              queryParams.set(key, String(value));
-          }
-      };
+        // Create a slug from the recipe name
+        const slug = recipe.recipeName
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^\w-]+/g, '')
+            .replace(/--+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 100);
 
-      // Create a slug from the recipe name (more robust sanitization)
-       const slug = recipe.recipeName
-           .toLowerCase()
-           .replace(/\s+/g, '-') // Replace spaces with hyphens
-           .replace(/[^\w-]+/g, '') // Remove non-word characters (except hyphens)
-           .replace(/--+/g, '-') // Replace multiple hyphens with single
-           .replace(/^-+|-+$/g, '') // Trim leading/trailing hyphens
-           .substring(0, 100); // Limit slug length
+        // Prepare data to store in Redis (include language)
+        const dataToStore: RecipeItem & { language?: LanguageCode } = {
+            ...recipe,
+            language: selectedLanguage,
+        };
 
-      // Add essential parameters to the query string
-      addParam('name', recipe.recipeName); // Pass the name for identification
-      addParam('time', recipe.estimatedTime);
-      addParam('difficulty', recipe.difficulty);
-      addParam('lang', selectedLanguage);
-      // Only include nutrition/diet if they exist
-      addParam('nutrition', recipe.nutritionFacts);
-      addParam('diet', recipe.dietPlanSuitability);
+        // Store data in Redis with a short expiry (e.g., 5 minutes)
+        const redisKey = `recipeDetail-${slug}`;
+        let storageSuccess = false;
+        if (isRedisAvailable()) {
+            try {
+                const serializedRecipe = JSON.stringify(dataToStore);
+                // Expire after 300 seconds (5 minutes)
+                const result = await redisClient?.set(redisKey, serializedRecipe, 'EX', 300);
 
-      // Prepare data for sessionStorage (exclude large image URI by default)
-      // Add language used to generate this specific recipe
-      const dataToStore: Partial<RecipeItem> & { imageOmitted?: boolean; language?: LanguageCode } = {
-        recipeName: recipe.recipeName, // Keep name for matching
-        ingredients: recipe.ingredients,
-        instructions: recipe.instructions,
-        estimatedTime: recipe.estimatedTime,
-        difficulty: recipe.difficulty,
-        imagePrompt: recipe.imagePrompt,
-        nutritionFacts: recipe.nutritionFacts,
-        dietPlanSuitability: recipe.dietPlanSuitability,
-        language: selectedLanguage, // Include the language context for this recipe
-        // Omit imageUrl initially
-        imageUrl: undefined,
-        imageOmitted: false,
-      };
-
-      // Handle image URL storage conditionally
-      const isDataUri = recipe.imageUrl?.startsWith('data:');
-      const MAX_URL_LENGTH = 1500; // Max length for query param
-
-      if (recipe.imageUrl) {
-          if (!isDataUri && recipe.imageUrl.length < MAX_URL_LENGTH) {
-              addParam('imageUrl', recipe.imageUrl); // Pass short URLs in query
-              dataToStore.imageUrl = recipe.imageUrl; // Also store it for consistency
-              console.log("Passing short image URL in query params.");
-          } else if (isDataUri && recipe.imageUrl.length < MAX_STORAGE_IMAGE_SIZE) {
-              dataToStore.imageUrl = recipe.imageUrl; // Store manageable data URIs
-              addParam('imageStored', 'true'); // Indicate image is in storage
-              console.log("Storing manageable image data URI in sessionStorage.");
-          } else if (isDataUri) {
-               // Image is too large for both query and storage
-               console.warn(`Image data URI for ${recipe.recipeName} is too large (${recipe.imageUrl.length} bytes) to store or pass in URL. Omitting.`);
-               dataToStore.imageOmitted = true; // Mark as omitted in storage
-               addParam('imageUnavailable', 'true'); // Indicate no image available via URL
-          } else {
-              // Long HTTP URL - pass via storage
-              dataToStore.imageUrl = recipe.imageUrl; // Store long URLs
-              addParam('imageStored', 'true');
-              console.log("Storing long image HTTP URL in sessionStorage.");
-          }
-       } else {
-         console.log(`No image URL provided for ${recipe.recipeName}.`);
-          addParam('imageUnavailable', 'true'); // Explicitly state no image
-       }
-
-
-      // Store potentially large/complex data in sessionStorage
-      // Generate a unique key for this recipe's data
-      const storageKey = `recipeDetail-${slug}`; // Use slug for a predictable key
-      let storageSuccess = false;
-      try {
-          const serializedRecipe = JSON.stringify(dataToStore);
-          // Check size before attempting to store
-          if (serializedRecipe.length > MAX_STORAGE_IMAGE_SIZE * 1.5) { // Add some buffer, adjust as needed
-             console.warn(`Serialized recipe data for ${recipe.recipeName} is too large (${serializedRecipe.length} bytes) for sessionStorage. Omitting image if possible.`);
-             // Attempt to store without image data URI if it's the large part
-             if(dataToStore.imageUrl?.startsWith('data:')) {
-                 const dataWithoutImage = {...dataToStore, imageUrl: undefined, imageOmitted: true };
-                 const smallerSerializedRecipe = JSON.stringify(dataWithoutImage);
-                 // Retry storing the smaller version
-                  try {
-                      sessionStorage.setItem(storageKey, smallerSerializedRecipe);
-                      const writtenData = sessionStorage.getItem(storageKey);
-                      if (writtenData === smallerSerializedRecipe) {
-                         storageSuccess = true;
-                         addParam('storageKey', storageKey); // Pass the key to retrieve data
-                         addParam('imageUnavailable', 'true'); // Indicate image was omitted
-                         console.log("Recipe detail data (without large image) successfully stored and verified in sessionStorage with key:", storageKey);
-                      } else {
-                         console.error("SessionStorage write verification failed after omitting image for key:", storageKey);
-                         setError(t('toast.storageErrorDesc'));
-                      }
-                  } catch (retryStorageError) {
-                      console.error("Error saving recipe details (without image) to sessionStorage for key", storageKey, ":", retryStorageError);
-                      setError(t('toast.storageErrorDesc')); // Generic storage error
-                      // Ensure potentially corrupted item is removed
-                      try { sessionStorage.removeItem(storageKey); } catch (_) { /* Ignore cleanup error */ }
-                  }
-             } else {
-                 // If the large size isn't from a data URI image, storage will likely fail
-                 setError(t('toast.storageQuotaExceededDesc'));
-             }
-          } else {
-             // Proceed with storing the original serialized data if size is acceptable
-             sessionStorage.setItem(storageKey, serializedRecipe);
-             // **Verification Step:** Immediately read back to confirm write
-             const writtenData = sessionStorage.getItem(storageKey);
-             if (writtenData === serializedRecipe) {
-                 storageSuccess = true;
-                 addParam('storageKey', storageKey); // Pass the key to retrieve data
-                 console.log("Recipe detail data successfully stored and verified in sessionStorage with key:", storageKey);
-             } else {
-                 // This should ideally not happen if setItem doesn't throw
-                 console.error("SessionStorage write verification failed! Data mismatch after write for key:", storageKey);
-                 setError(t('toast.storageErrorDesc'));
-             }
-          }
-      } catch (storageError) {
-          console.error("Error saving recipe details to sessionStorage for key", storageKey, ":", storageError);
-          if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
-              console.error(t('toast.storageQuotaExceededTitle'), t('toast.storageQuotaExceededDesc'));
-               setError(t('toast.storageQuotaExceededDesc')); // Use t()
-          } else {
-               console.error(t('toast.storageErrorTitle'), t('toast.storageErrorDesc'));
-               if (storageError instanceof Error) {
-                  setError(`${t('toast.storageErrorTitle')}: ${storageError.message}`); // Use t()
+                if (result === 'OK') {
+                    storageSuccess = true;
+                    console.log("Recipe detail data successfully stored in Redis with key:", redisKey);
                 } else {
-                  setError(t('toast.storageErrorDesc')); // Use t()
+                    console.error("Redis SET command did not return OK for key:", redisKey);
+                    setRedisError(t('toast.storageErrorDesc') + ' (Redis)');
                 }
-          }
-          // Ensure potentially corrupted item is removed
-          try { sessionStorage.removeItem(storageKey); } catch (_) { /* Ignore cleanup error */ }
-          // Do not add storageKey or imageStored params if storage failed
-          queryParams.delete('storageKey');
-          queryParams.delete('imageStored');
-      }
+            } catch (redisErr: any) {
+                console.error("Error saving recipe details to Redis for key", redisKey, ":", redisErr);
+                 setRedisError(`${t('toast.storageErrorTitle')}: ${redisErr.message || 'Failed to connect to Redis'}`);
+            }
+        } else {
+             console.warn("Redis not available, cannot store recipe details for navigation.");
+             setError("Cannot navigate to recipe details without temporary storage.");
+             return; // Prevent navigation if Redis isn't available
+         }
 
-      // Only navigate if storage was successful (or if no storage was needed/attempted)
-      if (storageSuccess || !queryParams.has('storageKey')) {
-           // Construct the final URL and navigate
-           const url = `/recipe/${slug}?${queryParams.toString()}`;
-           console.log("Navigating to URL:", url); // Log the final URL
-           router.push(url);
-       } else {
-           console.error(`Navigation aborted for "${recipe.recipeName}" due to sessionStorage write failure.`);
-           // Error state should already be set from the catch block
-       }
 
+        // Only navigate if storage was successful
+        if (storageSuccess) {
+            // Pass only the slug and the Redis key in the URL query
+            const queryParams = new URLSearchParams();
+            queryParams.set('redisKey', redisKey); // Pass the key to retrieve data on the detail page
+
+            const url = `/recipe/${slug}?${queryParams.toString()}`;
+            console.log("Navigating to URL:", url);
+            router.push(url);
+        } else {
+            console.error(`Navigation aborted for "${recipe.recipeName}" due to Redis storage failure.`);
+            // Error state should already be set from the catch block
+        }
 
     } catch (err) {
-      console.error(`Error preparing recipe details for viewing "${recipe.recipeName}":`, err);
-       if (err instanceof Error) {
-         setError(`Navigation Error: ${err.message}`);
-       } else {
-         setError("An unknown error occurred while preparing recipe details.");
-       }
+        console.error(`Error preparing recipe details for viewing "${recipe.recipeName}":`, err);
+        if (err instanceof Error) {
+            setError(`Navigation Error: ${err.message}`);
+        } else {
+            setError("An unknown error occurred while preparing recipe details.");
+        }
     }
-  };
+};
 
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     setRecipes(null); // Clear previous results immediately
     setError(null); // Clear previous errors
+    setRedisError(null); // Clear previous Redis errors
 
-    // Clear previous results from sessionStorage immediately
-    try {
-      sessionStorage.removeItem(RECIPE_RESULTS_KEY);
-      sessionStorage.removeItem(FORM_STATE_KEY);
-      console.log("Cleared previous state from sessionStorage before new search.");
-    } catch (err) {
-      console.warn("Could not clear sessionStorage before search:", err);
-       if (err instanceof Error) {
-         // Don't necessarily show this to the user, just log it
-          console.error(`Error clearing session before search: ${err.message}`);
-       }
+    // Clear previous results from Redis immediately if available
+    if (isRedisAvailable()) {
+        try {
+            await redisClient?.del(RECIPE_RESULTS_KEY, FORM_STATE_KEY);
+            console.log("Cleared previous state from Redis before new search.");
+        } catch (redisErr: any) {
+            console.warn("Could not clear Redis state before search:", redisErr);
+            // Don't show this error to the user, just log it
+            console.error(`Error clearing Redis before search: ${redisErr.message || 'Failed to connect'}`);
+        }
     }
 
+
     try {
-      // Enhance preferences based on new inputs
       let enhancedPreferences = values.preferences || '';
       if (values.quickMode) {
-        enhancedPreferences += (enhancedPreferences ? ', ' : '') + t('form.quickModePreference'); // Use translation
+        enhancedPreferences += (enhancedPreferences ? ', ' : '') + t('form.quickModePreference');
       }
       if (values.servingSize) {
-         enhancedPreferences += (enhancedPreferences ? ', ' : '') + t('form.servingSizePreference', { count: values.servingSize }); // Use translation with placeholder
+         enhancedPreferences += (enhancedPreferences ? ', ' : '') + t('form.servingSizePreference', { count: values.servingSize });
       }
       if (values.cuisineType) {
           enhancedPreferences += (enhancedPreferences ? ', ' : '') + `${t('form.cuisineTypeLabel')}: ${values.cuisineType}`;
@@ -583,119 +478,78 @@ export default function Home() {
        if (values.cookingMethod) {
           enhancedPreferences += (enhancedPreferences ? ', ' : '') + `${t('form.cookingMethodLabel')}: ${values.cookingMethod}`;
       }
+      // Add category to preferences if not 'All'
+      if (values.category && values.category !== 'All') {
+          enhancedPreferences += (enhancedPreferences ? ', ' : '') + `Category: ${values.category}`;
+      }
 
 
       const input: SuggestRecipesInput = {
         ingredients: values.ingredients,
         dietaryRestrictions: values.dietaryRestrictions || undefined,
-        preferences: enhancedPreferences || undefined, // Use enhanced preferences
+        preferences: enhancedPreferences || undefined,
         language: selectedLanguage,
-        includeDetails: values.includeDetails, // Pass the switch value
+        includeDetails: values.includeDetails,
       };
 
-      console.log("Submitting to AI with input:", input); // Log input sent to AI
+      console.log("Submitting to AI with input:", input);
 
       const result = await suggestRecipes(input);
-      console.log("Received recipes from AI:", result); // Log result from AI
+      console.log("Received recipes from AI:", result);
 
-      // Ensure results are always an array, even if API returns null/undefined unexpectedly
       const recipesArray = Array.isArray(result) ? result : [];
       setRecipes(recipesArray);
 
-       // --- Store results and form state in sessionStorage ---
-       if (recipesArray.length > 0) {
+       // --- Store results and form state in Redis (if available) ---
+       if (recipesArray.length > 0 && isRedisAvailable()) {
            try {
-              // Prepare data for storage, omitting large image URLs
-               const recipesForStorage = recipesArray.map(r => {
-                   const { imageUrl, ...rest } = r;
-                   const isDataUri = imageUrl?.startsWith('data:');
-                   const imageOmitted = !!(imageUrl && isDataUri && imageUrl.length >= MAX_STORAGE_IMAGE_SIZE);
+               // Prepare data for storage (images are handled separately, not stored in Redis usually)
+               const recipesForStorage = recipesArray.map(r => ({
+                   ...r,
+                   language: selectedLanguage, // Store language context
+                   // Don't store large image data URIs in Redis
+                   imageUrl: r.imageUrl?.startsWith('data:') ? undefined : r.imageUrl,
+                   imageOmitted: r.imageUrl?.startsWith('data:'),
+               }));
 
-                   return {
-                       ...rest,
-                       // Only include imageUrl if it's not a data URI or if it's small enough
-                       imageUrl: imageOmitted ? undefined : imageUrl,
-                       imageOmitted: imageOmitted, // Flag if large image was omitted
-                       language: selectedLanguage, // Store language context
-                   };
-               });
-
-               // Attempt to store results and form state
                const serializedResults = JSON.stringify(recipesForStorage);
                const serializedFormState = JSON.stringify(values);
 
-                // Check combined size before storing
-                if (serializedResults.length + serializedFormState.length > 5 * 1024 * 1024 * 0.9) { // Check against ~90% of 5MB limit
-                     console.warn("SessionStorage quota likely exceeded. Attempting to store minimal data.");
-                     setError(t('toast.storageQuotaWarningDesc'));
-                      // Try storing only form state and results WITHOUT images/instructions
-                      const minimalRecipes = recipesArray.map(({ imageUrl, imageOmitted, instructions, ingredients, ...rest }) => ({
-                           ...rest,
-                           language: selectedLanguage,
-                           imageOmitted: true,
-                           // Omit large text fields too
-                           ingredients: ingredients.substring(0, 100) + '...', // Truncate
-                           instructions: instructions.substring(0, 100) + '...' // Truncate
-                        }));
-                     try {
-                         sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(minimalRecipes));
-                         sessionStorage.setItem(FORM_STATE_KEY, serializedFormState);
-                         console.log("Stored minimal results and form state due to size constraints.");
-                     } catch (minimalError) {
-                         console.error("Failed to save even minimal state to sessionStorage:", minimalError);
-                         setError(t('toast.storageErrorDesc')); // Generic storage error
-                          // Clear storage if even minimal save fails
-                          sessionStorage.removeItem(RECIPE_RESULTS_KEY);
-                          sessionStorage.removeItem(FORM_STATE_KEY);
-                     }
-                } else {
-                     // Store full data if size is acceptable
-                     sessionStorage.setItem(RECIPE_RESULTS_KEY, serializedResults);
-                     sessionStorage.setItem(FORM_STATE_KEY, serializedFormState);
-                     console.log(`Stored ${recipesForStorage.length} results and form state in sessionStorage.`);
-                }
+               // Set keys in Redis with an expiry (e.g., 1 hour)
+               await Promise.all([
+                   redisClient?.set(RECIPE_RESULTS_KEY, serializedResults, 'EX', 3600), // 1 hour expiry
+                   redisClient?.set(FORM_STATE_KEY, serializedFormState, 'EX', 3600)
+               ]);
+               console.log(`Stored ${recipesForStorage.length} results and form state in Redis.`);
 
-           } catch (storageError) {
-               console.error("Error storing results in sessionStorage:", storageError);
-                if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
-                   console.warn("SessionStorage quota exceeded. Clearing previous results/state and trying again with minimal data.");
-                   setError(t('toast.storageQuotaWarningDesc')); // Inform user results might not persist
-                    // Attempt to clear and retry storing only form state and results WITHOUT images/large text
-                   try {
-                       sessionStorage.removeItem(RECIPE_RESULTS_KEY);
-                       sessionStorage.removeItem(FORM_STATE_KEY);
-                        const minimalRecipes = recipesArray.map(({ imageUrl, imageOmitted, instructions, ingredients, ...rest }) => ({
-                           ...rest,
-                           language: selectedLanguage,
-                           imageOmitted: true,
-                           ingredients: ingredients.substring(0, 100) + '...',
-                           instructions: instructions.substring(0, 100) + '...'
-                        }));
-                        sessionStorage.setItem(RECIPE_RESULTS_KEY, JSON.stringify(minimalRecipes));
-                       sessionStorage.setItem(FORM_STATE_KEY, JSON.stringify(values));
-                       console.warn("Stored minimal data after clearing due to quota exceeded error.");
-                   } catch (retryError) {
-                        console.error("Failed to save even minimal state to sessionStorage after clearing:", retryError);
-                        setError(t('toast.storageErrorDesc')); // Generic storage error
-                   }
-                } else {
-                   console.error(t('toast.storageErrorTitle'), t('toast.storageErrorDesc'));
-                    if (storageError instanceof Error) {
-                      setError(`${t('toast.storageErrorTitle')}: ${storageError.message}`); // Use t()
-                    } else {
-                      setError(t('toast.storageErrorDesc')); // Use t()
-                    }
-                }
+           } catch (redisErr: any) {
+               console.error("Error storing results in Redis:", redisErr);
+               setRedisError(`${t('toast.storageErrorTitle')}: ${redisErr.message || 'Failed to save to Redis'}`);
+               // Don't store if Redis fails, data will be lost on refresh
            }
+       } else if (recipesArray.length > 0 && !isRedisAvailable()) {
+           console.warn("Redis not available. Search results will not persist across sessions.");
+           setError("Storage unavailable: Results won't be saved."); // Inform user
        } else {
-           // If no recipes found, clear previous storage
-           sessionStorage.removeItem(RECIPE_RESULTS_KEY);
-           sessionStorage.removeItem(FORM_STATE_KEY);
-           console.log("No recipes found, cleared previous state from sessionStorage.");
+           // If no recipes found, clear previous Redis storage if available
+           if(isRedisAvailable()) {
+               await redisClient?.del(RECIPE_RESULTS_KEY, FORM_STATE_KEY);
+           }
+           console.log("No recipes found, cleared previous state from Redis (if applicable).");
        }
 
        // --- Save search to history in MongoDB ---
-       // REMOVED History saving related to DB
+       try {
+           await saveRecipeHistory({
+               searchInput: input,
+               resultsSummary: recipesArray.map(r => r.recipeName),
+               resultCount: recipesArray.length,
+           });
+           console.log("Saved search history to MongoDB.");
+       } catch (dbError) {
+           console.error("Error saving history to MongoDB:", dbError);
+           // Don't necessarily block the user, but log the error
+       }
 
 
       if (recipesArray.length === 0) {
@@ -708,30 +562,20 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Error suggesting recipes:', err);
-      // Try to get a more specific error message
       let errorMessage = t('toast.genericError');
-      let errorTitle = t('toast.errorTitle'); // Default error title
+      let errorTitle = t('toast.errorTitle');
 
       if (err instanceof z.ZodError) {
           errorMessage = t('toast.validationError') || 'Input validation failed. Please check your entries.';
-          // Optionally log specific validation errors: console.error("Validation Errors:", err.errors);
       } else if (err instanceof Error) {
-           // Check for network errors (customize based on how errors are thrown)
           if (err.message.toLowerCase().includes('network') || err.message.toLowerCase().includes('failed to fetch')) {
                errorTitle = t('toast.networkErrorTitle');
                errorMessage = t('toast.networkErrorDesc');
           } else {
-               errorMessage = err.message; // Use message from standard Error
+               errorMessage = err.message;
           }
-           // Check for specific Genkit errors if possible (needs inspection of error object)
-           // Example: Check if it's a GenkitError and handle specific codes
-           // if (err.name === 'GenkitError') {
-           //     if (err.code === 'UNAVAILABLE') { // Example code
-           //         errorMessage = t('toast.aiServiceUnavailable');
-           //     } else if (err.code === 'PERMISSION_DENIED') {
-           //         errorMessage = t('toast.apiKeyError'); // If API key is invalid
-           //     }
-           // }
+          // Check for GenkitError specifically if needed
+          // if (err.name === 'GenkitError') { ... }
       }
        console.error(`${errorTitle}: ${errorMessage}`);
        setError(`${errorTitle}: ${errorMessage}`);
@@ -746,26 +590,26 @@ export default function Home() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.08, // Slightly faster stagger
+        staggerChildren: 0.08,
         delayChildren: 0.1,
       },
     },
-    exit: { opacity: 0, transition: { duration: 0.2 } } // Exit animation
+    exit: { opacity: 0, transition: { duration: 0.2 } }
   };
 
   const itemVariants = {
-    hidden: {y: 15, opacity: 0}, // Smaller Y offset
+    hidden: {y: 15, opacity: 0},
     visible: {
       y: 0,
       opacity: 1,
-      transition: {type: 'spring', stiffness: 120, damping: 15}, // Adjusted spring
+      transition: {type: 'spring', stiffness: 120, damping: 15},
     },
-    exit: {y: -15, opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }, // Faster exit upwards
+    exit: {y: -15, opacity: 0, transition: { duration: 0.2, ease: "easeIn" } },
   };
 
     const cardHoverEffect = {
       rest: { scale: 1, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", y: 0 },
-      hover: { scale: 1.03, boxShadow: "0 10px 15px rgba(0, 0, 0, 0.1)", y: -5 } // Enhanced shadow + slight lift
+      hover: { scale: 1.03, boxShadow: "0 10px 15px rgba(0, 0, 0, 0.1)", y: -5 }
     };
 
    const buttonHoverEffect = {
@@ -787,11 +631,10 @@ export default function Home() {
       <span className="text-lg text-muted-foreground">
         {t('loadingMessage')}
       </span>
-      {/* Add skeleton card placeholders */}
       <div className="w-full max-w-3xl space-y-6 mt-6">
         {[...Array(2)].map((_, i) => (
             <Card key={i} className="w-full shadow-md border border-border/30 overflow-hidden bg-card/50">
-              <div className="h-48 bg-muted/30"></div> {/* Slightly taller image area */}
+              <div className="h-48 bg-muted/30"></div>
               <CardContent className="p-6 space-y-4">
                 <div className="h-6 w-3/4 bg-muted/40 rounded"></div>
                 <div className="flex gap-2">
@@ -804,7 +647,7 @@ export default function Home() {
                  </div>
                </CardContent>
                 <CardFooter className="p-6 pt-0">
-                   <div className="h-9 w-full bg-muted/40 rounded-md"></div> {/* Button placeholder */}
+                   <div className="h-9 w-full bg-muted/40 rounded-md"></div>
                 </CardFooter>
             </Card>
         ))}
@@ -812,9 +655,7 @@ export default function Home() {
     </motion.div>
   );
 
-   // Render only after client-side mount and initial load is complete
    if (!isClient || !initialLoadComplete) {
-        // Optionally show a basic loading state or null during initial setup
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -859,9 +700,8 @@ export default function Home() {
                      onValueChange={(value) => {
                        const newLang = value as LanguageCode;
                        setSelectedLanguage(newLang);
-                       // Store in localStorage only on the client
                        if (typeof window !== 'undefined') {
-                           localStorage.setItem('selectedLanguage', newLang);
+                           localStorage.setItem(SELECTED_LANGUAGE_KEY, newLang);
                        }
                      }}
                     >
@@ -872,7 +712,6 @@ export default function Home() {
                           aria-label={t('languageSelector.ariaLabel')}
                         >
                           <Languages className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground transition-colors" />
-                          {/* Use placeholder and render selected language directly */}
                            <SelectValue placeholder={t('languageSelector.placeholder')}>
                              {isClient ? selectedLanguage.toUpperCase() : 'EN'}
                            </SelectValue>
@@ -885,7 +724,7 @@ export default function Home() {
                     <SelectContent className="max-h-60 overflow-y-auto backdrop-blur-md bg-popover/95 border border-border/50 shadow-lg">
                       {supportedLanguages.map(lang => (
                         <SelectItem key={lang.value} value={lang.value}>
-                          {lang.label} {/* Show full label in dropdown */}
+                          {lang.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -900,7 +739,7 @@ export default function Home() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-9 w-9 focus:ring-1 focus:ring-primary/50 rounded-full" // Make it round
+                              className="h-9 w-9 focus:ring-1 focus:ring-primary/50 rounded-full"
                               aria-label={t('themeSelector.ariaLabel')}
                             >
                               <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -942,7 +781,6 @@ export default function Home() {
                          aria-label={t('savedRecipes.dialogOpenButtonAriaLabel')}
                        >
                          <Save className="h-[1.2rem] w-[1.2rem]" />
-                         {/* Badge for saved count */}
                           {savedRecipeNames.size > 0 && (
                               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                                 {savedRecipeNames.size}
@@ -964,7 +802,7 @@ export default function Home() {
 
         <main className="flex-1 container py-10 md:py-16 px-4 md:px-6">
           {/* Global Error Display */}
-           {error && (
+           {(error || redisError) && (
              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -974,7 +812,19 @@ export default function Home() {
                  <Alert variant="destructive">
                    <AlertTriangle className="h-4 w-4" />
                    <AlertTitle>{t('toast.errorTitle')}</AlertTitle>
-                   <AlertDescription>{error}</AlertDescription>
+                   <AlertDescription>{error || redisError}</AlertDescription>
+                   {/* Optional: Add retry button for Redis errors */}
+                    {redisError && !isLoading && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.location.reload()} // Simple reload for retry
+                            className="mt-2"
+                        >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Retry
+                        </Button>
+                    )}
                  </Alert>
              </motion.div>
            )}
@@ -986,7 +836,6 @@ export default function Home() {
             transition={{duration: 0.6, delay: 0.2, ease: "easeOut"}}
             className="mb-12 text-center"
           >
-             {/* Animated Gradient Title */}
              <motion.h1
                  className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary via-teal-500 to-emerald-500 py-2 leading-tight"
                  style={{ backgroundSize: "200% 200%" }}
@@ -1012,10 +861,10 @@ export default function Home() {
             animate={{opacity: 1, scale: 1}}
             transition={{duration: 0.5, delay: 0.4, ease: "easeOut"}}
           >
-            <Card className="w-full max-w-2xl mx-auto mb-12 shadow-lg border border-border/60 hover:shadow-xl transition-shadow duration-300 bg-card/90 backdrop-blur-sm overflow-hidden rounded-xl"> {/* Slightly more rounded */}
+            <Card className="w-full max-w-2xl mx-auto mb-12 shadow-lg border border-border/60 hover:shadow-xl transition-shadow duration-300 bg-card/90 backdrop-blur-sm overflow-hidden rounded-xl">
               <CardHeader className="pb-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-primary/10">
                 <CardTitle className="text-xl font-semibold text-primary flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 animate-pulse duration-1500" /> {/* Subtle pulse */}
+                  <Sparkles className="h-5 w-5 animate-pulse duration-1500" />
                   {t('form.title')}
                 </CardTitle>
                 <CardDescription>
@@ -1028,7 +877,6 @@ export default function Home() {
                     onSubmit={form.handleSubmit(onSubmit)}
                     className="space-y-6"
                   >
-                   {/* Use container variant for form fields */}
                    <motion.div variants={containerVariants} initial="hidden" animate="visible">
                     {/* Ingredients Field */}
                     <motion.div variants={itemVariants}>
@@ -1144,9 +992,46 @@ export default function Home() {
                            )}
                          />
                        </motion.div>
+                       {/* Category Field (Select) */}
+                       <motion.div variants={itemVariants} className="col-span-1 sm:col-span-2">
+                          <FormField
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="font-medium text-foreground/90">{t('form.categoryLabel')}</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 shadow-inner bg-muted/40 hover:bg-muted/50 dark:bg-background/50 dark:hover:bg-background/60 border-border/70 rounded-md">
+                                      <SelectValue placeholder={t('form.categoryPlaceholder')} />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {/* Add category options - Use translations */}
+                                    {[
+                                       'All',
+                                       'Breakfast',
+                                       'Lunch',
+                                       'Dinner',
+                                       'Dessert',
+                                       'Snack',
+                                       'Appetizer',
+                                       'Side Dish',
+                                       'Beverage',
+                                    ].map((category) => (
+                                       <SelectItem key={category} value={category}>
+                                          {t(`categories.${category.toLowerCase().replace(' ', '')}`, {}, category)}
+                                        </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                       </motion.div>
                     </div>
 
-                    {/* Switches & Serving Size */}
                      <motion.div variants={itemVariants} className="space-y-4 pt-2">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 flex-wrap">
                              {/* Quick Mode Switch */}
@@ -1169,7 +1054,6 @@ export default function Home() {
                                  </FormItem>
                                )}
                              />
-                             {/* Include Details Switch */}
                               <FormField
                                 control={form.control}
                                 name="includeDetails"
@@ -1191,12 +1075,11 @@ export default function Home() {
                               />
                          </div>
 
-                        {/* Serving Size Input */}
                         <FormField
                           control={form.control}
                           name="servingSize"
                           render={({ field }) => (
-                            <FormItem className="max-w-[200px]"> {/* Limit width */}
+                            <FormItem className="max-w-[200px]">
                               <FormLabel className="font-medium text-foreground/90 flex items-center gap-1.5 text-sm">
                                <Scale size={14} /> {t('form.servingSizeLabel')}
                               </FormLabel>
@@ -1204,14 +1087,12 @@ export default function Home() {
                                 <Input
                                   type="number"
                                   min="1"
-                                  step="1" // Ensure integer steps
+                                  step="1"
                                   placeholder={t('form.servingSizePlaceholder')}
                                   {...field}
-                                  // Ensure value is handled correctly for number input
                                   value={field.value ?? ''}
                                   onChange={(e) => {
                                     const val = e.target.value;
-                                    // Allow empty input or valid positive integers
                                     if (val === '' || /^[1-9]\d*$/.test(val)) {
                                         field.onChange(val === '' ? undefined : parseInt(val, 10));
                                     }
@@ -1226,13 +1107,12 @@ export default function Home() {
                      </motion.div>
 
 
-                    {/* Submit & Reset Buttons */}
                     <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 pt-4">
                       <motion.div {...buttonHoverEffect} className="flex-1">
                         <Button
                           type="submit"
-                          className="w-full py-3 text-base font-semibold transition-all duration-300 ease-out bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 active:scale-[0.98] rounded-md" // Standard rounding
-                          disabled={isLoading} // Disable only if recipe loading
+                          className="w-full py-3 text-base font-semibold transition-all duration-300 ease-out bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 active:scale-[0.98] rounded-md"
+                          disabled={isLoading || !!redisError} // Disable if Redis error
                           aria-live="polite"
                         >
                           {isLoading ? (
@@ -1252,18 +1132,17 @@ export default function Home() {
                           type="button"
                           variant="outline"
                           onClick={handleReset}
-                          className="w-full sm:w-auto transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-muted/20 border-border/70 rounded-md" // Standard rounding
+                          className="w-full sm:w-auto transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-muted/20 border-border/70 rounded-md"
                           disabled={isLoading}
                         >
                            <RotateCcw className="mr-2 h-4 w-4"/> {t('form.resetButton')}
                          </Button>
                        </motion.div>
                     </motion.div>
-                   </motion.div> {/* End of form fields container */}
+                   </motion.div>
                   </form>
                 </Form>
               </CardContent>
-               {/* Card Footer with Info */}
               <CardFooter className="p-4 bg-muted/30 dark:bg-background/30 rounded-b-xl border-t border-border/30">
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                   <Info className="h-3.5 w-3.5 shrink-0" /> {t('form.footerNote')}
@@ -1274,14 +1153,12 @@ export default function Home() {
 
           {/* Results Area */}
           <AnimatePresence mode="wait">
-            {/* Loading State */}
             {isLoading && isClient && (
                 <motion.div key="loading">
                     <LoadingSkeleton />
                 </motion.div>
             )}
 
-            {/* Recipe Results Section */}
             {recipes && recipes.length > 0 && !isLoading && (
               <motion.section
                 key="recipe-list"
@@ -1302,52 +1179,44 @@ export default function Home() {
                    initial="hidden"
                    animate="visible"
                    exit="exit"
-                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8" // Use grid layout
+                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
                  >
                   {recipes.map((recipe, index) => {
-                      // Check if recipe is saved using the state
                       const isSaved = savedRecipeNames.has(recipe.recipeName);
                       return (
                         <motion.div
                             key={recipe.recipeName + index}
                             variants={itemVariants}
-                             // Add lift-on-hover effect directly here
                              whileHover={{ y: -5, transition: { duration: 0.2 } }}
                         >
                           <motion.div whileHover="hover" initial="rest" animate="rest" variants={cardHoverEffect}>
                            <Card
                              className={cn(
-                                'w-full h-full flex flex-col shadow-md border border-border/50 overflow-hidden transition-all duration-300 group bg-card backdrop-blur-sm rounded-xl' // More rounded
+                                'w-full h-full flex flex-col shadow-md border border-border/50 overflow-hidden transition-all duration-300 group bg-card backdrop-blur-sm rounded-xl'
                               )}
                            >
-                            {/* Recipe Image Header */}
-                            <CardHeader className="p-0 relative aspect-[16/10] overflow-hidden group"> {/* Slightly taller aspect ratio */}
+                            <CardHeader className="p-0 relative aspect-[16/10] overflow-hidden group">
                                <div className="absolute inset-0 bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20 flex items-center justify-center">
-                                  {recipe.imageUrl ? (
+                                  {recipe.imageUrl && !recipe.imageOmitted ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                       src={recipe.imageUrl}
                                       alt={t('results.imageAlt', { recipeName: recipe.recipeName })}
                                       width={400}
-                                      height={250} // Adjust height for 16:10
+                                      height={250}
                                       className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                                       loading="lazy"
-                                      // Optional: Add error handling for image loading
-                                      // onError={(e) => { e.currentTarget.style.display = 'none'; /* Hide broken image */ }}
                                     />
                                   ) : (
                                     <ImageOff className="h-12 w-12 text-muted-foreground/40" />
                                   )}
                                </div>
-                              {/* Gradient overlay for text contrast */}
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none"></div>
-                              {/* Title positioned at the bottom */}
                               <div className="absolute bottom-0 left-0 right-0 p-4">
                                 <CardTitle className="text-lg font-bold text-white drop-shadow-md line-clamp-2 leading-snug">
                                   {recipe.recipeName}
                                 </CardTitle>
                               </div>
-                               {/* Save/Unsave Button */}
                                <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -1357,10 +1226,10 @@ export default function Home() {
                                         size="icon"
                                         className={cn(
                                             "absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 text-white hover:bg-primary hover:text-primary-foreground transition-all opacity-80 group-hover:opacity-100 backdrop-blur-sm focus:ring-1 focus:ring-primary/50",
-                                             isSaved && "bg-primary text-primary-foreground hover:bg-destructive hover:text-destructive-foreground" // Style when saved
+                                             isSaved && "bg-primary text-primary-foreground hover:bg-destructive hover:text-destructive-foreground"
                                         )}
                                         onClick={(e) => {
-                                            e.stopPropagation(); // Prevent card click if clicking the button
+                                            e.stopPropagation();
                                             handleToggleSaveRecipe(recipe)
                                          }}
                                         aria-label={isSaved ? t('results.unsaveButtonAriaLabel') : t('results.saveButtonAriaLabel')}
@@ -1375,50 +1244,44 @@ export default function Home() {
                                   </Tooltip>
                                 </TooltipProvider>
                             </CardHeader>
-                            {/* Recipe Details Content */}
                             <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
                               <motion.div
                                   initial={{ opacity: 0, y: 5 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ duration: 0.3, delay: 0.1 }}
                                   className="flex flex-wrap gap-2 items-center">
-                                 {/* Time Badge */}
                                 <Badge
                                   variant="outline"
-                                  className="flex items-center gap-1 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-0.5 px-2 text-xs font-medium rounded-full" // Rounded pill shape
+                                  className="flex items-center gap-1 border-primary/70 text-primary bg-primary/10 backdrop-blur-sm py-0.5 px-2 text-xs font-medium rounded-full"
                                 >
                                   <Clock className="h-3 w-3" />
                                   {recipe.estimatedTime}
                                 </Badge>
-                                {/* Difficulty Badge */}
                                 <Badge
                                    variant="outline"
-                                   className="flex items-center gap-1 border-secondary-foreground/40 text-secondary-foreground bg-secondary/50 dark:bg-secondary/20 backdrop-blur-sm py-0.5 px-2 text-xs font-medium rounded-full" // Rounded pill shape
+                                   className="flex items-center gap-1 border-secondary-foreground/40 text-secondary-foreground bg-secondary/50 dark:bg-secondary/20 backdrop-blur-sm py-0.5 px-2 text-xs font-medium rounded-full"
                                 >
                                   <BarChart className="h-3 w-3 -rotate-90" />
                                   {recipe.difficulty}
                                 </Badge>
                               </motion.div>
 
-                             {/* Short description/preview */}
                              <motion.p
                                  initial={{ opacity: 0, y: 5 }}
                                  animate={{ opacity: 1, y: 0 }}
                                  transition={{ duration: 0.3, delay: 0.2 }}
-                                 className="text-sm text-muted-foreground line-clamp-3 leading-snug flex-grow" // Use flex-grow
+                                 className="text-sm text-muted-foreground line-clamp-3 leading-snug flex-grow"
                               >
-                                 {/* Display first part of instructions or a default text */}
                                  {recipe.instructions?.split('\n')[0]?.replace(/^\s*(\d+\.|-)\s*/, '').trim() || t('results.defaultDescription')}
                                </motion.p>
 
                             </CardContent>
-                             {/* View Recipe Button */}
                              <CardFooter className="p-4 pt-0">
                                <motion.div {...buttonHoverEffect} className="w-full">
                                  <Button
                                     variant="outline"
                                     size="sm"
-                                    className="w-full transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary border-border/70 rounded-md" // Standard rounding
+                                    className="w-full transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary border-border/70 rounded-md"
                                     onClick={() => handleViewRecipe(recipe)}
                                   >
                                     {t('results.viewRecipeButton')}
@@ -1435,7 +1298,6 @@ export default function Home() {
               </motion.section>
             )}
 
-            {/* No Recipes Found Card */}
             {recipes !== null && recipes.length === 0 && !isLoading && (
               <motion.div
                 key="no-recipes"
@@ -1446,7 +1308,6 @@ export default function Home() {
                 className="mt-16"
               >
                 <Card className="w-full max-w-xl mx-auto text-center p-8 sm:p-10 shadow-sm border border-border/50 bg-card rounded-xl">
-                   {/* Gentle pulse/scale animation for the icon */}
                   <motion.div
                       animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }}
                       transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
@@ -1465,11 +1326,10 @@ export default function Home() {
           </AnimatePresence>
         </main>
 
-         {/* Footer */}
         <motion.footer
           initial={{opacity: 0}}
           animate={{opacity: 1}}
-          transition={{duration: 0.5, delay: 0.8 }} // Adjusted delay
+          transition={{duration: 0.5, delay: 0.8 }}
           className="py-6 md:px-8 border-t border-border/40 mt-16 sm:mt-20 bg-muted/40 dark:bg-background/20"
         >
           <div className="container flex flex-col items-center justify-center gap-2 text-center md:flex-row md:justify-between">
@@ -1480,7 +1340,7 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium underline underline-offset-4 hover:text-primary transition-colors"
-                 whileHover={{ color: "hsl(var(--primary))" }} // Example hover effect
+                 whileHover={{ color: "hsl(var(--primary))" }}
               >
                 Firebase Studio
               </motion.a>
@@ -1492,14 +1352,14 @@ export default function Home() {
           </div>
         </motion.footer>
       </div>
-      {/* Saved Recipes Dialog */}
        <SavedRecipesDialog
          isOpen={isSavedRecipesDialogOpen}
          onClose={() => setIsSavedRecipesDialogOpen(false)}
-         onViewRecipe={handleViewRecipe} // Pass view function
-         onRemoveRecipe={handleToggleSaveRecipe} // Pass remove function (same as toggle)
-         language={selectedLanguage} // Pass current language
+         onViewRecipe={handleViewRecipe}
+         onRemoveRecipe={handleToggleSaveRecipe}
+         language={selectedLanguage}
        />
     </>
   );
 }
+

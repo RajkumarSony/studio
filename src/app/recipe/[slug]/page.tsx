@@ -1,8 +1,8 @@
 // src/app/recipe/[slug]/page.tsx
 'use client';
 
-import React, { Suspense, useEffect, useState, useMemo, useCallback } from 'react'; // Import useCallback
-import { useSearchParams } from 'next/navigation';
+import React, { Suspense, useEffect, useState, useMemo, useCallback } from 'react';
+import { useSearchParams, notFound } from 'next/navigation'; // Import notFound
 import Image from 'next/image';
 import {
   Card,
@@ -23,15 +23,17 @@ import {
   UtensilsCrossed, // Icon for Nutrition/Diet
   AlertTriangle, // Icon for error
   Printer, // Icon for Print button
+  Loader2, // Import Loader for Suspense fallback & loading state
+  RefreshCw, // Icon for retry button
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
-import { Loader2 } from 'lucide-react'; // Import Loader for Suspense fallback
 import { cn } from '@/lib/utils';
 import type { RecipeItem } from '@/ai/flows/suggest-recipe'; // Import RecipeItem type
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import redisClient, { isRedisAvailable } from '@/lib/redis/client'; // Import Redis client
 
 // Helper function to get the translation messages object for a language
 const getTranslationMessages = (lang: LanguageCode) => translations[lang] || translations.en;
@@ -107,171 +109,116 @@ function RecipeDetailLoading() {
 
 function RecipeDetailContent() {
   const searchParams = useSearchParams();
-  // State for storing the complete RecipeItem, including potentially omitted image URL
-  const [recipeData, setRecipeData] = useState<(RecipeItem & { imageOmitted?: boolean }) | null>(null);
+  const [recipeData, setRecipeData] = useState<RecipeItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState<string | null>(null); // State for errors
+  const [language, setLanguage] = useState<LanguageCode>('en'); // State for language
 
-  // Get essential data from query params
-  const queryRecipeName = useMemo(() => searchParams.get('name') ? decodeURIComponent(searchParams.get('name')!) : null, [searchParams]);
-  // Correctly parse language from query or default
-  const queryLang = useMemo(() => {
-    const langParam = searchParams.get('lang');
-    // Validate if the langParam is a valid LanguageCode before using it
-    if (langParam && Object.keys(translations).includes(langParam)) {
-      return langParam as LanguageCode;
-    }
-    return 'en'; // Default to English if invalid or missing
-  }, [searchParams]);
-  const queryImageUrl = useMemo(() => searchParams.get('imageUrl') ? decodeURIComponent(searchParams.get('imageUrl')!) : null, [searchParams]);
-  const queryImageStored = useMemo(() => searchParams.get('imageStored') === 'true', [searchParams]);
-  const queryStorageKey = useMemo(() => searchParams.get('storageKey'), [searchParams]); // Get the storage key
-  const queryImageUnavailable = useMemo(() => searchParams.get('imageUnavailable') === 'true', [searchParams]); // Check if image was unavailable
 
+  // Get Redis key from query params
+  const redisKey = useMemo(() => searchParams.get('redisKey'), [searchParams]);
 
   // Define the translation function 't' using useCallback
   const t = useCallback((key: string, options?: { [key: string]: string | number }) => {
-    const messages = getTranslationMessages(queryLang);
-    // Split key for nested access, e.g., "recipeDetail.backButton"
+    const messages = getTranslationMessages(language); // Use state language
     const keys = key.split('.');
     let result: any = messages;
 
     for (const k of keys) {
       result = result?.[k];
       if (result === undefined) {
-        // Fallback to English if key not found in selected language
         let fallbackResult: any = translations.en;
         for (const fk of keys) {
             fallbackResult = fallbackResult?.[fk];
             if (fallbackResult === undefined) {
-                 console.warn(`Translation key "${key}" not found in language "${queryLang}" or fallback "en".`);
-                 return key; // Return key itself if not found anywhere
+                 console.warn(`Translation key "${key}" not found in language "${language}" or fallback "en".`);
+                 return key;
             }
         }
          result = fallbackResult || key;
-         break; // Found in fallback, stop searching
+         break;
       }
     }
-    // Replace placeholders like {count} or {recipeName}
     if (typeof result === 'string' && options) {
        Object.keys(options).forEach((placeholder) => {
          result = result.replace(`{${placeholder}}`, String(options[placeholder]));
        });
      }
 
-    return typeof result === 'string' ? result : key; // Ensure we return a string
-  }, [queryLang]); // Recreate t if language changes
+    return typeof result === 'string' ? result : key;
+  }, [language]); // Depend on language state
 
 
   useEffect(() => {
-    setIsClient(true); // Indicate component has mounted on the client
+    setIsClient(true);
+    setError(null);
+    setIsLoading(true); // Start loading
 
-    // Need storageKey to retrieve data from sessionStorage
-    if (queryStorageKey) {
-      console.log("Attempting to load from session storage with key:", queryStorageKey);
-      let storedData = null;
-      try {
-        storedData = sessionStorage.getItem(queryStorageKey);
-
-        if (storedData) {
-           console.log("Raw data retrieved from storage:", storedData.substring(0, 100) + '...'); // Log snippet
-           // Use Partial<RecipeItem> as imageUrl might be missing if omitted during storage
-           const parsedData: Partial<RecipeItem> & { imageOmitted?: boolean, language?: LanguageCode } = JSON.parse(storedData);
-           console.log("Parsed data from storage:", parsedData);
-
-            // **Data Validation and Combination Logic:**
-            if (!parsedData.recipeName) {
-                console.error("Critical error: Recipe name missing in stored data for key:", queryStorageKey);
-                setError(t('recipeDetail.errorLoadingMessage') + " (Missing recipe name in stored data)");
-                setRecipeData(null);
-                setIsLoading(false);
-                return; // Stop processing if name is missing
-            }
-
-           // Combine query param data (guaranteed essentials) with stored data
-           // Use defaults from stored data, override with query params if present.
-            const combinedData: RecipeItem & { imageOmitted?: boolean } = {
-               // Essential fields from stored data (validated above)
-               recipeName: parsedData.recipeName,
-               ingredients: parsedData.ingredients || '',
-               instructions: parsedData.instructions || '',
-
-               // Fields potentially overridden by query params or using stored fallback
-               estimatedTime: searchParams.get('time') ? decodeURIComponent(searchParams.get('time')!) : parsedData.estimatedTime || 'N/A',
-               difficulty: searchParams.get('difficulty') ? decodeURIComponent(searchParams.get('difficulty')!) : parsedData.difficulty || 'N/A',
-               nutritionFacts: searchParams.get('nutrition') ? decodeURIComponent(searchParams.get('nutrition')!) : parsedData.nutritionFacts,
-               dietPlanSuitability: searchParams.get('diet') ? decodeURIComponent(searchParams.get('diet')!) : parsedData.dietPlanSuitability,
-
-               // Other fields from stored data
-               imagePrompt: parsedData.imagePrompt,
-               language: parsedData.language || queryLang, // Use language from storage if present, else queryLang
-
-               // Image handling (complex part)
-               imageUrl: queryImageUrl || parsedData.imageUrl, // Prioritize query URL, then stored URL
-               imageOmitted: parsedData.imageOmitted || false,
-           };
-
-            // Correct image logic based on query params
-            if (queryImageUnavailable) {
-               console.warn(`Image for recipe ${combinedData.recipeName} was marked as unavailable.`);
-               combinedData.imageUrl = undefined;
-               combinedData.imageOmitted = true;
-            } else if (queryImageStored && !queryImageUrl && parsedData.imageUrl) {
-               // If query says stored, but no query URL, use stored one (might be long/data URI)
-               console.log(`Using stored image URL for ${combinedData.recipeName} as indicated by imageStored flag.`);
-               combinedData.imageUrl = parsedData.imageUrl;
-               combinedData.imageOmitted = parsedData.imageOmitted || false; // Ensure omitted flag is correct
-            } else if (!combinedData.imageUrl && parsedData.imageOmitted) {
-               // If no URL and marked omitted in storage, ensure it stays that way
-                console.log(`Image for ${combinedData.recipeName} confirmed as omitted.`);
-                combinedData.imageUrl = undefined;
-            } else if (combinedData.imageUrl && combinedData.imageOmitted) {
-                // If somehow we have a URL but it's marked omitted, warn and clear URL
-                console.warn(`Contradiction: Image URL present but marked as omitted for ${combinedData.recipeName}. Clearing URL.`);
-                combinedData.imageUrl = undefined;
-            }
-
-
-            setRecipeData(combinedData);
-            console.log("Recipe data successfully loaded and combined:", combinedData);
-            setError(null); // Clear previous errors on success
-
-        } else {
-           console.warn("Recipe data not found in session storage for key:", queryStorageKey);
-           setError(t('recipeDetail.errorLoadingMessage') + " (Data not found in session)"); // Set specific error
-           setRecipeData(null); // Ensure no stale data is shown
-        }
-      } catch (err) {
-         console.error(`Error processing sessionStorage data for key "${queryStorageKey}". Raw data: ${storedData ? storedData.substring(0,100)+'...' : 'null'}`, err);
-          if (err instanceof SyntaxError) {
-              setError(t('recipeDetail.errorLoadingMessage') + " (Corrupted data in session)");
-          } else if (err instanceof Error) {
-             setError(`${t('recipeDetail.errorLoadingTitle')}: ${err.message}`);
-           } else {
-             setError(t('recipeDetail.errorLoadingMessage'));
-           }
-        setRecipeData(null); // Ensure no stale data on error
-      } finally {
+    if (!redisKey) {
+        console.error("Redis key not found in query parameters.");
+        setError(t('recipeDetail.errorLoadingMessage') + " (Missing key)");
         setIsLoading(false);
-      }
-    } else {
-        console.error("Storage key not found in query parameters. Cannot load recipe details.");
-        setError(t('recipeDetail.errorLoadingMessage') + " (Missing storage key)");
-        setIsLoading(false); // Stop loading if no key is provided
+        return;
     }
-  }, [queryStorageKey, queryRecipeName, queryLang, queryImageUrl, queryImageStored, queryImageUnavailable, searchParams, t]); // Add dependencies
+
+    // Fetch data from Redis
+    const loadFromRedis = async () => {
+        if (!isRedisAvailable()) {
+            console.error("Redis is not available.");
+            setError(t('recipeDetail.errorLoadingMessage') + " (Storage unavailable)");
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const storedData = await redisClient?.get(redisKey);
+
+            if (storedData) {
+                console.log("Raw data retrieved from Redis:", storedData.substring(0, 100) + '...');
+                const parsedData: RecipeItem & { language?: LanguageCode } = JSON.parse(storedData);
+                console.log("Parsed data from Redis:", parsedData);
+
+                if (!parsedData.recipeName) {
+                    console.error("Critical error: Recipe name missing in stored data for key:", redisKey);
+                    setError(t('recipeDetail.errorLoadingMessage') + " (Missing recipe name)");
+                    setRecipeData(null);
+                } else {
+                    setRecipeData(parsedData);
+                    // Set the language state based on the stored data or fallback
+                    setLanguage(parsedData.language || 'en');
+                    setError(null);
+                }
+            } else {
+                console.warn("Recipe data not found in Redis for key (or expired):", redisKey);
+                setError(t('recipeDetail.errorLoadingMessage') + " (Data expired or not found)");
+                setRecipeData(null);
+            }
+        } catch (redisErr: any) {
+            console.error(`Error processing Redis data for key "${redisKey}":`, redisErr);
+            if (redisErr instanceof SyntaxError) {
+                setError(t('recipeDetail.errorLoadingMessage') + " (Corrupted data)");
+            } else {
+                 setError(`${t('toast.storageErrorTitle')}: ${redisErr.message || 'Failed to connect to Redis'}`);
+            }
+            setRecipeData(null);
+        } finally {
+            setIsLoading(false); // Finish loading
+        }
+    };
+
+    loadFromRedis();
+
+  }, [redisKey, t]); // Add t to dependency array
 
 
   // Function to safely render text with line breaks
   const renderMultilineText = (text: string | null | undefined) => {
     if (!text) return null;
-    // Replace potential escaped newlines from JSON with actual newlines
     const processedText = text.replace(/\\n/g, '\n');
     return processedText.split('\n').map((line, index) => {
       const trimmedLine = line.trim();
-      if (!trimmedLine) return null; // Skip empty lines
-      // Remove leading list markers like "1.", "-", "*"
+      if (!trimmedLine) return null;
       const content = trimmedLine.replace(/^(\s*(\d+\.|-|\*)\s*)/, '');
       return <React.Fragment key={index}>{content}<br /></React.Fragment>;
     });
@@ -280,47 +227,43 @@ function RecipeDetailContent() {
    // Function to render instructions with steps
    const renderInstructions = (text: string | null | undefined) => {
      if (!text) return <p>{t('recipeDetail.instructionsPlaceholder') || 'No instructions available.'}</p>;
-      // Replace potential escaped newlines from JSON with actual newlines
      const processedText = text.replace(/\\n/g, '\n');
      return processedText.split('\n').map((step, idx) => {
-       const cleanedStep = step.trim(); // Keep list markers if present
+       const cleanedStep = step.trim();
        return cleanedStep ? (
           <motion.div
              key={idx}
              className="flex items-start gap-3 mb-4"
              initial={{ opacity: 0, x: 20 }}
              animate={{ opacity: 1, x: 0 }}
-             transition={{ delay: 0.4 + idx * 0.05, duration: 0.4 }} // Stagger animation
+             transition={{ delay: 0.4 + idx * 0.05, duration: 0.4 }}
            >
-             {/* Consider adding step numbers visually if not present in text */}
-             {/* <span className="font-semibold text-primary w-5 text-right">{idx + 1}.</span> */}
              <p className="flex-1 leading-relaxed text-foreground/80 dark:text-foreground/75">
                 {cleanedStep}
              </p>
            </motion.div>
        ) : null;
-     }).filter(Boolean); // Filter out nulls from empty lines
+     }).filter(Boolean);
    };
 
    // Function to render ingredients list
     const renderIngredientsList = (text: string | null | undefined) => {
       if (!text) return <li>{t('recipeDetail.ingredientsPlaceholder') || 'No ingredients listed.'}</li>;
-       // Replace potential escaped newlines from JSON with actual newlines
       const processedText = text.replace(/\\n/g, '\n');
       return processedText.split('\n').map((item, idx) => {
-        const cleanedItem = item.replace(/^- \s*/, '').trim(); // Remove leading dash and trim
+        const cleanedItem = item.replace(/^- \s*/, '').trim();
         return cleanedItem ? (
            <motion.li
              key={idx}
              className="mb-1.5"
              initial={{ opacity: 0, x: -20 }}
              animate={{ opacity: 1, x: 0 }}
-             transition={{ delay: 0.3 + idx * 0.05, duration: 0.4 }} // Stagger animation
+             transition={{ delay: 0.3 + idx * 0.05, duration: 0.4 }}
            >
              {cleanedItem}
            </motion.li>
          ) : null;
-      }).filter(Boolean); // Filter out nulls from empty lines
+      }).filter(Boolean);
     };
 
     // Handle Print Action
@@ -330,12 +273,12 @@ function RecipeDetailContent() {
        }
      };
 
-   // Render loading state until client-side effect runs and data is loaded
+   // Render loading state
    if (isLoading || !isClient) {
        return <RecipeDetailLoading />;
    }
 
-   // Handle case where recipe data couldn't be loaded (due to error or missing data)
+   // Handle case where recipe data couldn't be loaded or Redis key was missing
    if (error || !recipeData) {
        return (
            <div className="container mx-auto py-12 px-4 md:px-6 max-w-4xl text-center">
@@ -355,15 +298,26 @@ function RecipeDetailContent() {
                          <AlertTriangle className="h-12 w-12 text-destructive" />
                        </div>
                         <CardTitle className="text-destructive text-xl mb-2">{t('recipeDetail.errorLoadingTitle')}</CardTitle>
-                        {/* Display the specific error message */}
                         <p className="text-muted-foreground">{error || t('recipeDetail.errorLoadingMessage')}</p>
+                        {/* Optional: Add retry for Redis errors */}
+                        {error?.includes('Redis') && (
+                             <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => window.location.reload()}
+                                 className="mt-4"
+                             >
+                                 <RefreshCw className="mr-2 h-4 w-4" />
+                                 Retry
+                             </Button>
+                         )}
                     </Card>
                 </motion.div>
            </div>
        );
    }
 
-  // Destructure loaded recipe data (now we know it's not null)
+  // Destructure loaded recipe data
   const {
       recipeName,
       ingredients,
@@ -374,16 +328,14 @@ function RecipeDetailContent() {
       imagePrompt,
       nutritionFacts,
       dietPlanSuitability,
-      imageOmitted // Use the flag from state
+      imageOmitted
   } = recipeData;
 
   return (
-   <TooltipProvider> {/* Ensure TooltipProvider wraps the component */}
+   <TooltipProvider>
      <div className="container mx-auto py-8 sm:py-12 px-4 md:px-6 max-w-4xl print:py-4 print:px-0">
-       {/* Apply the dynamic font style based on the loaded language */}
-       {/* This requires setting the font variable in CSS based on `queryLang` */}
-       {/* Ideally handled in a layout or higher component, but can be forced here if needed */}
-       {/* <style>{`:root { --font-dynamic: ${getFontVariable(queryLang)}; }`}</style> */}
+       {/* Set lang attribute dynamically */}
+       <style>{`:root { lang: ${language}; }`}</style>
 
        <motion.div
          initial={{ opacity: 0, y: -20 }}
@@ -413,9 +365,7 @@ function RecipeDetailContent() {
 
        <Card className="overflow-hidden shadow-xl border border-border/60 bg-card rounded-xl print:shadow-none print:border-none print:rounded-none">
          <CardHeader className="p-0 relative aspect-[16/8] sm:aspect-[16/7] overflow-hidden group print:aspect-auto print:max-h-[300px]">
-            {/* Conditional rendering based on image availability */}
-            {imageUrl ? (
-                // Use next/image for optimization if URL is not a data URI
+            {imageUrl && !imageOmitted ? (
                  imageUrl.startsWith('http') ? (
                     <Image
                         src={imageUrl}
@@ -424,22 +374,21 @@ function RecipeDetailContent() {
                          height={562}
                          className={cn(
                            "w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 print:object-contain",
-                           "print:max-h-[300px]" // Apply print max height using Tailwind class
+                           "print:max-h-[300px]"
                          )}
-                         priority // Load main image faster
-                         unoptimized={false} // Allow optimization for HTTP URLs
+                         priority
+                         unoptimized={false}
                      />
                  ) : (
-                     // Fallback to img tag for data URIs (no Next.js optimization)
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                           src={imageUrl}
                           alt={t('results.imageAlt', { recipeName })}
-                          width={1000} // Set width/height for layout consistency
+                          width={1000}
                           height={562}
                           className={cn(
                             "w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 print:object-contain",
-                            "print:max-h-[300px]" // Apply print max height using Tailwind class
+                            "print:max-h-[300px]"
                           )}
                           loading="lazy"
                       />
@@ -447,10 +396,9 @@ function RecipeDetailContent() {
              ) : (
                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20 print:static print:bg-muted/20 print:py-10">
                  <ImageOff className="h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground/40" />
-                  {imageOmitted && <p className="absolute bottom-2 text-xs text-muted-foreground/60 print:hidden">Image omitted (too large)</p>}
+                  {imageOmitted && <p className="absolute bottom-2 text-xs text-muted-foreground/60 print:hidden">Image omitted</p>}
                </div>
              )}
-           {/* Subtle gradient overlay - hidden on print */}
            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none print:hidden"></div>
            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/70 to-transparent print:static print:bg-none print:p-0 print:pt-4">
              <motion.div
@@ -482,7 +430,6 @@ function RecipeDetailContent() {
          </CardHeader>
 
          <CardContent className="p-5 sm:p-6 md:p-8 space-y-6 md:space-y-8 print:p-0 print:pt-6">
-           {/* Ingredients Section */}
             <motion.section
               aria-labelledby="ingredients-heading"
               initial={{ opacity: 0 }}
@@ -502,7 +449,6 @@ function RecipeDetailContent() {
 
            <Separator className="my-6 sm:my-8 bg-border/40 print:my-4" />
 
-           {/* Instructions Section */}
            <motion.section
                aria-labelledby="instructions-heading"
                initial={{ opacity: 0 }}
@@ -518,7 +464,6 @@ function RecipeDetailContent() {
            </motion.section>
 
 
-            {/* Conditionally render Nutrition and Diet Plan sections */}
             {(nutritionFacts || dietPlanSuitability) && (
                 <>
                     <Separator className="my-6 sm:my-8 bg-border/40 print:my-4" />
@@ -534,7 +479,6 @@ function RecipeDetailContent() {
                             }
                         }}
                     >
-                        {/* Nutrition Facts Section */}
                         {nutritionFacts && (
                             <motion.section
                                 aria-labelledby="nutrition-heading"
@@ -543,7 +487,7 @@ function RecipeDetailContent() {
                                 <h2 id="nutrition-heading" className="text-lg sm:text-xl font-semibold mb-3 text-foreground/90 flex items-center gap-2 print:text-base">
                                     <UtensilsCrossed size={18} className="text-primary"/> {t('recipeDetail.nutritionTitle')}
                                 </h2>
-                                <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full print:border-none print:bg-transparent print:p-0 print:shadow-none"> {/* Ensure card takes height */}
+                                <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full print:border-none print:bg-transparent print:p-0 print:shadow-none">
                                     <CardContent className="p-4 text-sm text-muted-foreground leading-relaxed print:p-0 print:text-xs">
                                         {renderMultilineText(nutritionFacts) || <p>{t('recipeDetail.nutritionPlaceholder')}</p>}
                                     </CardContent>
@@ -551,7 +495,6 @@ function RecipeDetailContent() {
                             </motion.section>
                         )}
 
-                        {/* Diet Plan Suitability Section */}
                         {dietPlanSuitability && (
                             <motion.section
                                 aria-labelledby="diet-plan-heading"
@@ -560,7 +503,7 @@ function RecipeDetailContent() {
                                 <h2 id="diet-plan-heading" className="text-lg sm:text-xl font-semibold mb-3 text-foreground/90 flex items-center gap-2 print:text-base">
                                     <UtensilsCrossed size={18} className="text-primary"/> {t('recipeDetail.dietPlanTitle')}
                                 </h2>
-                                <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full print:border-none print:bg-transparent print:p-0 print:shadow-none"> {/* Ensure card takes height */}
+                                <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full print:border-none print:bg-transparent print:p-0 print:shadow-none">
                                     <CardContent className="p-4 text-sm text-muted-foreground leading-relaxed print:p-0 print:text-xs">
                                         {renderMultilineText(dietPlanSuitability) || <p>{t('recipeDetail.dietPlanPlaceholder')}</p>}
                                     </CardContent>
@@ -574,7 +517,6 @@ function RecipeDetailContent() {
 
          </CardContent>
 
-         {/* Optional Footer for Image Prompt - hidden on print */}
          {imagePrompt && (
              <CardFooter className="p-4 sm:p-5 bg-muted/40 dark:bg-background/30 border-t border-border/30 mt-4 rounded-b-xl print:hidden">
                 <p className="text-xs text-muted-foreground italic text-center w-full">
@@ -590,10 +532,9 @@ function RecipeDetailContent() {
 
 
 export default function RecipeDetailPage() {
-  // Need a key for Suspense to ensure it re-renders when query params change,
-  // even if the component itself isn't fully unmounted/remounted by Next.js router.
   const searchParams = useSearchParams();
-  const suspenseKey = searchParams.toString(); // Use the full query string as the key
+  // Use Redis key if present, otherwise fallback to other params for key generation
+   const suspenseKey = searchParams.get('redisKey') || searchParams.toString();
 
   return (
     <Suspense fallback={<RecipeDetailLoading />} key={suspenseKey}>
@@ -601,11 +542,3 @@ export default function RecipeDetailPage() {
     </Suspense>
   );
 }
-
-// Add CSS for printing
-// Can be added to globals.css or a specific print CSS file
-// @media print {
-//   body { font-size: 10pt; }
-//   .print\:hidden { display: none; }
-//   /* Add other print-specific styles */
-// }

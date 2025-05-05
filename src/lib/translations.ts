@@ -38,33 +38,46 @@ interface TranslationMessages {
     quickModeAriaLabel: string;
     servingSizeLabel: string;
     servingSizePlaceholder: string;
-    cuisineTypeLabel: string; // New field
-    cuisineTypePlaceholder: string; // New field
-    cookingMethodLabel: string; // New field
-    cookingMethodPlaceholder: string; // New field
-    includeDetailsLabel: string; // New field
-    includeDetailsHint: string; // New field
-    includeDetailsAriaLabel: string; // New field
+    cuisineTypeLabel: string;
+    cuisineTypePlaceholder: string;
+    cookingMethodLabel: string;
+    cookingMethodPlaceholder: string;
+    includeDetailsLabel: string;
+    includeDetailsHint: string;
+    includeDetailsAriaLabel: string;
+    categoryLabel: string; // New category label
+    categoryPlaceholder: string; // New category placeholder
     submitButton: string;
     submitButtonLoading: string;
     resetButton: string;
     footerNote: string;
+  };
+  categories: { // New section for category names
+    all: string;
+    breakfast: string;
+    lunch: string;
+    dinner: string;
+    dessert: string;
+    snack: string;
+    appetizer: string;
+    sidedish: string; // Note: key is lowercased and space removed
+    beverage: string;
   };
   results: {
     title: string;
     imageAlt: string; // Use {recipeName} placeholder
     saveButtonAriaLabel: string;
     saveButtonTooltip: string;
-    unsaveButtonAriaLabel: string; // New for unsave
-    unsaveButtonTooltip: string; // New for unsave
+    unsaveButtonAriaLabel: string;
+    unsaveButtonTooltip: string;
     ingredientsTitle: string;
     instructionsTitle: string;
     noRecipesFoundTitle: string;
     noRecipesFoundSuggestion: string;
-    defaultDescription: string; // New fallback description
-    viewRecipeButton: string; // New button text
+    defaultDescription: string;
+    viewRecipeButton: string;
   };
-  recipeDetail: { // New section for detail page
+  recipeDetail: {
     backButton: string;
     nutritionTitle: string;
     dietPlanTitle: string;
@@ -73,12 +86,12 @@ interface TranslationMessages {
     ingredientsPlaceholder: string;
     instructionsPlaceholder: string;
     imagePromptLabel: string;
-    errorLoadingTitle: string; // New error title
-    errorLoadingMessage: string; // New error message
-    printButtonAriaLabel: string; // New for print
-    printButtonTooltip: string; // New for print
+    errorLoadingTitle: string;
+    errorLoadingMessage: string;
+    printButtonAriaLabel: string;
+    printButtonTooltip: string;
   };
-  savedRecipes: { // New section for saved recipes dialog
+  savedRecipes: {
      dialogTitle: string;
      dialogOpenButtonAriaLabel: string;
      dialogOpenButtonTooltip: string;
@@ -89,37 +102,34 @@ interface TranslationMessages {
      removeButtonTooltip: string;
      closeButton: string;
   };
-  // Toast translations removed
   toast: {
       formClearedTitle: string;
       formClearedDesc: string;
       recipeSavedTitle: string;
       recipeSavedDesc: string; // Use {recipeName} placeholder
-      recipeRemovedTitle: string; // New toast for removal
-      recipeRemovedDesc: string; // New toast for removal
+      recipeRemovedTitle: string;
+      recipeRemovedDesc: string; // Use {recipeName} placeholder
       noRecipesTitle: string;
       noRecipesDesc: string;
       recipesFoundTitle: string;
       recipesFoundDesc: string; // Use {count} and {s} placeholders
       errorTitle: string;
-      genericError: string; // Default error if specific message isn't available
-      validationError: string; // Error for form validation issues
-      authRequiredTitle: string; // New: Auth needed
-      authRequiredDesc: string; // New: Auth needed description
-      saveErrorTitle: string; // New: Error during save/unsave
-      saveErrorDesc: string; // New: Error during save/unsave description
-      storageQuotaExceededTitle: string; // New: Storage quota exceeded
-      storageQuotaExceededDesc: string; // New: Storage quota exceeded description
-      storageErrorTitle: string; // New: General storage error
-      storageErrorDesc: string; // New: General storage error description
-      storageQuotaWarningTitle: string; // New: Storage quota warning
-      storageQuotaWarningDesc: string; // New: Storage quota warning description
-      storageClearedTitle: string; // New: Storage cleared title
-      storageClearedDesc: string; // New: Storage cleared description
-      networkErrorTitle: string; // New: Network error title
-      networkErrorDesc: string; // New: Network error description
-      aiServiceUnavailable: string; // New: AI service unavailable
-      apiKeyError: string; // New: API key error
+      genericError: string;
+      validationError: string;
+      saveErrorTitle: string;
+      saveErrorDesc: string;
+      storageQuotaExceededTitle: string;
+      storageQuotaExceededDesc: string;
+      storageErrorTitle: string;
+      storageErrorDesc: string;
+      storageQuotaWarningTitle: string;
+      storageQuotaWarningDesc: string;
+      storageClearedTitle: string;
+      storageClearedDesc: string;
+      networkErrorTitle: string;
+      networkErrorDesc: string;
+      aiServiceUnavailable: string;
+      apiKeyError: string;
     };
   footer: {
     builtWith: string; // Includes "Built with ❤️ by "
@@ -166,25 +176,38 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'Quick mode (under 30 minutes)',
       servingSizeLabel: 'Servings',
       servingSizePlaceholder: 'e.g., 2',
-      cuisineTypeLabel: 'Cuisine Type', // New field
-      cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai', // New field
-      cookingMethodLabel: 'Cooking Method', // New field
-      cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling', // New field
-      includeDetailsLabel: 'Include Details?', // New field
-      includeDetailsHint: '(Nutrition/Diet)', // New field
-      includeDetailsAriaLabel: 'Include nutrition facts and diet plan suitability', // New field
+      cuisineTypeLabel: 'Cuisine Type',
+      cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai',
+      cookingMethodLabel: 'Cooking Method',
+      cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling',
+      includeDetailsLabel: 'Include Details?',
+      includeDetailsHint: '(Nutrition/Diet)',
+      includeDetailsAriaLabel: 'Include nutrition facts and diet plan suitability',
+      categoryLabel: 'Category', // New
+      categoryPlaceholder: 'Select a category', // New
       submitButton: 'Get Suggestions',
       submitButtonLoading: 'Finding Recipes...',
       resetButton: 'Clear Form',
       footerNote: 'AI generates suggestions based on your input. Results may vary. Double-check allergies!',
     },
+     categories: {
+       all: 'All Categories',
+       breakfast: 'Breakfast',
+       lunch: 'Lunch',
+       dinner: 'Dinner',
+       dessert: 'Dessert',
+       snack: 'Snack',
+       appetizer: 'Appetizer',
+       sidedish: 'Side Dish',
+       beverage: 'Beverage',
+     },
     results: {
       title: 'Your Recipe Suggestions',
       imageAlt: 'Generated image for {recipeName}',
       saveButtonAriaLabel: 'Save recipe',
       saveButtonTooltip: 'Save Recipe',
-      unsaveButtonAriaLabel: 'Remove saved recipe', // New
-      unsaveButtonTooltip: 'Remove Saved Recipe', // New
+      unsaveButtonAriaLabel: 'Remove saved recipe',
+      unsaveButtonTooltip: 'Remove Saved Recipe',
       ingredientsTitle: 'Ingredients',
       instructionsTitle: 'Instructions',
       noRecipesFoundTitle: 'No recipes found matching your criteria.',
@@ -202,9 +225,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        instructionsPlaceholder: 'No instructions available.',
        imagePromptLabel: 'Image Prompt',
        errorLoadingTitle: 'Error Loading Recipe',
-       errorLoadingMessage: 'Could not load the details for this recipe. It might be missing or the link might be incorrect.',
-       printButtonAriaLabel: 'Print Recipe', // New
-       printButtonTooltip: 'Print Recipe', // New
+       errorLoadingMessage: 'Could not load the details for this recipe. It might be missing, expired, or the link might be incorrect.', // Updated message
+       printButtonAriaLabel: 'Print Recipe',
+       printButtonTooltip: 'Print Recipe',
      },
     savedRecipes: {
         dialogTitle: 'Saved Recipes',
@@ -213,11 +236,11 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         noSavedRecipes: 'You haven\'t saved any recipes yet.',
         viewButton: 'View',
         removeButton: 'Remove',
-        removeButtonAriaLabel: 'Remove {recipeName} from saved recipes', // Use {recipeName}
+        removeButtonAriaLabel: 'Remove {recipeName} from saved recipes',
         removeButtonTooltip: 'Remove Recipe',
         closeButton: 'Close',
      },
-    toast: { // Keep the toast structure but maybe use console.log instead
+    toast: {
       formClearedTitle: 'Form Cleared',
       formClearedDesc: 'Ready for new ingredients!',
       recipeSavedTitle: 'Recipe Saved!',
@@ -231,14 +254,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Error',
       genericError: 'Failed to suggest recipes. Please try again later.',
       validationError: 'Input validation failed. Please check your entries.',
-      authRequiredTitle: 'Authentication Required', // Keep even if auth is removed, for consistency/future
-      authRequiredDesc: 'Please sign in to save recipes.', // Keep even if auth is removed
       saveErrorTitle: 'Save Error',
       saveErrorDesc: 'Could not save or remove the recipe. Please try again.',
       storageQuotaExceededTitle: "Storage Limit Exceeded",
       storageQuotaExceededDesc: "Browser storage is full. Recipe details might not be fully saved.",
       storageErrorTitle: "Storage Error",
-      storageErrorDesc: "Could not save data to browser storage.",
+      storageErrorDesc: "Could not save or access data from storage (Redis/LocalStorage).", // Updated message
       storageQuotaWarningTitle: "Storage Almost Full",
       storageQuotaWarningDesc: "Results might not persist fully due to browser storage limits.",
       storageClearedTitle: "Storage Cleared",
@@ -299,18 +320,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       includeDetailsLabel: 'विवरण शामिल करें?',
       includeDetailsHint: '(पोषण/आहार)',
       includeDetailsAriaLabel: 'पोषण तथ्य और आहार योजना उपयुक्तता शामिल करें',
+      categoryLabel: 'श्रेणी',
+      categoryPlaceholder: 'एक श्रेणी चुनें',
       submitButton: 'सुझाव प्राप्त करें',
       submitButtonLoading: 'रेसिपी ढूंढी जा रही हैं...',
       resetButton: 'फॉर्म साफ़ करें',
       footerNote: 'AI आपके इनपुट के आधार पर सुझाव उत्पन्न करता है। परिणाम भिन्न हो सकते हैं। एलर्जी की दोबारा जाँच करें!',
     },
+     categories: {
+       all: 'सभी श्रेणियाँ',
+       breakfast: 'नाश्ता',
+       lunch: 'दोपहर का भोजन',
+       dinner: 'रात का खाना',
+       dessert: 'मिठाई',
+       snack: 'नाश्ता',
+       appetizer: 'स्टार्टर',
+       sidedish: 'साइड डिश',
+       beverage: 'पेय',
+     },
     results: {
       title: 'आपके रेसिपी सुझाव',
       imageAlt: '{recipeName} के लिए उत्पन्न छवि',
       saveButtonAriaLabel: 'रेसिपी सहेजें',
       saveButtonTooltip: 'रेसिपी सहेजें',
-      unsaveButtonAriaLabel: 'सहेजी गई रेसिपी हटाएं', // New
-      unsaveButtonTooltip: 'सहेजी गई रेसिपी हटाएं', // New
+      unsaveButtonAriaLabel: 'सहेजी गई रेसिपी हटाएं',
+      unsaveButtonTooltip: 'सहेजी गई रेसिपी हटाएं',
       ingredientsTitle: 'सामग्री',
       instructionsTitle: 'निर्देश',
       noRecipesFoundTitle: 'आपके मानदंडों से मेल खाने वाली कोई रेसिपी नहीं मिली।',
@@ -328,9 +362,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       instructionsPlaceholder: 'कोई निर्देश उपलब्ध नहीं है।',
       imagePromptLabel: 'छवि प्रॉम्प्ट',
       errorLoadingTitle: 'रेसिपी लोड करने में त्रुटि',
-      errorLoadingMessage: 'इस रेसिपी का विवरण लोड नहीं किया जा सका। यह गुम हो सकता है या लिंक गलत हो सकता है।',
-      printButtonAriaLabel: 'रेसिपी प्रिंट करें', // New
-      printButtonTooltip: 'रेसिपी प्रिंट करें', // New
+      errorLoadingMessage: 'इस रेसिपी का विवरण लोड नहीं किया जा सका। यह गुम, समाप्त हो सकता है या लिंक गलत हो सकता है।',
+      printButtonAriaLabel: 'रेसिपी प्रिंट करें',
+      printButtonTooltip: 'रेसिपी प्रिंट करें',
     },
     savedRecipes: {
        dialogTitle: 'सहेजी गई रेसिपी',
@@ -343,7 +377,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        removeButtonTooltip: 'रेसिपी हटाएं',
        closeButton: 'बंद करें',
     },
-    toast: { // Keep the toast structure but maybe use console.log instead
+    toast: {
       formClearedTitle: 'फॉर्म साफ़ किया गया',
       formClearedDesc: 'नई सामग्री के लिए तैयार!',
       recipeSavedTitle: 'रेसिपी सहेजी गई!',
@@ -357,14 +391,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'त्रुटि',
       genericError: 'रेसिपी सुझाने में विफल। कृपया बाद में पुनः प्रयास करें।',
       validationError: 'इनपुट सत्यापन विफल रहा। कृपया अपनी प्रविष्टियाँ जांचें।',
-      authRequiredTitle: 'प्रमाणीकरण आवश्यक',
-      authRequiredDesc: 'रेसिपी सहेजने के लिए कृपया साइन इन करें।',
       saveErrorTitle: 'सहेजने में त्रुटि',
       saveErrorDesc: 'रेसिपी को सहेजा या हटाया नहीं जा सका। कृपया पुनः प्रयास करें।',
       storageQuotaExceededTitle: "भंडारण सीमा पार हो गई",
       storageQuotaExceededDesc: "ब्राउज़र भंडारण भर गया है। रेसिपी विवरण पूरी तरह से सहेजा नहीं जा सका।",
       storageErrorTitle: "भंडारण त्रुटि",
-      storageErrorDesc: "ब्राउज़र भंडारण में डेटा सहेजा नहीं जा सका।",
+      storageErrorDesc: "स्टोरेज (Redis/LocalStorage) से डेटा सहेजा या एक्सेस नहीं किया जा सका।",
       storageQuotaWarningTitle: "भंडारण लगभग भर गया",
       storageQuotaWarningDesc: "ब्राउज़र भंडारण सीमाओं के कारण परिणाम पूरी तरह से बने नहीं रह सकते हैं।",
       storageClearedTitle: "भंडारण साफ़ किया गया",
@@ -372,7 +404,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       networkErrorTitle: "नेटवर्क त्रुटि",
       networkErrorDesc: "सर्वर से कनेक्ट नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जांचें।",
       aiServiceUnavailable: "AI सेवा वर्तमान में अनुपलब्ध है। कृपया बाद में पुनः प्रयास करें।",
-      apiKeyError: "AI सेवा के लिए अमान्य API कुंजी कॉन्फ़ਿगरेशन।",
+      apiKeyError: "AI सेवा के लिए अमान्य API कुंजी कॉन्फ़िगरेशन।",
     },
     footer: {
       builtWith: '❤️ द्वारा निर्मित ',
@@ -423,18 +455,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         includeDetailsLabel: 'বিস্তারিত অন্তর্ভুক্ত?',
         includeDetailsHint: '(পুষ্টি/খাদ্য)',
         includeDetailsAriaLabel: 'পুষ্টি তথ্য এবং খাদ্য পরিকল্পনার উপযুক্ততা অন্তর্ভুক্ত করুন',
+        categoryLabel: 'বিভাগ',
+        categoryPlaceholder: 'একটি বিভাগ নির্বাচন করুন',
         submitButton: 'পরামর্শ পান',
         submitButtonLoading: 'রেসিপি খোঁজা হচ্ছে...',
         resetButton: 'ফর্ম পরিষ্কার করুন',
         footerNote: 'AI আপনার ইনপুটের উপর ভিত্তি করে পরামর্শ তৈরি করে। ফলাফল ভিন্ন হতে পারে। অ্যালার্জি ডাবল-চেক করুন!',
     },
+     categories: {
+       all: 'সব বিভাগ',
+       breakfast: 'সকালের নাস্তা',
+       lunch: 'দুপুরের খাবার',
+       dinner: 'রাতের খাবার',
+       dessert: 'মিষ্টান্ন',
+       snack: 'হালকা নাস্তা',
+       appetizer: 'ক্ষুধাবর্ধক',
+       sidedish: 'সাইড ডিশ',
+       beverage: 'পানীয়',
+     },
     results: {
         title: 'আপনার রেসিপি পরামর্শ',
         imageAlt: '{recipeName} এর জন্য জেনারেট করা ছবি',
         saveButtonAriaLabel: 'রেসিপি সংরক্ষণ করুন',
         saveButtonTooltip: 'রেসিপি সংরক্ষণ করুন',
-        unsaveButtonAriaLabel: 'সংরক্ষিত রেসিপি সরান', // New
-        unsaveButtonTooltip: 'সংরক্ষিত রেসিপি সরান', // New
+        unsaveButtonAriaLabel: 'সংরক্ষিত রেসিপি সরান',
+        unsaveButtonTooltip: 'সংরক্ষিত রেসিপি সরান',
         ingredientsTitle: 'উপকরণ',
         instructionsTitle: 'নির্দেশাবলী',
         noRecipesFoundTitle: 'আপনার মানদণ্ডের সাথে মিলে যাওয়া কোনও রেসিপি পাওয়া যায়নি।',
@@ -452,9 +497,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        instructionsPlaceholder: 'কোনো নির্দেশনা উপলব্ধ নেই।',
        imagePromptLabel: 'চিত্র প্রম্পট',
        errorLoadingTitle: 'রেসিপি লোড করতে ত্রুটি',
-       errorLoadingMessage: 'এই রেসিপির বিবরণ লোড করা যায়নি। এটি অনুপস্থিত থাকতে পারে বা লিঙ্কটি ভুল হতে পারে।',
-       printButtonAriaLabel: 'রেসিপি প্রিন্ট করুন', // New
-       printButtonTooltip: 'রেসিপি প্রিন্ট করুন', // New
+       errorLoadingMessage: 'এই রেসিপির বিবরণ লোড করা যায়নি। এটি অনুপস্থিত, মেয়াদোত্তীর্ণ হতে পারে বা লিঙ্কটি ভুল হতে পারে।',
+       printButtonAriaLabel: 'রেসিপি প্রিন্ট করুন',
+       printButtonTooltip: 'রেসিপি প্রিন্ট করুন',
      },
     savedRecipes: {
         dialogTitle: 'সংরক্ষিত রেসিপি',
@@ -467,7 +512,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         removeButtonTooltip: 'রেসিপি সরান',
         closeButton: 'বন্ধ করুন',
     },
-    toast: { // Keep the toast structure but maybe use console.log instead
+    toast: {
         formClearedTitle: 'ফর্ম পরিষ্কার করা হয়েছে',
         formClearedDesc: 'নতুন উপকরণের জন্য প্রস্তুত!',
         recipeSavedTitle: 'রেসিপি সংরক্ষিত হয়েছে!',
@@ -481,14 +526,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         errorTitle: 'ত্রুটি',
         genericError: 'রেসিপি পরামর্শ দিতে ব্যর্থ হয়েছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।',
         validationError: 'ইনপুট যাচাইকরণ ব্যর্থ হয়েছে। অনুগ্রহ করে আপনার এন্ট্রি চেক করুন।',
-        authRequiredTitle: 'প্রমাণীকরণ প্রয়োজন',
-        authRequiredDesc: 'রেসিপি সংরক্ষণ করতে অনুগ্রহ করে সাইন ইন করুন।',
         saveErrorTitle: 'সংরক্ষণে ত্রুটি',
         saveErrorDesc: 'রেসিপি সংরক্ষণ বা সরাতে முடியவில்லை। অনুগ্রহ করে আবার চেষ্টা করুন।',
         storageQuotaExceededTitle: "স্টোরেজ সীমা অতিক্রম করেছে",
         storageQuotaExceededDesc: "ব্রাউজার স্টোরেজ পূর্ণ। রেসিপির বিবরণ সম্পূর্ণরূপে সংরক্ষিত নাও হতে পারে।",
         storageErrorTitle: "স্টোরেজ ত্রুটি",
-        storageErrorDesc: "ব্রাউজার স্টোরেজে ডেটা সংরক্ষণ করা যায়নি।",
+        storageErrorDesc: "স্টোরেজ (Redis/LocalStorage) থেকে ডেটা সংরক্ষণ বা অ্যাক্সেস করা যায়নি।",
         storageQuotaWarningTitle: "স্টোরেজ প্রায় পূর্ণ",
         storageQuotaWarningDesc: "ব্রাউজার স্টোরেজ সীমার কারণে ফলাফল সম্পূর্ণরূপে টিকে নাও থাকতে পারে।",
         storageClearedTitle: "স্টোরেজ পরিষ্কার করা হয়েছে",
@@ -547,18 +590,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           includeDetailsLabel: 'तपशील समाविष्ट करायचे?',
           includeDetailsHint: '(पोषण/आहार)',
           includeDetailsAriaLabel: 'पोषण तथ्ये आणि आहार योजना योग्यता समाविष्ट करा',
+          categoryLabel: 'श्रेणी',
+          categoryPlaceholder: 'एक श्रेणी निवडा',
           submitButton: 'सूचना मिळवा',
           submitButtonLoading: 'रेसिपी शोधत आहे...',
           resetButton: 'फॉर्म साफ करा',
           footerNote: 'AI तुमच्या इनपुटवर आधारित सूचना तयार करते. परिणाम भिन्न असू शकतात. ऍलर्जी तपासा!',
       },
+       categories: {
+         all: 'सर्व श्रेणी',
+         breakfast: 'न्याहारी',
+         lunch: 'दुपारचे जेवण',
+         dinner: 'रात्रीचे जेवण',
+         dessert: 'मिष्टान्न',
+         snack: 'नाश्ता',
+         appetizer: 'स्टार्टर',
+         sidedish: 'साइड डिश',
+         beverage: 'पेय',
+       },
       results: {
           title: 'तुमच्या रेसिपी सूचना',
           imageAlt: '{recipeName} साठी तयार केलेली प्रतिमा',
           saveButtonAriaLabel: 'रेसिपी जतन करा',
           saveButtonTooltip: 'रेसिपी जतन करा',
-          unsaveButtonAriaLabel: 'जतन केलेली रेसिपी काढा', // New
-          unsaveButtonTooltip: 'जतन केलेली रेसिपी काढा', // New
+          unsaveButtonAriaLabel: 'जतन केलेली रेसिपी काढा',
+          unsaveButtonTooltip: 'जतन केलेली रेसिपी काढा',
           ingredientsTitle: 'साहित्य',
           instructionsTitle: 'कृती',
           noRecipesFoundTitle: 'तुमच्या निकषांशी जुळणारी कोणतीही रेसिपी आढळली नाही.',
@@ -576,9 +632,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          instructionsPlaceholder: 'कोणतीही कृती उपलब्ध नाही.',
          imagePromptLabel: 'प्रतिमा प्रॉम्प्ट',
          errorLoadingTitle: 'रेसिपी लोड करण्यात त्रुटी',
-         errorLoadingMessage: 'या रेसिपीचा तपशील लोड होऊ शकला नाही. तो गहाळ असू शकतो किंवा लिंक चुकीची असू शकते.',
-         printButtonAriaLabel: 'रेसिपी प्रिंट करा', // New
-         printButtonTooltip: 'रेसिपी प्रिंट करा', // New
+         errorLoadingMessage: 'या रेसिपीचा तपशील लोड होऊ शकला नाही. तो गहाळ, कालबाह्य झालेला असू शकतो किंवा लिंक चुकीची असू शकते.',
+         printButtonAriaLabel: 'रेसिपी प्रिंट करा',
+         printButtonTooltip: 'रेसिपी प्रिंट करा',
        },
        savedRecipes: {
           dialogTitle: 'जतन केलेल्या रेसिपी',
@@ -591,7 +647,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           removeButtonTooltip: 'रेसिपी काढा',
           closeButton: 'बंद करा',
        },
-      toast: { // Keep the toast structure but maybe use console.log instead
+      toast: {
           formClearedTitle: 'फॉर्म साफ केला',
           formClearedDesc: 'नवीन साहित्यासाठी तयार!',
           recipeSavedTitle: 'रेसिपी जतन केली!',
@@ -605,14 +661,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'त्रुटी',
           genericError: 'रेसिपी सुचवण्यात अयशस्वी. कृपया नंतर पुन्हा प्रयत्न करा.',
           validationError: 'इनपुट प्रमाणीकरण अयशस्वी. कृपया आपल्या नोंदी तपासा.',
-          authRequiredTitle: 'प्रमाणीकरण आवश्यक',
-          authRequiredDesc: 'रेसिपी जतन करण्यासाठी कृपया साइन इन करा.',
           saveErrorTitle: 'जतन करण्यात त्रुटी',
           saveErrorDesc: 'रेसिपी जतन किंवा काढता आली नाही. कृपया पुन्हा प्रयत्न करा.',
           storageQuotaExceededTitle: "स्टोरेज मर्यादा ओलांडली",
           storageQuotaExceededDesc: "ब्राउझर स्टोरेज भरले आहे. रेसिपी तपशील पूर्णपणे जतन केला जाऊ शकत नाही.",
           storageErrorTitle: "स्टोरेज त्रुटी",
-          storageErrorDesc: "ब्राउझर स्टोरेजमध्ये डेटा जतन करता आला नाही.",
+          storageErrorDesc: "स्टोरेज (Redis/LocalStorage) मधून डेटा जतन किंवा ऍक्सेस करता आला नाही.",
           storageQuotaWarningTitle: "स्टोरेज जवळजवळ भरले आहे",
           storageQuotaWarningDesc: "ब्राउझर स्टोरेज मर्यादेमुळे परिणाम पूर्णपणे टिकू शकत नाहीत.",
           storageClearedTitle: "स्टोरेज साफ केले",
@@ -671,18 +725,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           includeDetailsLabel: 'விவரங்களைச் சேர்க்கவா?',
           includeDetailsHint: '(ஊட்டச்சத்து/உணவு)',
           includeDetailsAriaLabel: 'ஊட்டச்சத்து உண்மைகள் மற்றும் உணவுத் திட்டப் பொருத்தத்தைச் சேர்க்கவும்',
+          categoryLabel: 'வகை',
+          categoryPlaceholder: 'ஒரு வகையைத் தேர்ந்தெடுக்கவும்',
           submitButton: 'பரிந்துரைகளைப் பெறுக',
           submitButtonLoading: 'சமையல் குறிப்புகள் தேடப்படுகின்றன...',
           resetButton: 'படிவத்தை அழிக்கவும்',
           footerNote: 'AI உங்கள் உள்ளீட்டின் அடிப்படையில் பரிந்துரைகளை உருவாக்குகிறது. முடிவுகள் மாறுபடலாம். ஒவ்வாமைகளை இருமுறை சரிபார்க்கவும்!',
       },
+       categories: {
+         all: 'அனைத்து வகைகள்',
+         breakfast: 'காலை உணவு',
+         lunch: 'மதிய உணவு',
+         dinner: 'இரவு உணவு',
+         dessert: 'இனிப்பு',
+         snack: 'சிற்றுண்டி',
+         appetizer: 'பசியூட்டி',
+         sidedish: 'சைட் டிஷ்',
+         beverage: 'பானம்',
+       },
       results: {
           title: 'உங்கள் சமையல் குறிப்பு பரிந்துரைகள்',
           imageAlt: '{recipeName} க்கான உருவாக்கப்பட்ட படம்',
           saveButtonAriaLabel: 'சமையல் குறிப்பைச் சேமி',
           saveButtonTooltip: 'சமையல் குறிப்பைச் சேமி',
-          unsaveButtonAriaLabel: 'சேமித்த செய்முறையை அகற்று', // New
-          unsaveButtonTooltip: 'சேமித்த செய்முறையை அகற்று', // New
+          unsaveButtonAriaLabel: 'சேமித்த செய்முறையை அகற்று',
+          unsaveButtonTooltip: 'சேமித்த செய்முறையை அகற்று',
           ingredientsTitle: 'பொருட்கள்',
           instructionsTitle: 'செய்முறை',
           noRecipesFoundTitle: 'உங்கள் நிபந்தனைகளுடன் பொருந்தக்கூடிய சமையல் குறிப்புகள் எதுவும் இல்லை.',
@@ -700,9 +767,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          instructionsPlaceholder: 'செய்முறை எதுவும் கிடைக்கவில்லை.',
          imagePromptLabel: 'பட உந்தல்',
          errorLoadingTitle: 'செய்முறையை ஏற்றுவதில் பிழை',
-         errorLoadingMessage: 'இந்த செய்முறையின் விவரங்களை ஏற்ற முடியவில்லை. அது விடுபட்டிருக்கலாம் அல்லது இணைப்பு தவறாக இருக்கலாம்.',
-         printButtonAriaLabel: 'செய்முறையை அச்சிடு', // New
-         printButtonTooltip: 'செய்முறையை அச்சிடு', // New
+         errorLoadingMessage: 'இந்த செய்முறையின் விவரங்களை ஏற்ற முடியவில்லை. அது விடுபட்டிருக்கலாம், காலாவதியாகி இருக்கலாம் அல்லது இணைப்பு தவறாக இருக்கலாம்.',
+         printButtonAriaLabel: 'செய்முறையை அச்சிடு',
+         printButtonTooltip: 'செய்முறையை அச்சிடு',
        },
        savedRecipes: {
           dialogTitle: 'சேமித்த சமையல் குறிப்புகள்',
@@ -715,7 +782,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           removeButtonTooltip: 'செய்முறையை அகற்று',
           closeButton: 'மூடு',
        },
-      toast: { // Keep the toast structure but maybe use console.log instead
+      toast: {
           formClearedTitle: 'படிவம் அழிக்கப்பட்டது',
           formClearedDesc: 'புதிய பொருட்களுக்குத் தயார்!',
           recipeSavedTitle: 'சமையல் குறிப்பு சேமிக்கப்பட்டது!',
@@ -729,14 +796,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'பிழை',
           genericError: 'சமையல் குறிப்புகளைப் பரிந்துரைக்க முடியவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.',
           validationError: 'உள்ளீட்டு சரிபார்ப்பு தோல்வியடைந்தது. உங்கள் உள்ளீடுகளை சரிபார்க்கவும்.',
-          authRequiredTitle: 'அங்கீகாரம் தேவை',
-          authRequiredDesc: 'செய்முறைகளைச் சேமிக்க தயவுசெய்து உள்நுழையவும்.',
           saveErrorTitle: 'சேமிப்பதில் பிழை',
           saveErrorDesc: 'செய்முறையைச் சேமிக்கவோ அல்லது அகற்றவோ முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.',
           storageQuotaExceededTitle: "சேமிப்பக வரம்பு மீறப்பட்டது",
           storageQuotaExceededDesc: "உலாவி சேமிப்பகம் நிரம்பியுள்ளது. சமையல் குறிப்பு விவரங்கள் முழுமையாக சேமிக்கப்படாமல் போகலாம்.",
           storageErrorTitle: "சேமிப்பகப் பிழை",
-          storageErrorDesc: "உலாவி சேமிப்பகத்தில் தரவைச் சேமிக்க முடியவில்லை.",
+          storageErrorDesc: "சேமிப்பகத்திலிருந்து (Redis/LocalStorage) தரவைச் சேமிக்கவோ அல்லது அணுகவோ முடியவில்லை.",
           storageQuotaWarningTitle: "சேமிப்பகம் கிட்டத்தட்ட நிரம்பியுள்ளது",
           storageQuotaWarningDesc: "உலாவி சேமிப்பக வரம்புகள் காரணமாக முடிவுகள் முழுமையாக நிலைத்திருக்காது.",
           storageClearedTitle: "சேமிப்பகம் அழிக்கப்பட்டது",
@@ -795,18 +860,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           includeDetailsLabel: 'వివరాలను చేర్చాలా?',
           includeDetailsHint: '(పోషకాహారం/ఆహారం)',
           includeDetailsAriaLabel: 'పోషకాహార వాస్తవాలు మరియు ఆహార ప్రణాళిక అనుకూలతను చేర్చండి',
+          categoryLabel: 'వర్గం',
+          categoryPlaceholder: 'ఒక వర్గాన్ని ఎంచుకోండి',
           submitButton: 'సూచనలను పొందండి',
           submitButtonLoading: 'వంటకాలు కనుగొనబడుతున్నాయి...',
           resetButton: 'ఫారమ్‌ను క్లియర్ చేయండి',
           footerNote: 'AI మీ ఇన్‌పుట్ ఆధారంగా సూచనలను రూపొందిస్తుంది. ఫలితాలు మారవచ్చు. అలెర్జీలను రెండుసార్లు తనిఖీ చేయండి!',
       },
+       categories: {
+         all: 'అన్ని వర్గాలు',
+         breakfast: 'అల్పాహారం',
+         lunch: 'మధ్యాహ్న భోజనం',
+         dinner: 'రాత్రి భోజనం',
+         dessert: 'డెజర్ట్',
+         snack: 'చిరుతిండి',
+         appetizer: 'ఆకలిని పెంచేది',
+         sidedish: 'సైడ్ డిష్',
+         beverage: 'పానీయం',
+       },
       results: {
           title: 'మీ వంటకం సూచనలు',
           imageAlt: '{recipeName} కోసం రూపొందించిన చిత్రం',
           saveButtonAriaLabel: 'వంటకాన్ని సేవ్ చేయండి',
           saveButtonTooltip: 'వంటకాన్ని సేవ్ చేయండి',
-          unsaveButtonAriaLabel: 'సేవ్ చేసిన రెసిపీని తీసివేయండి', // New
-          unsaveButtonTooltip: 'సేవ్ చేసిన రెసిపీని తీసివేయండి', // New
+          unsaveButtonAriaLabel: 'సేవ్ చేసిన రెసిపీని తీసివేయండి',
+          unsaveButtonTooltip: 'సేవ్ చేసిన రెసిపీని తీసివేయండి',
           ingredientsTitle: 'పదార్థాలు',
           instructionsTitle: 'సూచనలు',
           noRecipesFoundTitle: 'మీ ప్రమాణాలకు సరిపోయే వంటకాలు ఏవీ కనుగొనబడలేదు.',
@@ -824,9 +902,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          instructionsPlaceholder: 'సూచనలు ఏవీ అందుబాటులో లేవు.',
          imagePromptLabel: 'చిత్ర ప్రాంప్ట్',
          errorLoadingTitle: 'వంటకాన్ని లోడ్ చేయడంలో లోపం',
-         errorLoadingMessage: 'ఈ వంటకం వివరాలను లోడ్ చేయలేకపోయాము. అది అందుబాటులో లేకపోవచ్చు లేదా లింక్ తప్పుగా ఉండవచ్చు.',
-         printButtonAriaLabel: 'వంటకాన్ని ప్రింట్ చేయండి', // New
-         printButtonTooltip: 'వంటకాన్ని ప్రింట్ చేయండి', // New
+         errorLoadingMessage: 'ఈ వంటకం వివరాలను లోడ్ చేయలేకపోయాము. అది అందుబాటులో లేకపోవచ్చు, గడువు ముగిసి ఉండవచ్చు లేదా లింక్ తప్పుగా ఉండవచ్చు.',
+         printButtonAriaLabel: 'వంటకాన్ని ప్రింట్ చేయండి',
+         printButtonTooltip: 'వంటకాన్ని ప్రింట్ చేయండి',
        },
        savedRecipes: {
           dialogTitle: 'సేవ్ చేసిన వంటకాలు',
@@ -839,7 +917,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           removeButtonTooltip: 'వంటకాన్ని తీసివేయండి',
           closeButton: 'మూసివేయండి',
        },
-      toast: { // Keep the toast structure but maybe use console.log instead
+      toast: {
           formClearedTitle: 'ఫారమ్ క్లియర్ చేయబడింది',
           formClearedDesc: 'కొత్త పదార్థాల కోసం సిద్ధంగా ఉంది!',
           recipeSavedTitle: 'వంటకం సేవ్ చేయబడింది!',
@@ -853,14 +931,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'లోపం',
           genericError: 'వంటకాలను సూచించడంలో విఫలమైంది. దయచేసి తర్వాత మళ్లీ ప్రయత్నించండి.',
           validationError: 'ఇన్‌పుట్ ధ్రువీకరణ విఫలమైంది. దయచేసి మీ ఎంట్రీలను తనిఖీ చేయండి.',
-          authRequiredTitle: 'ప్రామాణీకరణ అవసరం',
-          authRequiredDesc: 'వంటకాలను సేవ్ చేయడానికి దయచేసి సైన్ ఇన్ చేయండి.',
           saveErrorTitle: 'సేవ్ చేయడంలో లోపం',
           saveErrorDesc: 'వంటకాన్ని సేవ్ చేయడం లేదా తీసివేయడం సాధ్యపడలేదు. దయచేసి మళ్లీ ప్రయత్నించండి.',
           storageQuotaExceededTitle: "నిల్వ కోటా మించిపోయింది",
           storageQuotaExceededDesc: "బ్రౌజర్ నిల్వ నిండిపోయింది. వంటకం వివరాలు పూర్తిగా సేవ్ చేయబడకపోవచ్చు.",
           storageErrorTitle: "నిల్వ లోపం",
-          storageErrorDesc: "బ్రౌజర్ నిల్వలో డేటాను సేవ్ చేయడం సాధ్యపడలేదు.",
+          storageErrorDesc: "నిల్వ (Redis/LocalStorage) నుండి డేటాను సేవ్ చేయడం లేదా యాక్సెస్ చేయడం సాధ్యపడలేదు.",
           storageQuotaWarningTitle: "నిల్వ దాదాపు నిండిపోయింది",
           storageQuotaWarningDesc: "బ్రౌజర్ నిల్వ పరిమితుల కారణంగా ఫలితాలు పూర్తిగా నిలబడకపోవచ్చు.",
           storageClearedTitle: "నిల్వ క్లియర్ చేయబడింది",
@@ -919,18 +995,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           includeDetailsLabel: 'ବିବରଣୀ ସାମିଲ କରନ୍ତୁ?',
           includeDetailsHint: '(ପୋଷଣ/ଆହାର)',
           includeDetailsAriaLabel: 'ପୋଷଣ ତଥ୍ୟ ଏବଂ ଆହାର ଯୋଜନା ଉପଯୁକ୍ତତା ସାମିଲ କରନ୍ତୁ',
+          categoryLabel: 'ଶ୍ରେଣୀ',
+          categoryPlaceholder: 'ଏକ ଶ୍ରେଣୀ ଚୟନ କରନ୍ତୁ',
           submitButton: 'ପରାମର୍ଶ ପାଆନ୍ତୁ',
           submitButtonLoading: 'ରେସିପି ଖୋଜା ଚାଲିଛି...',
           resetButton: 'ଫର୍ମ ସଫା କରନ୍ତୁ',
           footerNote: 'AI ଆପଣଙ୍କ ଇନପୁଟ୍ ଆଧାରରେ ପରାମର୍ଶ ଦେଇଥାଏ। ଫଳାଫଳ ଭିନ୍ନ ହୋଇପାରେ। ଆଲର୍ଜି ଦୁଇଥର ଯାଞ୍ଚ କରନ୍ତୁ!',
       },
+       categories: {
+         all: 'ସମସ୍ତ ଶ୍ରେଣୀ',
+         breakfast: 'ଜଳଖିଆ',
+         lunch: 'ମଧ୍ୟାହ୍ନ ଭୋଜନ',
+         dinner: 'ରାତ୍ରୀ ଭୋଜନ',
+         dessert: 'ମିଠା',
+         snack: 'ହାଲୁକା ଖାଦ୍ୟ',
+         appetizer: 'ଆପେଟାଇଜର୍',
+         sidedish: 'ସାଇଡ୍ ଡିସ୍',
+         beverage: 'ପାନୀୟ',
+       },
       results: {
           title: 'ଆପଣଙ୍କ ରେସିପି ପରାମର୍ଶ',
           imageAlt: '{recipeName} ପାଇଁ ଜେନେରେଟ୍ ହୋଇଥିବା ଚିତ୍ର',
           saveButtonAriaLabel: 'ରେସିପି ସଂରକ୍ଷଣ କରନ୍ତୁ',
           saveButtonTooltip: 'ରେସିପି ସଂରକ୍ଷଣ କରନ୍ତୁ',
-          unsaveButtonAriaLabel: 'ସଂରକ୍ଷିତ ରେସିପି ଅପସାରଣ କରନ୍ତୁ', // New
-          unsaveButtonTooltip: 'ସଂରକ୍ଷିତ ରେସିପି ଅପସାରଣ କରନ୍ତୁ', // New
+          unsaveButtonAriaLabel: 'ସଂରକ୍ଷିତ ରେସିପି ଅପସାରଣ କରନ୍ତୁ',
+          unsaveButtonTooltip: 'ସଂରକ୍ଷିତ ରେସିପି ଅପସାରଣ କରନ୍ତୁ',
           ingredientsTitle: 'ଉପାଦାନ',
           instructionsTitle: 'ନିର୍ଦ୍ଦେଶାବଳୀ',
           noRecipesFoundTitle: 'ଆପଣଙ୍କ ମାନଦଣ୍ଡ ସହିତ ମେଳ ଖାଉଥିବା କୌଣସି ରେସିପି ମିଳିଲା ନାହିଁ।',
@@ -948,9 +1037,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          instructionsPlaceholder: 'କୌଣସି ନିର୍ଦ୍ଦେଶାବଳୀ ଉପଲବ୍ଧ ନାହିଁ।',
          imagePromptLabel: 'ଚିତ୍ର ପ୍ରମ୍ପ୍ଟ',
          errorLoadingTitle: 'ରେସିପି ଲୋଡ୍ କରିବାରେ ତ୍ରୁଟି',
-         errorLoadingMessage: 'ଏହି ରେସିପିର ବିବରଣୀ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। ଏହା ହଜିଯାଇଥାଇପାରେ କିମ୍ବା ଲିଙ୍କ୍ ଭୁଲ୍ ହୋଇପାରେ।',
-         printButtonAriaLabel: 'ରେସିପି ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ', // New
-         printButtonTooltip: 'ରେସିପି ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ', // New
+         errorLoadingMessage: 'ଏହି ରେସିପିର ବିବରଣୀ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। ଏହା ହଜିଯାଇଥାଇପାରେ, ମିଆଦ ପୂରିଯାଇଥାଇପାରେ କିମ୍ବା ଲିଙ୍କ୍ ଭୁଲ୍ ହୋଇପାରେ।',
+         printButtonAriaLabel: 'ରେସିପି ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ',
+         printButtonTooltip: 'ରେସିପି ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ',
        },
        savedRecipes: {
           dialogTitle: 'ସଂରକ୍ଷିତ ରେସିପି',
@@ -963,7 +1052,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           removeButtonTooltip: 'ରେସିପି ଅପସାରଣ କରନ୍ତୁ',
           closeButton: 'ବନ୍ଦ କରନ୍ତୁ',
        },
-      toast: { // Keep the toast structure but maybe use console.log instead
+      toast: {
           formClearedTitle: 'ଫର୍ମ ସଫା କରାଗଲା',
           formClearedDesc: 'ନୂଆ ଉପାଦାନ ପାଇଁ ପ୍ରସ୍ତୁତ!',
           recipeSavedTitle: 'ରେସିପି ସଂରକ୍ଷିତ ହେଲା!',
@@ -977,14 +1066,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'ତ୍ରୁଟି',
           genericError: 'ରେସିପି ପରାମର୍ଶ ଦେବାରେ ବିଫଳ। ଦୟାକରି ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।',
           validationError: 'ଇନପୁଟ୍ ବୈଧତା ବିଫଳ ହେଲା। ଦୟାକରି ଆପଣଙ୍କର ପ୍ରବିଷ୍ଟିଗୁଡିକ ଯାଞ୍ଚ କରନ୍ତୁ।',
-          authRequiredTitle: 'ପ୍ରମାଣୀକରଣ ଆବଶ୍ୟକ',
-          authRequiredDesc: 'ରେସିପି ସଂରକ୍ଷଣ କରିବାକୁ ଦୟାକରି ସାଇନ୍ ଇନ୍ କରନ୍ତୁ।',
           saveErrorTitle: 'ସଂରକ୍ଷଣ ତ୍ରୁଟି',
           saveErrorDesc: 'ରେସିପି ସଂରକ୍ଷଣ କିମ୍ବା ଅପସାରଣ କରାଯାଇପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।',
           storageQuotaExceededTitle: "ଷ୍ଟୋରେଜ୍ ସୀମା ଅତିକ୍ରମ କରିଛି",
           storageQuotaExceededDesc: "ବ୍ରାଉଜର୍ ଷ୍ଟୋରେଜ୍ ପୂର୍ଣ୍ଣ। ରେସିପି ବିବରଣୀ ସମ୍ପୂର୍ଣ୍ଣ ଭାବେ ସଂରକ୍ଷିତ ହୋଇନପାରେ।",
           storageErrorTitle: "ଷ୍ଟୋରେଜ୍ ତ୍ରୁଟି",
-          storageErrorDesc: "ବ୍ରାଉଜର୍ ଷ୍ଟୋରେଜରେ ଡାଟା ସଂରକ୍ଷଣ କରାଯାଇପାରିଲା ନାହିଁ।",
+          storageErrorDesc: "ଷ୍ଟୋରେଜ୍ (Redis/LocalStorage) ରୁ ଡାଟା ସଂରକ୍ଷଣ କିମ୍ବା ଆକ୍ସେସ୍ କରାଯାଇପାରିଲା ନାହିଁ।",
           storageQuotaWarningTitle: "ଷ୍ଟୋରେଜ୍ ପ୍ରାୟ ପୂର୍ଣ୍ଣ",
           storageQuotaWarningDesc: "ବ୍ରାଉଜର୍ ଷ୍ଟୋରେଜ୍ ସୀମା ଯୋଗୁଁ ଫଳାଫଳ ସମ୍ପୂର୍ଣ୍ଣ ଭାବେ ରହିନପାରେ।",
           storageClearedTitle: "ଷ୍ଟୋରେଜ୍ ସଫା କରାଗଲା",
@@ -1043,18 +1130,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           includeDetailsLabel: 'ਵੇਰਵੇ ਸ਼ਾਮਲ ਕਰੀਏ?',
           includeDetailsHint: '(ਪੋਸ਼ਣ/ਖੁਰਾਕ)',
           includeDetailsAriaLabel: 'ਪੋਸ਼ਣ ਸੰਬੰਧੀ ਤੱਥ ਅਤੇ ਖੁਰਾਕ ਯੋਜਨਾ ਦੀ ਯੋਗਤਾ ਸ਼ਾਮਲ ਕਰੋ',
+          categoryLabel: 'ਸ਼੍ਰੇਣੀ',
+          categoryPlaceholder: 'ਇੱਕ ਸ਼੍ਰੇਣੀ ਚੁਣੋ',
           submitButton: 'ਸੁਝਾਅ ਪ੍ਰਾਪਤ ਕਰੋ',
           submitButtonLoading: 'ਵਿਅੰਜਨ ਲੱਭੇ ਜਾ ਰਹੇ ਹਨ...',
           resetButton: 'ਫਾਰਮ ਸਾਫ਼ ਕਰੋ',
           footerNote: 'AI ਤੁਹਾਡੇ ਇਨਪੁਟ ਦੇ ਆਧਾਰ \'ਤੇ ਸੁਝਾਅ ਤਿਆਰ ਕਰਦਾ ਹੈ। ਨਤੀਜੇ ਵੱਖ-ਵੱਖ ਹੋ ਸਕਦੇ ਹਨ। ਐਲਰਜੀ ਦੀ ਦੋ ਵਾਰ ਜਾਂਚ ਕਰੋ!',
       },
+       categories: {
+         all: 'ਸਾਰੀਆਂ ਸ਼੍ਰੇਣੀਆਂ',
+         breakfast: 'ਨਾਸ਼ਤਾ',
+         lunch: 'ਦੁਪਹਿਰ ਦਾ ਖਾਣਾ',
+         dinner: 'ਰਾਤ ਦਾ ਖਾਣਾ',
+         dessert: 'ਮਿਠਾਈ',
+         snack: 'ਸਨੈਕ',
+         appetizer: 'ਐਪੀਟਾਈਜ਼ਰ',
+         sidedish: 'ਸਾਈਡ ਡਿਸ਼',
+         beverage: 'ਪੀਣ ਵਾਲਾ ਪਦਾਰਥ',
+       },
       results: {
           title: 'ਤੁਹਾਡੇ ਵਿਅੰਜਨ ਸੁਝਾਅ',
           imageAlt: '{recipeName} ਲਈ ਤਿਆਰ ਕੀਤੀ ਗਈ ਤਸਵੀਰ',
           saveButtonAriaLabel: 'ਵਿਅੰਜਨ ਸੁਰੱਖਿਅਤ ਕਰੋ',
           saveButtonTooltip: 'ਵਿਅੰਜਨ ਸੁਰੱਖਿਅਤ ਕਰੋ',
-          unsaveButtonAriaLabel: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਹਟਾਓ', // New
-          unsaveButtonTooltip: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਹਟਾਓ', // New
+          unsaveButtonAriaLabel: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਹਟਾਓ',
+          unsaveButtonTooltip: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਹਟਾਓ',
           ingredientsTitle: 'ਸਮੱਗਰੀ',
           instructionsTitle: 'ਨਿਰਦੇਸ਼',
           noRecipesFoundTitle: 'ਤੁਹਾਡੇ ਮਾਪਦੰਡਾਂ ਨਾਲ ਮੇਲ ਖਾਂਦਾ ਕੋਈ ਵਿਅੰਜਨ ਨਹੀਂ ਮਿਲਿਆ।',
@@ -1072,9 +1172,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          instructionsPlaceholder: 'ਕੋਈ ਨਿਰਦੇਸ਼ ਉਪਲਬਧ ਨਹੀਂ ਹਨ।',
          imagePromptLabel: 'ਚਿੱਤਰ ਪ੍ਰੋਂਪਟ',
          errorLoadingTitle: 'ਵਿਅੰਜਨ ਲੋਡ ਕਰਨ ਵਿੱਚ ਗਲਤੀ',
-         errorLoadingMessage: 'ਇਸ ਵਿਅੰਜਨ ਦੇ ਵੇਰਵੇ ਲੋਡ ਨਹੀਂ ਕੀਤੇ ਜਾ ਸਕੇ। ਇਹ ਗੁੰਮ ਹੋ ਸਕਦਾ ਹੈ ਜਾਂ ਲਿੰਕ ਗਲਤ ਹੋ ਸਕਦਾ ਹੈ।',
-         printButtonAriaLabel: 'ਵਿਅੰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ', // New
-         printButtonTooltip: 'ਵਿਅੰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ', // New
+         errorLoadingMessage: 'ਇਸ ਵਿਅੰਜਨ ਦੇ ਵੇਰਵੇ ਲੋਡ ਨਹੀਂ ਕੀਤੇ ਜਾ ਸਕੇ। ਇਹ ਗੁੰਮ, ਮਿਆਦ ਪੁੱਗਿਆ ਹੋ ਸਕਦਾ ਹੈ ਜਾਂ ਲਿੰਕ ਗਲਤ ਹੋ ਸਕਦਾ ਹੈ।',
+         printButtonAriaLabel: 'ਵਿਅੰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ',
+         printButtonTooltip: 'ਵਿਅੰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ',
        },
        savedRecipes: {
           dialogTitle: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ',
@@ -1087,7 +1187,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           removeButtonTooltip: 'ਵਿਅੰਜਨ ਹਟਾਓ',
           closeButton: 'ਬੰਦ ਕਰੋ',
        },
-      toast: { // Keep the toast structure but maybe use console.log instead
+      toast: {
           formClearedTitle: 'ਫਾਰਮ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ',
           formClearedDesc: 'ਨਵੀਂ ਸਮੱਗਰੀ ਲਈ ਤਿਆਰ!',
           recipeSavedTitle: 'ਵਿਅੰਜਨ ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ!',
@@ -1101,14 +1201,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'ਗਲਤੀ',
           genericError: 'ਵਿਅੰਜਨ ਸੁਝਾਉਣ ਵਿੱਚ ਅਸਫਲ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
           validationError: 'ਇਨਪੁਟ ਪ੍ਰਮਾਣਿਕਤਾ ਅਸਫਲ ਰਹੀ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੀਆਂ ਐਂਟਰੀਆਂ ਦੀ ਜਾਂਚ ਕਰੋ।',
-          authRequiredTitle: 'ਪ੍ਰਮਾਣਿਕਤਾ ਲੋੜੀਂਦੀ ਹੈ',
-          authRequiredDesc: 'ਵਿਅੰਜਨਾਂ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕਰਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਸਾਈਨ ਇਨ ਕਰੋ।',
           saveErrorTitle: 'ਸੁਰੱਖਿਅਤ ਕਰਨ ਵਿੱਚ ਗਲਤੀ',
           saveErrorDesc: 'ਵਿਅੰਜਨ ਨੂੰ ਸੁਰੱਖਿਅਤ ਜਾਂ ਹਟਾਇਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
           storageQuotaExceededTitle: "ਸਟੋਰੇਜ ਕੋਟਾ ਵੱਧ ਗਿਆ",
           storageQuotaExceededDesc: "ਬ੍ਰਾਊਜ਼ਰ ਸਟੋਰੇਜ ਭਰ ਗਈ ਹੈ। ਵਿਅੰਜਨ ਦੇ ਵੇਰਵੇ ਪੂਰੀ ਤਰ੍ਹਾਂ ਸੁਰੱਖਿਅਤ ਨਹੀਂ ਕੀਤੇ ਜਾ ਸਕਦੇ ਹਨ।",
           storageErrorTitle: "ਸਟੋਰੇਜ ਗਲਤੀ",
-          storageErrorDesc: "ਬ੍ਰਾਊਜ਼ਰ ਸਟੋਰੇਜ ਵਿੱਚ ਡਾਟਾ ਸੁਰੱਖਿਅਤ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ।",
+          storageErrorDesc: "ਸਟੋਰੇਜ (Redis/LocalStorage) ਤੋਂ ਡਾਟਾ ਸੁਰੱਖਿਅਤ ਜਾਂ ਐਕਸੈਸ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ।",
           storageQuotaWarningTitle: "ਸਟੋਰੇਜ ਲਗਭਗ ਭਰ ਗਈ ਹੈ",
           storageQuotaWarningDesc: "ਬ੍ਰਾਊਜ਼ਰ ਸਟੋਰੇਜ ਸੀਮਾਵਾਂ ਕਾਰਨ ਨਤੀਜੇ ਪੂਰੀ ਤਰ੍ਹਾਂ ਬਰਕਰਾਰ ਨਹੀਂ ਰਹਿ ਸਕਦੇ ਹਨ।",
           storageClearedTitle: "ਸਟੋਰੇਜ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ",
@@ -1167,18 +1265,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           includeDetailsLabel: '詳細を含める？',
           includeDetailsHint: '（栄養/食事）',
           includeDetailsAriaLabel: '栄養成分表示と食事プランの適合性を含める',
+          categoryLabel: 'カテゴリー',
+          categoryPlaceholder: 'カテゴリーを選択',
           submitButton: '提案を取得',
           submitButtonLoading: 'レシピを検索中...',
           resetButton: 'フォームをクリア',
           footerNote: 'AIは入力に基づいて提案を生成します。結果は異なる場合があります。アレルギーを再確認してください！',
       },
+       categories: {
+         all: 'すべてのカテゴリー',
+         breakfast: '朝食',
+         lunch: '昼食',
+         dinner: '夕食',
+         dessert: 'デザート',
+         snack: 'スナック',
+         appetizer: '前菜',
+         sidedish: 'サイドディッシュ',
+         beverage: '飲み物',
+       },
       results: {
           title: 'あなたのレシピ提案',
           imageAlt: '{recipeName} の生成画像',
           saveButtonAriaLabel: 'レシピを保存',
           saveButtonTooltip: 'レシピを保存',
-          unsaveButtonAriaLabel: '保存したレシピを削除', // New
-          unsaveButtonTooltip: '保存したレシピを削除', // New
+          unsaveButtonAriaLabel: '保存したレシピを削除',
+          unsaveButtonTooltip: '保存したレシピを削除',
           ingredientsTitle: '材料',
           instructionsTitle: '作り方',
           noRecipesFoundTitle: 'あなたの基準に一致するレシピは見つかりませんでした。',
@@ -1196,9 +1307,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          instructionsPlaceholder: '作り方は利用できません。',
          imagePromptLabel: '画像プロンプト',
          errorLoadingTitle: 'レシピの読み込みエラー',
-         errorLoadingMessage: 'このレシピの詳細を読み込めませんでした。見つからないか、リンクが間違っている可能性があります。',
-         printButtonAriaLabel: 'レシピを印刷', // New
-         printButtonTooltip: 'レシピを印刷', // New
+         errorLoadingMessage: 'このレシピの詳細を読み込めませんでした。見つからないか、期限切れか、リンクが間違っている可能性があります。',
+         printButtonAriaLabel: 'レシピを印刷',
+         printButtonTooltip: 'レシピを印刷',
        },
        savedRecipes: {
           dialogTitle: '保存したレシピ',
@@ -1211,7 +1322,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           removeButtonTooltip: 'レシピを削除',
           closeButton: '閉じる',
        },
-      toast: { // Keep the toast structure but maybe use console.log instead
+      toast: {
           formClearedTitle: 'フォームがクリアされました',
           formClearedDesc: '新しい材料の準備ができました！',
           recipeSavedTitle: 'レシピが保存されました！',
@@ -1225,14 +1336,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           errorTitle: 'エラー',
           genericError: 'レシピの提案に失敗しました。後でもう一度お試しください。',
           validationError: '入力検証に失敗しました。エントリを確認してください。',
-          authRequiredTitle: '認証が必要です',
-          authRequiredDesc: 'レシピを保存するにはサインインしてください。',
           saveErrorTitle: '保存エラー',
           saveErrorDesc: 'レシピを保存または削除できませんでした。もう一度お試しください。',
           storageQuotaExceededTitle: "ストレージ制限を超えました",
           storageQuotaExceededDesc: "ブラウザストレージがいっぱいです。レシピの詳細が完全に保存されない可能性があります。",
           storageErrorTitle: "ストレージエラー",
-          storageErrorDesc: "ブラウザストレージにデータを保存できませんでした。",
+          storageErrorDesc: "ストレージ（Redis/LocalStorage）からデータを保存またはアクセスできませんでした。",
           storageQuotaWarningTitle: "ストレージがほぼいっぱいです",
           storageQuotaWarningDesc: "ブラウザのストレージ制限のため、結果が完全に保持されない可能性があります。",
           storageClearedTitle: "ストレージがクリアされました",
@@ -1291,18 +1400,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       includeDetailsLabel: '¿Incluir Detalles?',
       includeDetailsHint: '(Nutrición/Dieta)',
       includeDetailsAriaLabel: 'Incluir información nutricional y adecuación al plan de dieta',
+      categoryLabel: 'Categoría',
+      categoryPlaceholder: 'Selecciona una categoría',
       submitButton: 'Obtener Sugerencias',
       submitButtonLoading: 'Buscando Recetas...',
       resetButton: 'Limpiar Formulario',
       footerNote: 'La IA genera sugerencias basadas en tu entrada. Los resultados pueden variar. ¡Verifica las alergias!',
     },
+     categories: {
+       all: 'Todas las Categorías',
+       breakfast: 'Desayuno',
+       lunch: 'Almuerzo',
+       dinner: 'Cena',
+       dessert: 'Postre',
+       snack: 'Aperitivo',
+       appetizer: 'Entrante',
+       sidedish: 'Guarnición',
+       beverage: 'Bebida',
+     },
     results: {
       title: 'Tus Sugerencias de Recetas',
       imageAlt: 'Imagen generada para {recipeName}',
       saveButtonAriaLabel: 'Guardar receta',
       saveButtonTooltip: 'Guardar Receta',
-      unsaveButtonAriaLabel: 'Eliminar receta guardada', // New
-      unsaveButtonTooltip: 'Eliminar Receta Guardada', // New
+      unsaveButtonAriaLabel: 'Eliminar receta guardada',
+      unsaveButtonTooltip: 'Eliminar Receta Guardada',
       ingredientsTitle: 'Ingredientes',
       instructionsTitle: 'Instrucciones',
       noRecipesFoundTitle: 'No se encontraron recetas que coincidan con tus criterios.',
@@ -1320,9 +1442,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        instructionsPlaceholder: 'No hay instrucciones disponibles.',
        imagePromptLabel: 'Prompt de Imagen',
        errorLoadingTitle: 'Error al Cargar la Receta',
-       errorLoadingMessage: 'No se pudieron cargar los detalles de esta receta. Puede que falte o que el enlace sea incorrecto.',
-       printButtonAriaLabel: 'Imprimir Receta', // New
-       printButtonTooltip: 'Imprimir Receta', // New
+       errorLoadingMessage: 'No se pudieron cargar los detalles de esta receta. Puede que falte, haya caducado o que el enlace sea incorrecto.',
+       printButtonAriaLabel: 'Imprimir Receta',
+       printButtonTooltip: 'Imprimir Receta',
      },
     savedRecipes: {
        dialogTitle: 'Recetas Guardadas',
@@ -1335,7 +1457,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        removeButtonTooltip: 'Eliminar Receta',
        closeButton: 'Cerrar',
     },
-    toast: { // Keep the toast structure but maybe use console.log instead
+    toast: {
       formClearedTitle: 'Formulario Limpiado',
       formClearedDesc: '¡Listo para nuevos ingredientes!',
       recipeSavedTitle: '¡Receta Guardada!',
@@ -1349,14 +1471,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Error',
       genericError: 'Fallo al sugerir recetas. Por favor, inténtalo de nuevo más tarde.',
       validationError: 'Falló la validación de entrada. Por favor, revisa tus entradas.',
-      authRequiredTitle: 'Autenticación Requerida',
-      authRequiredDesc: 'Por favor, inicia sesión para guardar recetas.',
       saveErrorTitle: 'Error al Guardar',
       saveErrorDesc: 'No se pudo guardar o eliminar la receta. Por favor, inténtalo de nuevo.',
       storageQuotaExceededTitle: "Límite de almacenamiento excedido",
       storageQuotaExceededDesc: "El almacenamiento del navegador está lleno. Es posible que los detalles de la receta no se guarden por completo.",
       storageErrorTitle: "Error de almacenamiento",
-      storageErrorDesc: "No se pudieron guardar los datos en el almacenamiento del navegador.",
+      storageErrorDesc: "No se pudieron guardar o acceder a los datos del almacenamiento (Redis/LocalStorage).",
       storageQuotaWarningTitle: "Almacenamiento casi lleno",
       storageQuotaWarningDesc: "Es posible que los resultados no persistan completamente debido a los límites de almacenamiento del navegador.",
       storageClearedTitle: "Almacenamiento borrado",
@@ -1415,18 +1535,31 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       includeDetailsLabel: 'Inclure les Détails ?',
       includeDetailsHint: '(Nutrition/Régime)',
       includeDetailsAriaLabel: 'Inclure les informations nutritionnelles et la compatibilité avec le régime alimentaire',
+      categoryLabel: 'Catégorie',
+      categoryPlaceholder: 'Sélectionnez une catégorie',
       submitButton: 'Obtenir des Suggestions',
       submitButtonLoading: 'Recherche de Recettes...',
       resetButton: 'Effacer le Formulaire',
       footerNote: 'L\'IA génère des suggestions basées sur votre saisie. Les résultats peuvent varier. Vérifiez bien les allergies !',
     },
+     categories: {
+       all: 'Toutes les Catégories',
+       breakfast: 'Petit Déjeuner',
+       lunch: 'Déjeuner',
+       dinner: 'Dîner',
+       dessert: 'Dessert',
+       snack: 'En-cas',
+       appetizer: 'Entrée',
+       sidedish: 'Accompagnement',
+       beverage: 'Boisson',
+     },
     results: {
       title: 'Vos Suggestions de Recettes',
       imageAlt: 'Image générée pour {recipeName}',
       saveButtonAriaLabel: 'Enregistrer la recette',
       saveButtonTooltip: 'Enregistrer la Recette',
-      unsaveButtonAriaLabel: 'Supprimer la recette enregistrée', // New
-      unsaveButtonTooltip: 'Supprimer la Recette Enregistrée', // New
+      unsaveButtonAriaLabel: 'Supprimer la recette enregistrée',
+      unsaveButtonTooltip: 'Supprimer la Recette Enregistrée',
       ingredientsTitle: 'Ingrédients',
       instructionsTitle: 'Instructions',
       noRecipesFoundTitle: 'Aucune recette correspondant à vos critères n\'a été trouvée.',
@@ -1444,9 +1577,9 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        instructionsPlaceholder: 'Aucune instruction disponible.',
        imagePromptLabel: 'Prompt d\'Image',
        errorLoadingTitle: 'Erreur de Chargement de la Recette',
-       errorLoadingMessage: 'Impossible de charger les détails de cette recette. Elle est peut-être manquante ou le lien est incorrect.',
-       printButtonAriaLabel: 'Imprimer la recette', // New
-       printButtonTooltip: 'Imprimer la recette', // New
+       errorLoadingMessage: 'Impossible de charger les détails de cette recette. Elle est peut-être manquante, expirée ou le lien est incorrect.',
+       printButtonAriaLabel: 'Imprimer la recette',
+       printButtonTooltip: 'Imprimer la recette',
      },
     savedRecipes: {
         dialogTitle: 'Recettes Enregistrées',
@@ -1459,7 +1592,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         removeButtonTooltip: 'Supprimer la Recette',
         closeButton: 'Fermer',
      },
-    toast: { // Keep the toast structure but maybe use console.log instead
+    toast: {
       formClearedTitle: 'Formulaire Effacé',
       formClearedDesc: 'Prêt pour de nouveaux ingrédients !',
       recipeSavedTitle: 'Recette Enregistrée !',
@@ -1473,14 +1606,12 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Erreur',
       genericError: 'Échec de la suggestion de recettes. Veuillez réessayer plus tard.',
       validationError: 'La validation de l\'entrée a échoué. Veuillez vérifier vos saisies.',
-      authRequiredTitle: 'Authentification Requise',
-      authRequiredDesc: 'Veuillez vous connecter pour enregistrer des recettes.',
       saveErrorTitle: 'Erreur d\'Enregistrement',
       saveErrorDesc: 'Impossible d\'enregistrer ou de supprimer la recette. Veuillez réessayer.',
       storageQuotaExceededTitle: "Limite de stockage dépassée",
       storageQuotaExceededDesc: "Le stockage du navigateur est plein. Les détails de la recette pourraient ne pas être entièrement sauvegardés.",
       storageErrorTitle: "Erreur de stockage",
-      storageErrorDesc: "Impossible de sauvegarder les données dans le stockage du navigateur.",
+      storageErrorDesc: "Impossible de sauvegarder ou d'accéder aux données depuis le stockage (Redis/LocalStorage).",
       storageQuotaWarningTitle: "Stockage presque plein",
       storageQuotaWarningDesc: "Les résultats pourraient ne pas persister entièrement en raison des limites de stockage du navigateur.",
       storageClearedTitle: "Stockage effacé",
@@ -1497,4 +1628,3 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
     },
   },
 };
-
