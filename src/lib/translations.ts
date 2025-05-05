@@ -72,6 +72,8 @@ interface TranslationMessages {
     unsaveButtonTooltip: string;
     ingredientsTitle: string;
     instructionsTitle: string;
+    estimatedTimeLabel: string; // Label for estimated time badge
+    difficultyLabel: string; // Label for difficulty badge
     noRecipesFoundTitle: string;
     noRecipesFoundSuggestion: string;
     defaultDescription: string;
@@ -90,6 +92,8 @@ interface TranslationMessages {
     errorLoadingMessage: string;
     printButtonAriaLabel: string;
     printButtonTooltip: string;
+    downloadPdfButtonAriaLabel: string; // New for PDF download
+    downloadPdfButtonTooltip: string; // New for PDF download
   };
   savedRecipes: {
      dialogTitle: string;
@@ -210,6 +214,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       unsaveButtonTooltip: 'Remove Saved Recipe',
       ingredientsTitle: 'Ingredients',
       instructionsTitle: 'Instructions',
+      estimatedTimeLabel: 'Time', // New
+      difficultyLabel: 'Difficulty', // New
       noRecipesFoundTitle: 'No recipes found matching your criteria.',
       noRecipesFoundSuggestion: 'Try adjusting your ingredients or preferences for better luck!',
       defaultDescription: 'A delicious recipe suggestion based on your ingredients.',
@@ -228,6 +234,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        errorLoadingMessage: 'Could not load the details for this recipe. It might be missing, expired, or the link might be incorrect.', // Updated message
        printButtonAriaLabel: 'Print Recipe',
        printButtonTooltip: 'Print Recipe',
+       downloadPdfButtonAriaLabel: 'Download Recipe as PDF', // New
+       downloadPdfButtonTooltip: 'Download PDF', // New
      },
     savedRecipes: {
         dialogTitle: 'Saved Recipes',
@@ -347,6 +355,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       unsaveButtonTooltip: 'सहेजी गई रेसिपी हटाएं',
       ingredientsTitle: 'सामग्री',
       instructionsTitle: 'निर्देश',
+      estimatedTimeLabel: 'समय', // New
+      difficultyLabel: 'कठिनाई', // New
       noRecipesFoundTitle: 'आपके मानदंडों से मेल खाने वाली कोई रेसिपी नहीं मिली।',
       noRecipesFoundSuggestion: 'बेहतर भाग्य के लिए अपनी सामग्री या प्राथमिकताओं को समायोजित करने का प्रयास करें!',
       defaultDescription: 'आपकी सामग्री के आधार पर एक स्वादिष्ट रेसिपी सुझाव।',
@@ -365,6 +375,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorLoadingMessage: 'इस रेसिपी का विवरण लोड नहीं किया जा सका। यह गुम, समाप्त हो सकता है या लिंक गलत हो सकता है।',
       printButtonAriaLabel: 'रेसिपी प्रिंट करें',
       printButtonTooltip: 'रेसिपी प्रिंट करें',
+      downloadPdfButtonAriaLabel: 'रेसिपी को पीडीएफ के रूप में डाउनलोड करें', // New
+      downloadPdfButtonTooltip: 'पीडीएफ डाउनलोड करें', // New
     },
     savedRecipes: {
        dialogTitle: 'सहेजी गई रेसिपी',
@@ -482,6 +494,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
         unsaveButtonTooltip: 'সংরক্ষিত রেসিপি সরান',
         ingredientsTitle: 'উপকরণ',
         instructionsTitle: 'নির্দেশাবলী',
+        estimatedTimeLabel: 'সময়', // New
+        difficultyLabel: 'কঠিনতা', // New
         noRecipesFoundTitle: 'আপনার মানদণ্ডের সাথে মিলে যাওয়া কোনও রেসিপি পাওয়া যায়নি।',
         noRecipesFoundSuggestion: 'আরও ভাল ফলাফলের জন্য আপনার উপকরণ বা পছন্দগুলি সামঞ্জস্য করার চেষ্টা করুন!',
         defaultDescription: 'আপনার উপকরণের উপর ভিত্তি করে একটি সুস্বাদু রেসিপি পরামর্শ।',
@@ -500,6 +514,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        errorLoadingMessage: 'এই রেসিপির বিবরণ লোড করা যায়নি। এটি অনুপস্থিত, মেয়াদোত্তীর্ণ হতে পারে বা লিঙ্কটি ভুল হতে পারে।',
        printButtonAriaLabel: 'রেসিপি প্রিন্ট করুন',
        printButtonTooltip: 'রেসিপি প্রিন্ট করুন',
+       downloadPdfButtonAriaLabel: 'রেসিপি পিডিএফ হিসাবে ডাউনলোড করুন', // New
+       downloadPdfButtonTooltip: 'পিডিএফ ডাউনলোড করুন', // New
      },
     savedRecipes: {
         dialogTitle: 'সংরক্ষিত রেসিপি',
@@ -617,6 +633,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           unsaveButtonTooltip: 'जतन केलेली रेसिपी काढा',
           ingredientsTitle: 'साहित्य',
           instructionsTitle: 'कृती',
+          estimatedTimeLabel: 'वेळ', // New
+          difficultyLabel: 'काठीण्य', // New
           noRecipesFoundTitle: 'तुमच्या निकषांशी जुळणारी कोणतीही रेसिपी आढळली नाही.',
           noRecipesFoundSuggestion: 'चांगल्या परिणामांसाठी तुमचे साहित्य किंवा प्राधान्ये समायोजित करण्याचा प्रयत्न करा!',
           defaultDescription: 'तुमच्या साहित्यावर आधारित एक स्वादिष्ट रेसिपी सूचना.',
@@ -635,6 +653,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingMessage: 'या रेसिपीचा तपशील लोड होऊ शकला नाही. तो गहाळ, कालबाह्य झालेला असू शकतो किंवा लिंक चुकीची असू शकते.',
          printButtonAriaLabel: 'रेसिपी प्रिंट करा',
          printButtonTooltip: 'रेसिपी प्रिंट करा',
+         downloadPdfButtonAriaLabel: 'रेसिपी PDF म्हणून डाउनलोड करा', // New
+         downloadPdfButtonTooltip: 'PDF डाउनलोड करा', // New
        },
        savedRecipes: {
           dialogTitle: 'जतन केलेल्या रेसिपी',
@@ -752,6 +772,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           unsaveButtonTooltip: 'சேமித்த செய்முறையை அகற்று',
           ingredientsTitle: 'பொருட்கள்',
           instructionsTitle: 'செய்முறை',
+          estimatedTimeLabel: 'நேரம்', // New
+          difficultyLabel: 'கடினம்', // New
           noRecipesFoundTitle: 'உங்கள் நிபந்தனைகளுடன் பொருந்தக்கூடிய சமையல் குறிப்புகள் எதுவும் இல்லை.',
           noRecipesFoundSuggestion: 'சிறந்த முடிவுகளுக்கு உங்கள் பொருட்கள் அல்லது விருப்பங்களைச் சரிசெய்ய முயற்சிக்கவும்!',
           defaultDescription: 'உங்கள் பொருட்களின் அடிப்படையில் ஒரு சுவையான சமையல் குறிப்பு பரிந்துரை.',
@@ -770,6 +792,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingMessage: 'இந்த செய்முறையின் விவரங்களை ஏற்ற முடியவில்லை. அது விடுபட்டிருக்கலாம், காலாவதியாகி இருக்கலாம் அல்லது இணைப்பு தவறாக இருக்கலாம்.',
          printButtonAriaLabel: 'செய்முறையை அச்சிடு',
          printButtonTooltip: 'செய்முறையை அச்சிடு',
+         downloadPdfButtonAriaLabel: 'செய்முறையை PDF ஆக பதிவிறக்கவும்', // New
+         downloadPdfButtonTooltip: 'PDF பதிவிறக்கம்', // New
        },
        savedRecipes: {
           dialogTitle: 'சேமித்த சமையல் குறிப்புகள்',
@@ -887,6 +911,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           unsaveButtonTooltip: 'సేవ్ చేసిన రెసిపీని తీసివేయండి',
           ingredientsTitle: 'పదార్థాలు',
           instructionsTitle: 'సూచనలు',
+          estimatedTimeLabel: 'సమయం', // New
+          difficultyLabel: 'కఠినత', // New
           noRecipesFoundTitle: 'మీ ప్రమాణాలకు సరిపోయే వంటకాలు ఏవీ కనుగొనబడలేదు.',
           noRecipesFoundSuggestion: 'మెరుగైన అదృష్టం కోసం మీ పదార్థాలు లేదా ప్రాధాన్యతలను సర్దుబాటు చేయడానికి ప్రయత్నించండి!',
           defaultDescription: 'మీ పదార్థాల ఆధారంగా ఒక రుచికరమైన వంటకం సూచన.',
@@ -905,6 +931,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingMessage: 'ఈ వంటకం వివరాలను లోడ్ చేయలేకపోయాము. అది అందుబాటులో లేకపోవచ్చు, గడువు ముగిసి ఉండవచ్చు లేదా లింక్ తప్పుగా ఉండవచ్చు.',
          printButtonAriaLabel: 'వంటకాన్ని ప్రింట్ చేయండి',
          printButtonTooltip: 'వంటకాన్ని ప్రింట్ చేయండి',
+         downloadPdfButtonAriaLabel: 'వంటకాన్ని PDFగా డౌన్‌లోడ్ చేయండి', // New
+         downloadPdfButtonTooltip: 'PDF డౌన్‌లోడ్ చేయండి', // New
        },
        savedRecipes: {
           dialogTitle: 'సేవ్ చేసిన వంటకాలు',
@@ -1022,6 +1050,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           unsaveButtonTooltip: 'ସଂରକ୍ଷିତ ରେସିପି ଅପସାରଣ କରନ୍ତୁ',
           ingredientsTitle: 'ଉପାଦାନ',
           instructionsTitle: 'ନିର୍ଦ୍ଦେଶାବଳୀ',
+          estimatedTimeLabel: 'ସମୟ', // New
+          difficultyLabel: 'କଷ୍ଟିନତା', // New
           noRecipesFoundTitle: 'ଆପଣଙ୍କ ମାନଦଣ୍ଡ ସହିତ ମେଳ ଖାଉଥିବା କୌଣସି ରେସିପି ମିଳିଲା ନାହିଁ।',
           noRecipesFoundSuggestion: 'ଭଲ ଫଳାଫଳ ପାଇଁ ଆପଣଙ୍କ ଉପାଦାନ କିମ୍ବା ପସନ୍ଦଗୁଡିକ ସଜାଡିବାକୁ ଚେଷ୍ଟା କରନ୍ତୁ!',
           defaultDescription: 'ଆପଣଙ୍କ ଉପାଦାନ ଆଧାରରେ ଏକ ସୁସ୍ୱାଦୁ ରେସିପି ପରାମର୍ଶ।',
@@ -1040,6 +1070,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingMessage: 'ଏହି ରେସିପିର ବିବରଣୀ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। ଏହା ହଜିଯାଇଥାଇପାରେ, ମିଆଦ ପୂରିଯାଇଥାଇପାରେ କିମ୍ବା ଲିଙ୍କ୍ ଭୁଲ୍ ହୋଇପାରେ।',
          printButtonAriaLabel: 'ରେସିପି ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ',
          printButtonTooltip: 'ରେସିପି ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ',
+         downloadPdfButtonAriaLabel: 'ରେସିପିକୁ PDF ଭାବରେ ଡାଉନଲୋଡ୍ କରନ୍ତୁ', // New
+         downloadPdfButtonTooltip: 'PDF ଡାଉନଲୋଡ୍ କରନ୍ତୁ', // New
        },
        savedRecipes: {
           dialogTitle: 'ସଂରକ୍ଷିତ ରେସିପି',
@@ -1157,6 +1189,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           unsaveButtonTooltip: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਹਟਾਓ',
           ingredientsTitle: 'ਸਮੱਗਰੀ',
           instructionsTitle: 'ਨਿਰਦੇਸ਼',
+          estimatedTimeLabel: 'ਸਮਾਂ', // New
+          difficultyLabel: 'ਮੁਸ਼ਕਲ', // New
           noRecipesFoundTitle: 'ਤੁਹਾਡੇ ਮਾਪਦੰਡਾਂ ਨਾਲ ਮੇਲ ਖਾਂਦਾ ਕੋਈ ਵਿਅੰਜਨ ਨਹੀਂ ਮਿਲਿਆ।',
           noRecipesFoundSuggestion: 'ਬਿਹਤਰ ਕਿਸਮਤ ਲਈ ਆਪਣੀ ਸਮੱਗਰੀ ਜਾਂ ਤਰਜੀਹਾਂ ਨੂੰ ਵਿਵਸਥਿਤ ਕਰਨ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰੋ!',
           defaultDescription: 'ਤੁਹਾਡੀ ਸਮੱਗਰੀ ਦੇ ਆਧਾਰ \'ਤੇ ਇੱਕ ਸੁਆਦੀ ਵਿਅੰਜਨ ਸੁਝਾਅ।',
@@ -1175,6 +1209,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingMessage: 'ਇਸ ਵਿਅੰਜਨ ਦੇ ਵੇਰਵੇ ਲੋਡ ਨਹੀਂ ਕੀਤੇ ਜਾ ਸਕੇ। ਇਹ ਗੁੰਮ, ਮਿਆਦ ਪੁੱਗਿਆ ਹੋ ਸਕਦਾ ਹੈ ਜਾਂ ਲਿੰਕ ਗਲਤ ਹੋ ਸਕਦਾ ਹੈ।',
          printButtonAriaLabel: 'ਵਿਅੰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ',
          printButtonTooltip: 'ਵਿਅੰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ',
+         downloadPdfButtonAriaLabel: 'ਵਿਅੰਜਨ ਨੂੰ PDF ਵਜੋਂ ਡਾਊਨਲੋਡ ਕਰੋ', // New
+         downloadPdfButtonTooltip: 'PDF ਡਾਊਨਲੋਡ ਕਰੋ', // New
        },
        savedRecipes: {
           dialogTitle: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ',
@@ -1292,6 +1328,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
           unsaveButtonTooltip: '保存したレシピを削除',
           ingredientsTitle: '材料',
           instructionsTitle: '作り方',
+          estimatedTimeLabel: '時間', // New
+          difficultyLabel: '難易度', // New
           noRecipesFoundTitle: 'あなたの基準に一致するレシピは見つかりませんでした。',
           noRecipesFoundSuggestion: 'より良い結果を得るために、材料や好みを調整してみてください！',
           defaultDescription: 'あなたの材料に基づいたおいしいレシピの提案。',
@@ -1310,6 +1348,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          errorLoadingMessage: 'このレシピの詳細を読み込めませんでした。見つからないか、期限切れか、リンクが間違っている可能性があります。',
          printButtonAriaLabel: 'レシピを印刷',
          printButtonTooltip: 'レシピを印刷',
+         downloadPdfButtonAriaLabel: 'レシピをPDFとしてダウンロード', // New
+         downloadPdfButtonTooltip: 'PDFをダウンロード', // New
        },
        savedRecipes: {
           dialogTitle: '保存したレシピ',
@@ -1427,6 +1467,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       unsaveButtonTooltip: 'Eliminar Receta Guardada',
       ingredientsTitle: 'Ingredientes',
       instructionsTitle: 'Instrucciones',
+      estimatedTimeLabel: 'Tiempo', // New
+      difficultyLabel: 'Dificultad', // New
       noRecipesFoundTitle: 'No se encontraron recetas que coincidan con tus criterios.',
       noRecipesFoundSuggestion: '¡Intenta ajustar tus ingredientes o preferencias para tener más suerte!',
       defaultDescription: 'Una deliciosa sugerencia de receta basada en tus ingredientes.',
@@ -1445,6 +1487,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        errorLoadingMessage: 'No se pudieron cargar los detalles de esta receta. Puede que falte, haya caducado o que el enlace sea incorrecto.',
        printButtonAriaLabel: 'Imprimir Receta',
        printButtonTooltip: 'Imprimir Receta',
+       downloadPdfButtonAriaLabel: 'Descargar Receta como PDF', // New
+       downloadPdfButtonTooltip: 'Descargar PDF', // New
      },
     savedRecipes: {
        dialogTitle: 'Recetas Guardadas',
@@ -1562,6 +1606,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       unsaveButtonTooltip: 'Supprimer la Recette Enregistrée',
       ingredientsTitle: 'Ingrédients',
       instructionsTitle: 'Instructions',
+      estimatedTimeLabel: 'Temps', // New
+      difficultyLabel: 'Difficulté', // New
       noRecipesFoundTitle: 'Aucune recette correspondant à vos critères n\'a été trouvée.',
       noRecipesFoundSuggestion: 'Essayez d\'ajuster vos ingrédients ou préférences pour avoir plus de chance !',
       defaultDescription: 'Une suggestion de recette délicieuse basée sur vos ingrédients.',
@@ -1580,6 +1626,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        errorLoadingMessage: 'Impossible de charger les détails de cette recette. Elle est peut-être manquante, expirée ou le lien est incorrect.',
        printButtonAriaLabel: 'Imprimer la recette',
        printButtonTooltip: 'Imprimer la recette',
+       downloadPdfButtonAriaLabel: 'Télécharger la recette en PDF', // New
+       downloadPdfButtonTooltip: 'Télécharger PDF', // New
      },
     savedRecipes: {
         dialogTitle: 'Recettes Enregistrées',

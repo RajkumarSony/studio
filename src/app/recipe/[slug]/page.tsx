@@ -3,8 +3,9 @@
 'use client';
 
 import React, { Suspense, useEffect, useState, useMemo, useCallback } from 'react';
-import { useSearchParams, notFound, useRouter } from 'next/navigation'; // Import notFound and useRouter
+import { useSearchParams, useRouter } from 'next/navigation'; // Import notFound removed, useRouter added
 import Image from 'next/image';
+import { jsPDF } from 'jspdf'; // Import jsPDF
 import {
   Card,
   CardContent,
@@ -23,7 +24,8 @@ import {
   ArrowLeft,
   UtensilsCrossed, // Icon for Nutrition/Diet
   AlertTriangle, // Icon for error
-  Printer, // Icon for Print button
+  Printer, // Icon for Print button (can repurpose or add Download)
+  Download, // Icon for Download PDF
   Loader2, // Import Loader for Suspense fallback & loading state
   RefreshCw, // Icon for retry button
   CloudOff, // Icon for Redis error
@@ -113,7 +115,7 @@ function RecipeDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter(); // Add router for programmatic navigation
   // Use RecipeItem type for state, allowing potential undefined _id before saving
-  const [recipeData, setRecipeData] = useState<RecipeItem | null>(null);
+  const [recipeData, setRecipeData] = useState<(RecipeItem & { language?: LanguageCode }) | null>(null); // Ensure language is part of the state type
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState<string | null>(null); // State for errors
@@ -121,7 +123,7 @@ function RecipeDetailContent() {
 
   // Get Redis key from query params
   const redisKey = useMemo(() => searchParams.get('redisKey'), [searchParams]);
-  console.log("RecipeDetailContent: Retrieved redisKey from URL:", redisKey); // Added logging
+  console.log("RecipeDetailContent: Retrieved redisKey from URL:", redisKey);
 
   // Define the translation function 't' using useCallback
   const t = useCallback((key: string, options?: { [key: string]: string | number }) => {
@@ -138,7 +140,6 @@ function RecipeDetailContent() {
         for (const fk of keys) {
             fallbackResult = fallbackResult?.[fk];
             if (fallbackResult === undefined) {
-                 // console.warn(`Translation key "${key}" not found in language "${currentLanguage}" or fallback "en".`); // Reduce noise
                  return key;
             }
         }
@@ -153,54 +154,56 @@ function RecipeDetailContent() {
      }
 
     return typeof result === 'string' ? result : key;
-  }, [recipeData]); // Depend on recipeData to get the correct language
+  }, [recipeData?.language]); // Depend on recipeData.language
 
 
   useEffect(() => {
     setIsClient(true); // Mark as client-side rendered
     setError(null);
     setIsLoading(true); // Start loading
-    console.log("RecipeDetailContent: useEffect triggered. redisKey:", redisKey); // Added logging
+    console.log("RecipeDetailContent: useEffect triggered. redisKey:", redisKey);
 
     if (!redisKey) {
         console.error("RecipeDetailContent: Redis key not found in query parameters.");
-        setError(t('recipeDetail.errorLoadingMessage') + " (Missing key)"); // Use t here with default 'en' initially
+        // Use the translation function directly here, assuming 'en' as default if recipeData isn't loaded yet
+        setError(getTranslationMessages('en').recipeDetail.errorLoadingMessage + " (Missing key)");
         setIsLoading(false);
-        // Optionally redirect back or show a more permanent error
-        // router.push('/'); // Example redirect
+        // Optionally redirect or show a more permanent error state
+        // Consider not redirecting immediately to show the error message
+        // router.push('/');
         return;
     }
 
     // Fetch data from Redis using Server Action
     const loadFromRedisAction = async () => {
-        console.log(`RecipeDetailContent: Calling getRecipeFromNavigationStore with key: ${redisKey}`); // Added logging
+        console.log(`RecipeDetailContent: Calling getRecipeFromNavigationStore with key: ${redisKey}`);
         try {
-            // getRecipeFromNavigationStore now returns RecipeItem | null
+            // getRecipeFromNavigationStore returns RecipeItem with optional language
             const data = await getRecipeFromNavigationStore(redisKey);
 
             if (data) {
-                console.log("RecipeDetailContent: Data retrieved successfully from Redis via server action:", data); // Added logging
+                console.log("RecipeDetailContent: Data retrieved successfully from Redis via server action:", data);
                  // Restore full image URL if it was omitted and a prompt exists (or handle placeholder)
                  if (data.imageOmitted && data.imagePrompt) {
-                    // Ideally, you'd regenerate or have a placeholder URL mechanism.
-                    // For now, we'll leave imageUrl as undefined if omitted.
                     console.warn(`RecipeDetailContent: Image was omitted for ${data.recipeName}. Displaying fallback.`);
                     data.imageUrl = undefined; // Ensure it's undefined
                  }
-                setRecipeData(data); // Set state with RecipeItem
+                setRecipeData(data); // Set state with RecipeItem & language
                 setError(null); // Clear any previous errors
             } else {
-                console.warn(`RecipeDetailContent: Recipe data not found or expired in Redis for key: ${redisKey}`); // Added logging
-                setError(t('recipeDetail.errorLoadingMessage') + " (Data expired or not found)"); // Use t again, language might be set now if data was found before
+                console.warn(`RecipeDetailContent: Recipe data not found or expired in Redis for key: ${redisKey}`);
+                 // Use translation function based on the current language state (or default 'en')
+                setError(t('recipeDetail.errorLoadingMessage') + " (Data expired or not found)");
                 setRecipeData(null);
             }
         } catch (err: any) {
-            console.error(`RecipeDetailContent: Error calling getRecipeFromNavigationStore action for key "${redisKey}":`, err); // Added logging
-            setError(`${t('toast.storageErrorTitle')}: ${err.message || 'Failed to retrieve data'}`); // Use t
+            console.error(`RecipeDetailContent: Error calling getRecipeFromNavigationStore action for key "${redisKey}":`, err);
+            // Use translation function based on the current language state (or default 'en')
+             setError(`${t('toast.storageErrorTitle')}: ${err.message || 'Failed to retrieve data'}`);
             setRecipeData(null);
         } finally {
             setIsLoading(false); // Finish loading
-            console.log("RecipeDetailContent: Loading finished."); // Added logging
+            console.log("RecipeDetailContent: Loading finished.");
         }
     };
 
@@ -213,7 +216,7 @@ function RecipeDetailContent() {
       if (recipeData?.language) {
          document.documentElement.lang = recipeData.language;
       }
-  }, [recipeData]);
+  }, [recipeData?.language]);
 
 
   // Function to safely render text with line breaks
@@ -245,8 +248,6 @@ function RecipeDetailContent() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 + idx * 0.05, duration: 0.4 }}
         >
-          {/* Optional: Add step number indicator */}
-          {/* <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-bold">{idx + 1}</span> */}
           <p className="flex-1 leading-relaxed text-foreground/80 dark:text-foreground/75">
              {step.replace(/^(\s*(\d+\.|-|\*)\s*)/, '')} {/* Remove potential list markers */}
           </p>
@@ -280,6 +281,78 @@ function RecipeDetailContent() {
        }
      };
 
+   // Handle Download PDF Action
+    const handleDownloadPdf = () => {
+        if (!recipeData || typeof window === 'undefined') return;
+
+        const doc = new jsPDF();
+        const pageHeight = doc.internal.pageSize.height;
+        const margin = 15;
+        let yPos = margin;
+
+        // Function to add text and handle page breaks
+        const addText = (text: string | string[], options: any, isTitle = false) => {
+            const lineHeight = isTitle ? 10 : 7;
+            const splitText = typeof text === 'string' ? doc.splitTextToSize(text, doc.internal.pageSize.width - margin * 2) : text;
+
+             if (yPos + (splitText.length * lineHeight) > pageHeight - margin) {
+                 doc.addPage();
+                 yPos = margin;
+             }
+
+             doc.text(splitText, margin, yPos, options);
+             yPos += splitText.length * lineHeight;
+         };
+
+        // Title
+        doc.setFontSize(20);
+        addText(recipeData.recipeName, { align: 'center' }, true);
+        yPos += 5; // Add some space after title
+
+        // Badges (optional, text-based for simplicity)
+        doc.setFontSize(10);
+        addText(`${t('results.estimatedTimeLabel')}: ${recipeData.estimatedTime} | ${t('results.difficultyLabel')}: ${recipeData.difficulty}`, {}, false);
+        yPos += 5;
+
+        // Ingredients
+        doc.setFontSize(14);
+        addText(t('results.ingredientsTitle'), { align: 'left' }, true);
+        doc.setFontSize(10);
+        const ingredientsText = recipeData.ingredients?.replace(/\\n/g, '\n').split('\n').map(i => `- ${i.trim()}`).filter(Boolean).join('\n') || t('recipeDetail.ingredientsPlaceholder');
+        addText(ingredientsText, {}, false);
+        yPos += 10;
+
+        // Instructions
+        doc.setFontSize(14);
+        addText(t('results.instructionsTitle'), { align: 'left' }, true);
+        doc.setFontSize(10);
+        const instructionsText = recipeData.instructions?.replace(/\\n/g, '\n').split('\n').map((step, idx) => `${idx + 1}. ${step.trim().replace(/^(\s*(\d+\.|-|\*)\s*)/, '')}`).filter(s => s.length > 3).join('\n') || t('recipeDetail.instructionsPlaceholder');
+        addText(instructionsText, {}, false);
+        yPos += 10;
+
+        // Nutrition Facts
+        if (recipeData.nutritionFacts) {
+            doc.setFontSize(14);
+            addText(t('recipeDetail.nutritionTitle'), { align: 'left' }, true);
+            doc.setFontSize(10);
+            addText(recipeData.nutritionFacts.replace(/\\n/g, '\n'), {}, false);
+            yPos += 10;
+        }
+
+        // Diet Plan Suitability
+        if (recipeData.dietPlanSuitability) {
+            doc.setFontSize(14);
+            addText(t('recipeDetail.dietPlanTitle'), { align: 'left' }, true);
+            doc.setFontSize(10);
+            addText(recipeData.dietPlanSuitability.replace(/\\n/g, '\n'), {}, false);
+        }
+
+        // Sanitize filename
+        const filename = `${recipeData.recipeName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+        doc.save(filename);
+    };
+
+
    // Render loading state
    if (isLoading || !isClient) {
        return <RecipeDetailLoading />;
@@ -287,7 +360,7 @@ function RecipeDetailContent() {
 
    // Handle case where recipe data couldn't be loaded or Redis key was missing
    if (error || !recipeData) {
-       console.error("RecipeDetailContent: Rendering error state. Error:", error, "RecipeData:", recipeData); // Added logging
+       console.error("RecipeDetailContent: Rendering error state. Error:", error, "RecipeData:", recipeData);
        return (
            <div className="container mx-auto py-12 px-4 md:px-6 max-w-4xl text-center">
                 <motion.div
@@ -298,6 +371,7 @@ function RecipeDetailContent() {
                    <Button asChild variant="outline" size="sm" className="mb-6 group transition-all hover:bg-accent hover:shadow-sm">
                      <Link href="/">
                        <ArrowLeft className="mr-2 h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
+                       {/* Use translation function 't' here */}
                        {t('recipeDetail.backButton')}
                      </Link>
                    </Button>
@@ -305,6 +379,7 @@ function RecipeDetailContent() {
                        <div className="flex justify-center mb-4">
                          {error?.includes('Redis') || error?.includes('Storage') || error?.includes('retrieve data') || error?.includes('expired') ? <CloudOff className="h-12 w-12 text-destructive" /> : <AlertTriangle className="h-12 w-12 text-destructive" />}
                        </div>
+                        {/* Use translation function 't' here */}
                         <CardTitle className="text-destructive text-xl mb-2">{t('recipeDetail.errorLoadingTitle')}</CardTitle>
                         <p className="text-muted-foreground">{error || t('recipeDetail.errorLoadingMessage')}</p>
                         {/* Optional: Add retry for Redis errors */}
@@ -325,7 +400,7 @@ function RecipeDetailContent() {
        );
    }
 
-    console.log("RecipeDetailContent: Rendering recipe details for:", recipeData.recipeName); // Added logging
+    console.log("RecipeDetailContent: Rendering recipe details for:", recipeData.recipeName);
 
   // Destructure loaded recipe data (now typed as RecipeItem)
   const {
@@ -344,9 +419,6 @@ function RecipeDetailContent() {
   return (
    <TooltipProvider>
      <div className="container mx-auto py-8 sm:py-12 px-4 md:px-6 max-w-4xl print:py-4 print:px-0">
-       {/* Language is now set via useEffect */}
-       {/* <style>{`:root { lang: ${language}; }`}</style> */}
-
        <motion.div
          initial={{ opacity: 0, y: -20 }}
          animate={{ opacity: 1, y: 0 }}
@@ -359,23 +431,36 @@ function RecipeDetailContent() {
              {t('recipeDetail.backButton')}
            </Link>
          </Button>
-          {/* Print Button */}
-          <Tooltip>
-             <TooltipTrigger asChild>
-               <Button variant="outline" size="icon" onClick={handlePrint} className="h-9 w-9">
-                 <Printer className="h-4 w-4" />
-                 <span className="sr-only">{t('recipeDetail.printButtonAriaLabel')}</span>
-               </Button>
-             </TooltipTrigger>
-             <TooltipContent side="bottom">
-                <p>{t('recipeDetail.printButtonTooltip')}</p>
-              </TooltipContent>
-            </Tooltip>
+          {/* Action Buttons: Print & Download PDF */}
+          <div className="flex items-center gap-2">
+              <Tooltip>
+                 <TooltipTrigger asChild>
+                   <Button variant="outline" size="icon" onClick={handlePrint} className="h-9 w-9">
+                     <Printer className="h-4 w-4" />
+                     <span className="sr-only">{t('recipeDetail.printButtonAriaLabel')}</span>
+                   </Button>
+                 </TooltipTrigger>
+                 <TooltipContent side="bottom">
+                    <p>{t('recipeDetail.printButtonTooltip')}</p>
+                  </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" onClick={handleDownloadPdf} className="h-9 w-9">
+                          <Download className="h-4 w-4" />
+                          <span className="sr-only">{t('recipeDetail.downloadPdfButtonAriaLabel')}</span>
+                       </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                       <p>{t('recipeDetail.downloadPdfButtonTooltip')}</p>
+                  </TooltipContent>
+               </Tooltip>
+           </div>
        </motion.div>
 
        <Card className="overflow-hidden shadow-xl border border-border/60 bg-card rounded-xl print:shadow-none print:border-none print:rounded-none">
          <CardHeader className="p-0 relative aspect-[16/8] sm:aspect-[16/7] overflow-hidden group print:aspect-auto print:max-h-[300px]">
-            {imageUrl ? ( // Only render if imageUrl exists
+            {imageUrl && !imageOmitted ? ( // Render only if imageUrl exists and wasn't omitted
                  imageUrl.startsWith('http') ? ( // Check if it's a regular URL
                     <Image
                         src={imageUrl}
@@ -389,7 +474,7 @@ function RecipeDetailContent() {
                          priority
                          unoptimized={false} // Allow Next.js optimization for external URLs
                      />
-                 ) : ( // Assume data URI (though we try to avoid storing these)
+                 ) : ( // Assume data URI
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                           src={imageUrl}
