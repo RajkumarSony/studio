@@ -1,4 +1,4 @@
-// src/components/SavedRecipesDialog.tsx
+{// src/components/SavedRecipesDialog.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -16,7 +16,7 @@ import type { RecipeItem } from '@/ai/flows/suggest-recipe';
 import { translations, type LanguageCode } from '@/lib/translations';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, BarChart, Trash2, Eye, ImageOff, AlertTriangle } from 'lucide-react';
+import { Clock, BarChart, Trash2, Eye, ImageOff, AlertTriangle, CloudOff } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from './ui/separator';
 
@@ -26,6 +26,7 @@ interface SavedRecipesDialogProps {
   onViewRecipe: (recipe: RecipeItem) => void; // Function to handle viewing a recipe
   onRemoveRecipe: (recipe: RecipeItem) => void; // Function to handle removing a recipe
   language: LanguageCode; // Pass current language for translations
+  isRedisAvailable: boolean; // Pass Redis availability status
 }
 
 const SAVED_RECIPES_KEY = 'recipeSageSavedRecipes';
@@ -36,6 +37,7 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
   onViewRecipe,
   onRemoveRecipe,
   language,
+  isRedisAvailable, // Receive Redis status
 }) => {
   const [savedRecipes, setSavedRecipes] = useState<RecipeItem[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -75,17 +77,32 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
       try {
         const storedData = localStorage.getItem(SAVED_RECIPES_KEY);
         if (storedData) {
-          setSavedRecipes(JSON.parse(storedData));
-          setError(null);
+          // Ensure stored data is valid JSON array before parsing
+          try {
+             const parsedData = JSON.parse(storedData);
+             if (Array.isArray(parsedData)) {
+                setSavedRecipes(parsedData);
+             } else {
+                 console.warn("Invalid data found in localStorage for saved recipes. Clearing.");
+                 localStorage.removeItem(SAVED_RECIPES_KEY);
+                 setSavedRecipes([]);
+             }
+          } catch (parseError) {
+             console.error("Error parsing saved recipes from localStorage:", parseError);
+             localStorage.removeItem(SAVED_RECIPES_KEY); // Clear corrupted data
+             setSavedRecipes([]);
+             setError(t('toast.storageErrorDesc') + " (Corrupted)");
+          }
         } else {
           setSavedRecipes([]);
         }
+        setError(null); // Clear previous errors on open
       } catch (err) {
-        console.error("Error loading saved recipes from localStorage:", err);
+        console.error("Error accessing localStorage for saved recipes:", err);
         setError(t('toast.storageErrorDesc')); // Use translation
         setSavedRecipes([]);
-         // Optionally clear corrupted storage
-         localStorage.removeItem(SAVED_RECIPES_KEY);
+         // Optionally clear potentially corrupted storage
+         // localStorage.removeItem(SAVED_RECIPES_KEY);
       }
     }
   }, [isOpen, t]); // Reload when dialog opens or translation function changes
@@ -105,6 +122,12 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
    };
 
    const handleView = (recipe: RecipeItem) => {
+       if (!isRedisAvailable) {
+           console.warn("Cannot view recipe, Redis is not available.");
+           setError("Storage unavailable: Cannot view recipe details.");
+           return;
+       }
+       setError(null); // Clear error if view is possible
        onViewRecipe(recipe); // Call the function passed from the parent
        onClose(); // Close the dialog after initiating view
    };
@@ -123,7 +146,8 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
          <ScrollArea className="flex-1 overflow-y-auto p-6 pt-0">
            {error && (
               <div className="text-center py-4 text-destructive flex items-center justify-center gap-2">
-                  <AlertTriangle size={18} /> {error}
+                  {error.includes('Storage unavailable') ? <CloudOff size={18} /> : <AlertTriangle size={18} />}
+                  {error}
                </div>
             )}
            {savedRecipes.length === 0 && !error ? (
@@ -146,6 +170,7 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
                          ) : (
                             <div className="flex items-center justify-center h-full bg-muted/30">
                                 <ImageOff className="h-10 w-10 text-muted-foreground/40" />
+                                {recipe.imageOmitted && <p className="absolute bottom-1 text-[10px] text-muted-foreground/60">Image omitted</p>}
                              </div>
                          )}
                     </CardHeader>
@@ -165,11 +190,14 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
                      <CardFooter className="p-4 pt-2 flex justify-end gap-2">
                         <Tooltip>
                            <TooltipTrigger asChild>
-                              <Button variant="outline" size="sm" onClick={() => handleView(recipe)}>
+                             {/* Disable View button if Redis is unavailable */}
+                              <Button variant="outline" size="sm" onClick={() => handleView(recipe)} disabled={!isRedisAvailable}>
                                  <Eye size={16} className="mr-1"/> {t('savedRecipes.viewButton')}
                                </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>{t('results.viewRecipeButton')}</p></TooltipContent>
+                             <TooltipContent>
+                                 {isRedisAvailable ? <p>{t('results.viewRecipeButton')}</p> : <p>Storage unavailable</p>}
+                             </TooltipContent>
                          </Tooltip>
                          <Tooltip>
                            <TooltipTrigger asChild>
