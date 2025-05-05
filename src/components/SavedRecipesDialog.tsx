@@ -1,7 +1,7 @@
 // src/components/SavedRecipesDialog.tsx
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,32 +16,33 @@ import type { RecipeItem } from '@/ai/flows/suggest-recipe';
 import { translations, type LanguageCode } from '@/lib/translations';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, BarChart, Trash2, Eye, ImageOff, AlertTriangle, CloudOff } from 'lucide-react';
+import { Clock, BarChart, Trash2, Eye, ImageOff, AlertTriangle, CloudOff, Loader2, RefreshCw } from 'lucide-react'; // Added Loader2, RefreshCw
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Separator } from './ui/separator';
+import { getAllSavedRecipes, deleteRecipeById } from '@/lib/db/recipes'; // Import DB actions
 
 interface SavedRecipesDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onViewRecipe: (recipe: RecipeItem) => void; // Function to handle viewing a recipe
-  onRemoveRecipe: (recipe: RecipeItem) => void; // Function to handle removing a recipe
   language: LanguageCode; // Pass current language for translations
   isRedisAvailable: boolean; // Pass Redis availability status
 }
 
-const SAVED_RECIPES_KEY = 'recipeSageSavedRecipes';
+// Define the type for recipes fetched from DB (includes string _id)
+type SavedRecipeItem = RecipeItem & { _id: string };
 
 const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
   isOpen,
   onClose,
   onViewRecipe,
-  onRemoveRecipe,
   language,
-  isRedisAvailable, // Receive Redis status
+  isRedisAvailable,
 }) => {
-  const [savedRecipes, setSavedRecipes] = useState<RecipeItem[]>([]);
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipeItem[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // State for loading recipes
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition(); // For delete operation
 
   // Translation function specific to this component
    const t = useCallback((key: string, options?: { [key: string]: string | number }) => {
@@ -71,64 +72,65 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
       return typeof result === 'string' ? result : key;
     }, [language]);
 
+  // Function to fetch saved recipes from the database
+  const fetchRecipes = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const recipesFromDb = await getAllSavedRecipes();
+      if (recipesFromDb) {
+        setSavedRecipes(recipesFromDb);
+      } else {
+        setError(t('toast.storageErrorDesc') + ' (DB Fetch)'); // Use translation for DB error
+        setSavedRecipes([]);
+      }
+    } catch (err) {
+      console.error("Error fetching saved recipes from DB:", err);
+      setError(t('toast.storageErrorDesc') + ' (DB Fetch)'); // Use translation
+      setSavedRecipes([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [t]); // Depend on translation function
+
   useEffect(() => {
     setIsClient(true);
-    if (isOpen && typeof window !== 'undefined') {
-      try {
-        const storedData = localStorage.getItem(SAVED_RECIPES_KEY);
-        if (storedData) {
-          // Ensure stored data is valid JSON array before parsing
-          try {
-             const parsedData = JSON.parse(storedData);
-             if (Array.isArray(parsedData)) {
-                setSavedRecipes(parsedData);
-             } else {
-                 console.warn("Invalid data found in localStorage for saved recipes. Clearing.");
-                 localStorage.removeItem(SAVED_RECIPES_KEY);
-                 setSavedRecipes([]);
-             }
-          } catch (parseError) {
-             console.error("Error parsing saved recipes from localStorage:", parseError);
-             localStorage.removeItem(SAVED_RECIPES_KEY); // Clear corrupted data
-             setSavedRecipes([]);
-             setError(t('toast.storageErrorDesc') + " (Corrupted)");
-          }
-        } else {
-          setSavedRecipes([]);
-        }
-        setError(null); // Clear previous errors on open
-      } catch (err) {
-        console.error("Error accessing localStorage for saved recipes:", err);
-        setError(t('toast.storageErrorDesc')); // Use translation
-        setSavedRecipes([]);
-         // Optionally clear potentially corrupted storage
-         // localStorage.removeItem(SAVED_RECIPES_KEY);
-      }
+    if (isOpen) {
+      fetchRecipes(); // Fetch recipes when the dialog opens
     }
-  }, [isOpen, t]); // Reload when dialog opens or translation function changes
+  }, [isOpen, fetchRecipes]);
 
-  const handleRemove = (recipe: RecipeItem) => {
-     try {
-      const updatedRecipes = savedRecipes.filter(r => r.recipeName !== recipe.recipeName);
-      localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(updatedRecipes));
-      setSavedRecipes(updatedRecipes);
-      // Also trigger the main page's remove function to update its state
-      onRemoveRecipe(recipe);
-       console.log(t('toast.recipeRemovedTitle'), t('toast.recipeRemovedDesc', { recipeName: recipe.recipeName }));
-     } catch (err) {
-        console.error("Error removing recipe from localStorage:", err);
-        setError(t('toast.saveErrorDesc')); // Use translation
-     }
+  // Handler for deleting a recipe using Server Action
+  const handleRemove = (recipeId: string, recipeName: string) => {
+    startTransition(async () => {
+      setError(null); // Clear previous errors
+      try {
+        const success = await deleteRecipeById(recipeId);
+        if (success) {
+          // Remove the recipe from the local state optimistically or refetch
+          setSavedRecipes(prev => prev.filter(r => r._id !== recipeId));
+          console.log(t('toast.recipeRemovedTitle'), t('toast.recipeRemovedDesc', { recipeName: recipeName }));
+        } else {
+          console.error(`Failed to delete recipe ${recipeId} via server action.`);
+          setError(t('toast.saveErrorDesc') + ' (DB Delete)');
+        }
+      } catch (err) {
+        console.error("Error calling deleteRecipeById action:", err);
+        setError(t('toast.saveErrorDesc') + ' (DB Delete)');
+      }
+    });
    };
 
-   const handleView = (recipe: RecipeItem) => {
+   const handleView = (recipe: SavedRecipeItem) => {
        if (!isRedisAvailable) {
            console.warn("Cannot view recipe, Redis is not available.");
            setError("Storage unavailable: Cannot view recipe details.");
            return;
        }
        setError(null); // Clear error if view is possible
-       onViewRecipe(recipe); // Call the function passed from the parent
+       // Pass the recipe (excluding the DB-specific _id if necessary, though RecipeItem shouldn't have it)
+       const { _id, ...recipeToView } = recipe;
+       onViewRecipe(recipeToView as RecipeItem); // Cast back to RecipeItem
        onClose(); // Close the dialog after initiating view
    };
 
@@ -143,21 +145,33 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
          <DialogHeader className="p-6 pb-4 border-b">
            <DialogTitle>{t('savedRecipes.dialogTitle')}</DialogTitle>
          </DialogHeader>
+
          <ScrollArea className="flex-1 overflow-y-auto p-6 pt-0">
-           {error && (
-              <div className="text-center py-4 text-destructive flex items-center justify-center gap-2">
-                  {error.includes('Storage unavailable') ? <CloudOff size={18} /> : <AlertTriangle size={18} />}
-                  {error}
+           {isLoading && (
+               <div className="flex justify-center items-center py-10">
+                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
+               </div>
+           )}
+           {error && !isLoading && (
+              <div className="text-center py-4 text-destructive flex flex-col items-center gap-2">
+                 <div className="flex items-center gap-2">
+                     {error.includes('Storage unavailable') ? <CloudOff size={18} /> : <AlertTriangle size={18} />}
+                     <span>{error}</span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={fetchRecipes} className="mt-2">
+                       <RefreshCw className="mr-2 h-4 w-4"/> Retry
+                   </Button>
                </div>
             )}
-           {savedRecipes.length === 0 && !error ? (
+           {!isLoading && !error && savedRecipes.length === 0 && (
              <div className="text-center py-10 text-muted-foreground">
                {t('savedRecipes.noSavedRecipes')}
              </div>
-           ) : (
+           )}
+           {!isLoading && !error && savedRecipes.length > 0 && (
              <div className="grid grid-cols-1 gap-4">
                {savedRecipes.map((recipe) => (
-                 <Card key={recipe.recipeName} className="flex flex-col sm:flex-row overflow-hidden border border-border/40 shadow-sm bg-card/80">
+                 <Card key={recipe._id} className="flex flex-col sm:flex-row overflow-hidden border border-border/40 shadow-sm bg-card/80">
                     <CardHeader className="p-0 w-full sm:w-1/3 relative aspect-video sm:aspect-auto">
                         {recipe.imageUrl && !recipe.imageOmitted ? (
                              // eslint-disable-next-line @next/next/no-img-element
@@ -190,7 +204,6 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
                      <CardFooter className="p-4 pt-2 flex justify-end gap-2">
                         <Tooltip>
                            <TooltipTrigger asChild>
-                             {/* Disable View button if Redis is unavailable */}
                               <Button variant="outline" size="sm" onClick={() => handleView(recipe)} disabled={!isRedisAvailable}>
                                  <Eye size={16} className="mr-1"/> {t('savedRecipes.viewButton')}
                                </Button>
@@ -201,8 +214,8 @@ const SavedRecipesDialog: React.FC<SavedRecipesDialogProps> = ({
                          </Tooltip>
                          <Tooltip>
                            <TooltipTrigger asChild>
-                               <Button variant="destructive" size="icon" onClick={() => handleRemove(recipe)} aria-label={t('savedRecipes.removeButtonAriaLabel', {recipeName: recipe.recipeName})}>
-                                 <Trash2 size={16} />
+                               <Button variant="destructive" size="icon" onClick={() => handleRemove(recipe._id, recipe.recipeName)} disabled={isPending} aria-label={t('savedRecipes.removeButtonAriaLabel', {recipeName: recipe.recipeName})}>
+                                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 size={16} />}
                                </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{t('savedRecipes.removeButtonTooltip')}</p></TooltipContent>

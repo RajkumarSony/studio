@@ -1,4 +1,4 @@
-{// src/app/recipe/[slug]/page.tsx
+// src/app/recipe/[slug]/page.tsx
 'use client';
 
 import React, { Suspense, useEffect, useState, useMemo, useCallback } from 'react';
@@ -32,10 +32,8 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
 import { cn } from '@/lib/utils';
-import type { RecipeItem } from '@/ai/flows/suggest-recipe'; // Import RecipeItem type
+import type { RecipeItem } from '@/types/recipe'; // Import RecipeItem type
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-// Remove direct Redis client import
-// import redisClient, { isRedisAvailable } from '@/lib/redis/client';
 import { getRecipeFromNavigationStore } from '@/actions/redisActions'; // Import server action
 
 // Helper function to get the translation messages object for a language
@@ -112,12 +110,11 @@ function RecipeDetailLoading() {
 
 function RecipeDetailContent() {
   const searchParams = useSearchParams();
-  const [recipeData, setRecipeData] = useState<(RecipeItem & { language?: LanguageCode }) | null>(null); // Include language in state
+  // Use RecipeItem type for state, allowing potential undefined _id before saving
+  const [recipeData, setRecipeData] = useState<RecipeItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState<string | null>(null); // State for errors
-  // Language is now derived from recipeData, no separate state needed unless for fallback
-  // const [language, setLanguage] = useState<LanguageCode>('en'); // State for language
 
 
   // Get Redis key from query params
@@ -171,6 +168,7 @@ function RecipeDetailContent() {
     // Fetch data from Redis using Server Action
     const loadFromRedisAction = async () => {
         try {
+            // getRecipeFromNavigationStore now returns RecipeItem | null
             const data = await getRecipeFromNavigationStore(redisKey);
 
             if (data) {
@@ -182,7 +180,7 @@ function RecipeDetailContent() {
                     console.warn(`Image was omitted for ${data.recipeName}. Displaying fallback.`);
                     data.imageUrl = undefined; // Ensure it's undefined
                  }
-                setRecipeData(data);
+                setRecipeData(data); // Set state with RecipeItem
                 setError(null); // Clear any previous errors
             } else {
                 console.warn("Recipe data not found or expired in Redis for key (via server action):", redisKey);
@@ -219,7 +217,7 @@ function RecipeDetailContent() {
       const trimmedLine = line.trim();
       if (!trimmedLine) return null; // Skip empty lines
       // Basic check for list markers, render as plain text for now
-      const content = trimmedLine.replace(/^(\s*(\d+\.|-|\*)\s*)/, '');
+      const content = trimmedLine.replace(/^(\s*(\d+\.|-)\s*)/, '');
       return <React.Fragment key={index}>{content}<br /></React.Fragment>;
     });
   };
@@ -318,7 +316,7 @@ function RecipeDetailContent() {
        );
    }
 
-  // Destructure loaded recipe data
+  // Destructure loaded recipe data (now typed as RecipeItem)
   const {
       recipeName,
       ingredients,

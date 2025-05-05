@@ -13,6 +13,7 @@
 import {ai} from '@/ai/ai-instance';
 import {z} from 'zod';
 import type {GenerateRequest} from 'genkit'; // Import GenerateRequest type
+import type { RecipeItem } from '@/types/recipe'; // Import the dedicated RecipeItem type
 
 const SuggestRecipesInputSchema = z.object({
   ingredients: z
@@ -42,7 +43,9 @@ const SuggestRecipesInputSchema = z.object({
 });
 export type SuggestRecipesInput = z.infer<typeof SuggestRecipesInputSchema>;
 
-const RecipeItemSchema = z.object({
+// Use the imported RecipeItem type for schema definition
+// Omit fields that are added later (like _id, language, imageOmitted, createdAt)
+const BaseRecipeItemSchema = z.object({
   recipeName: z.string().describe('The name of the suggested recipe.'),
   ingredients: z
     .string()
@@ -79,10 +82,9 @@ const RecipeItemSchema = z.object({
      .optional()
      .describe('Brief assessment of how the recipe fits into common diet plans (e.g., balanced, keto-friendly, high-protein). Include only if requested.'),
 });
-export type RecipeItem = z.infer<typeof RecipeItemSchema>;
 
-// The output is an array of recipe items
-const SuggestRecipesOutputSchema = z.array(RecipeItemSchema);
+// The output is an array of recipe items based on the base schema
+const SuggestRecipesOutputSchema = z.array(BaseRecipeItemSchema);
 
 /**
  * Suggests up to 3 recipes based on the provided input, including generating images and optionally details.
@@ -91,17 +93,21 @@ const SuggestRecipesOutputSchema = z.array(RecipeItemSchema);
  */
 export async function suggestRecipes(
   input: SuggestRecipesInput
-): Promise<RecipeItem[]> {
+): Promise<RecipeItem[]> { // Return type uses the imported RecipeItem
   // Validate input using Zod schema before calling the flow
   const validatedInput = SuggestRecipesInputSchema.parse(input);
-  return suggestRecipeFlow(validatedInput);
+  // The flow will return the base structure, DB/Redis actions add other fields
+  const baseRecipes = await suggestRecipeFlow(validatedInput);
+  // Cast the result to the full RecipeItem type, knowing other fields might be added later
+  return baseRecipes as RecipeItem[];
 }
 
 // Define schema for the prompt output *before* image generation
-// Adjust based on whether details are requested
+// This should match the BaseRecipeItemSchema structure
 const RecipeTextOutputSchema = z.array(
-  RecipeItemSchema.omit({imageUrl: true}) // Omit imageUrl initially, nutrition/diet are conditional in prompt
+  BaseRecipeItemSchema.omit({imageUrl: true}) // Omit imageUrl initially
 );
+
 
 const suggestRecipePrompt = ai.definePrompt({
   name: 'suggestRecipePrompt',
@@ -109,8 +115,7 @@ const suggestRecipePrompt = ai.definePrompt({
     schema: SuggestRecipesInputSchema,
   },
   output: {
-    // Expecting an array of recipes *without* the final imageUrl yet
-    // Nutrition/diet fields might be present based on input.includeDetails
+    // Expecting an array of recipes matching the BaseRecipeItemSchema (excluding imageUrl)
     schema: RecipeTextOutputSchema,
   },
   model: 'googleai/gemini-2.0-flash', // Use specified model
@@ -144,12 +149,12 @@ Return the result as a JSON array, where each object in the array represents a r
 
 const suggestRecipeFlow = ai.defineFlow<
   typeof SuggestRecipesInputSchema,
-  typeof SuggestRecipesOutputSchema // Final output includes imageUrl
+  typeof SuggestRecipesOutputSchema // Flow output schema matches the array of base recipes
 >(
   {
     name: 'suggestRecipeFlow',
     inputSchema: SuggestRecipesInputSchema,
-    outputSchema: SuggestRecipesOutputSchema, // Flow outputs the full schema
+    outputSchema: SuggestRecipesOutputSchema, // Flow outputs the array of base schema items
   },
   async input => {
     // 1. Get recipe details (potentially translated, maybe with nutrition/diet) and image prompts (always English)
@@ -214,6 +219,7 @@ const suggestRecipeFlow = ai.defineFlow<
         }
 
         // Combine original recipe data with the generated image URL
+        // This still matches the BaseRecipeItemSchema structure
         return {
           ...recipe, // Includes name, ingredients, instructions, time, difficulty, and potentially nutrition/diet
           imageUrl: imageUrl, // Add the generated URL (or undefined)
@@ -221,6 +227,6 @@ const suggestRecipeFlow = ai.defineFlow<
       })
     );
     console.log('Finished processing all recipes with image generation.');
-    return recipesWithImages;
+    return recipesWithImages; // Returns array matching SuggestRecipesOutputSchema
   }
 );
