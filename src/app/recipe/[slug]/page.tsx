@@ -1,8 +1,9 @@
+
 // src/app/recipe/[slug]/page.tsx
 'use client';
 
 import React, { Suspense, useEffect, useState, useMemo, useCallback } from 'react';
-import { useSearchParams, notFound } from 'next/navigation'; // Import notFound
+import { useSearchParams, notFound, useRouter } from 'next/navigation'; // Import notFound and useRouter
 import Image from 'next/image';
 import {
   Card,
@@ -110,6 +111,7 @@ function RecipeDetailLoading() {
 
 function RecipeDetailContent() {
   const searchParams = useSearchParams();
+  const router = useRouter(); // Add router for programmatic navigation
   // Use RecipeItem type for state, allowing potential undefined _id before saving
   const [recipeData, setRecipeData] = useState<RecipeItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -119,6 +121,7 @@ function RecipeDetailContent() {
 
   // Get Redis key from query params
   const redisKey = useMemo(() => searchParams.get('redisKey'), [searchParams]);
+  console.log("RecipeDetailContent: Retrieved redisKey from URL:", redisKey); // Added logging
 
   // Define the translation function 't' using useCallback
   const t = useCallback((key: string, options?: { [key: string]: string | number }) => {
@@ -135,7 +138,7 @@ function RecipeDetailContent() {
         for (const fk of keys) {
             fallbackResult = fallbackResult?.[fk];
             if (fallbackResult === undefined) {
-                 console.warn(`Translation key "${key}" not found in language "${currentLanguage}" or fallback "en".`);
+                 // console.warn(`Translation key "${key}" not found in language "${currentLanguage}" or fallback "en".`); // Reduce noise
                  return key;
             }
         }
@@ -157,42 +160,47 @@ function RecipeDetailContent() {
     setIsClient(true); // Mark as client-side rendered
     setError(null);
     setIsLoading(true); // Start loading
+    console.log("RecipeDetailContent: useEffect triggered. redisKey:", redisKey); // Added logging
 
     if (!redisKey) {
-        console.error("Redis key not found in query parameters.");
+        console.error("RecipeDetailContent: Redis key not found in query parameters.");
         setError(t('recipeDetail.errorLoadingMessage') + " (Missing key)"); // Use t here with default 'en' initially
         setIsLoading(false);
+        // Optionally redirect back or show a more permanent error
+        // router.push('/'); // Example redirect
         return;
     }
 
     // Fetch data from Redis using Server Action
     const loadFromRedisAction = async () => {
+        console.log(`RecipeDetailContent: Calling getRecipeFromNavigationStore with key: ${redisKey}`); // Added logging
         try {
             // getRecipeFromNavigationStore now returns RecipeItem | null
             const data = await getRecipeFromNavigationStore(redisKey);
 
             if (data) {
-                console.log("Data retrieved from Redis via server action:", data);
+                console.log("RecipeDetailContent: Data retrieved successfully from Redis via server action:", data); // Added logging
                  // Restore full image URL if it was omitted and a prompt exists (or handle placeholder)
                  if (data.imageOmitted && data.imagePrompt) {
                     // Ideally, you'd regenerate or have a placeholder URL mechanism.
                     // For now, we'll leave imageUrl as undefined if omitted.
-                    console.warn(`Image was omitted for ${data.recipeName}. Displaying fallback.`);
+                    console.warn(`RecipeDetailContent: Image was omitted for ${data.recipeName}. Displaying fallback.`);
                     data.imageUrl = undefined; // Ensure it's undefined
                  }
                 setRecipeData(data); // Set state with RecipeItem
                 setError(null); // Clear any previous errors
             } else {
-                console.warn("Recipe data not found or expired in Redis for key (via server action):", redisKey);
+                console.warn(`RecipeDetailContent: Recipe data not found or expired in Redis for key: ${redisKey}`); // Added logging
                 setError(t('recipeDetail.errorLoadingMessage') + " (Data expired or not found)"); // Use t again, language might be set now if data was found before
                 setRecipeData(null);
             }
         } catch (err: any) {
-            console.error(`Error calling getRecipeFromNavigationStore action for key "${redisKey}":`, err);
+            console.error(`RecipeDetailContent: Error calling getRecipeFromNavigationStore action for key "${redisKey}":`, err); // Added logging
             setError(`${t('toast.storageErrorTitle')}: ${err.message || 'Failed to retrieve data'}`); // Use t
             setRecipeData(null);
         } finally {
             setIsLoading(false); // Finish loading
+            console.log("RecipeDetailContent: Loading finished."); // Added logging
         }
     };
 
@@ -279,6 +287,7 @@ function RecipeDetailContent() {
 
    // Handle case where recipe data couldn't be loaded or Redis key was missing
    if (error || !recipeData) {
+       console.error("RecipeDetailContent: Rendering error state. Error:", error, "RecipeData:", recipeData); // Added logging
        return (
            <div className="container mx-auto py-12 px-4 md:px-6 max-w-4xl text-center">
                 <motion.div
@@ -294,12 +303,12 @@ function RecipeDetailContent() {
                    </Button>
                     <Card className="p-8 bg-card border border-destructive/50 shadow-lg">
                        <div className="flex justify-center mb-4">
-                         {error?.includes('Redis') || error?.includes('Storage') ? <CloudOff className="h-12 w-12 text-destructive" /> : <AlertTriangle className="h-12 w-12 text-destructive" />}
+                         {error?.includes('Redis') || error?.includes('Storage') || error?.includes('retrieve data') || error?.includes('expired') ? <CloudOff className="h-12 w-12 text-destructive" /> : <AlertTriangle className="h-12 w-12 text-destructive" />}
                        </div>
                         <CardTitle className="text-destructive text-xl mb-2">{t('recipeDetail.errorLoadingTitle')}</CardTitle>
                         <p className="text-muted-foreground">{error || t('recipeDetail.errorLoadingMessage')}</p>
                         {/* Optional: Add retry for Redis errors */}
-                        {(error?.includes('Redis') || error?.includes('Storage') || error?.includes('retrieve data')) && (
+                        {(error?.includes('Redis') || error?.includes('Storage') || error?.includes('retrieve data') || error?.includes('expired')) && (
                              <Button
                                  variant="outline"
                                  size="sm"
@@ -315,6 +324,8 @@ function RecipeDetailContent() {
            </div>
        );
    }
+
+    console.log("RecipeDetailContent: Rendering recipe details for:", recipeData.recipeName); // Added logging
 
   // Destructure loaded recipe data (now typed as RecipeItem)
   const {

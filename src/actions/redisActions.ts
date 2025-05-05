@@ -1,8 +1,9 @@
+
 'use server';
 
 import redisClient from '@/lib/redis/client';
 import type { FormValues } from '@/types/form'; // Use shared type
-import type { RecipeItem } from '@/ai/flows/suggest-recipe';
+import type { RecipeItem } from '@/types/recipe'; // Use the dedicated RecipeItem type
 import type { LanguageCode } from '@/lib/translations';
 import { ObjectId } from 'mongodb'; // Import ObjectId for type checking
 
@@ -10,37 +11,16 @@ const FORM_STATE_KEY = 'recipeSageFormState';
 const RECIPE_RESULTS_KEY = 'recipeSageResults';
 
 // Helper function to ensure data is plain serializable JSON
-// Converts ObjectId and Date to strings
+// Converts ObjectId and Date to strings - simplified for clarity
 const ensureSerializable = (data: any): any => {
-  if (data === null || typeof data !== 'object') {
-    return data;
-  }
-
-  if (data instanceof ObjectId) {
-    return data.toString();
-  }
-
-  if (data instanceof Date) {
-    return data.toISOString();
-  }
-
-  if (Array.isArray(data)) {
-    return data.map(ensureSerializable);
-  }
-
-  // For plain objects, iterate over keys
-  const sanitizedObj: { [key: string]: any } = {};
-  for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
-      // Exclude MongoDB internal fields if they sneak in, like _id if not already converted
-       if (key === '_id' && data[key] instanceof ObjectId) {
-            sanitizedObj[key] = data[key].toString();
-       } else {
-           sanitizedObj[key] = ensureSerializable(data[key]);
-       }
+  return JSON.parse(JSON.stringify(data, (key, value) => {
+    // Convert ObjectId to string during stringification
+    if (value && typeof value === 'object' && value instanceof ObjectId) {
+      return value.toString();
     }
-  }
-  return sanitizedObj;
+    // Dates are handled automatically by JSON.stringify into ISO strings
+    return value;
+  }));
 };
 
 
@@ -59,6 +39,7 @@ export async function checkRedisAvailability(): Promise<boolean> {
     if (!isAvailable) {
         console.warn("Redis ping failed or returned unexpected response:", pong);
     }
+    // console.log(`Redis availability check: ${isAvailable ? 'Available' : 'Unavailable'}`); // Optional: reduce logging noise
     return isAvailable;
   } catch (error) {
     console.error('Redis availability check failed:', error);
@@ -82,13 +63,8 @@ export async function getStoredState(): Promise<{ formState: FormValues | null; 
     ]);
 
     const formState = storedFormState ? (JSON.parse(storedFormState) as FormValues) : null;
-    let results = storedResults ? (JSON.parse(storedResults) as any[]) : null; // Parse as any first
-
-    // Ensure results are serializable (convert ObjectId/Date)
-    if (results) {
-       results = ensureSerializable(results) as RecipeItem[];
-    }
-
+    // Use ensureSerializable AFTER parsing to handle potential non-serializable fields like Dates from JSON
+    const results = storedResults ? (ensureSerializable(JSON.parse(storedResults)) as RecipeItem[]) : null;
 
     console.log(`Retrieved state from Redis: Form state ${formState ? 'found' : 'not found'}, Results ${results ? 'found ('+results.length+')' : 'not found'}`);
     return { formState, results };
@@ -121,8 +97,6 @@ export async function setStoredState(formState: FormValues, results: RecipeItem[
        // Keep image URL if it's a regular URL, otherwise omit data URIs
        imageUrl: r.imageUrl?.startsWith('data:') ? undefined : r.imageUrl,
        imageOmitted: !!(r.imageUrl?.startsWith('data:')), // Mark if image was omitted
-       // Explicitly convert _id if present (it shouldn't be in RecipeItem ideally, but safe)
-       _id: (r as any)._id instanceof ObjectId ? (r as any)._id.toString() : (r as any)._id,
      }));
 
     // Ensure the entire structure is serializable before stringifying
@@ -182,6 +156,7 @@ export async function storeRecipeForNavigation(slug: string, recipe: RecipeItem,
        return null;
      }
      const redisKey = `recipeDetail-${slug}`;
+      console.log(`Attempting to store recipe details in Redis with key: ${redisKey}`); // Added logging
       try {
          // Prepare data to store (include language, omit large image data URIs)
          const dataToStore: RecipeItem & { language?: LanguageCode; imageOmitted?: boolean } = {
@@ -189,26 +164,27 @@ export async function storeRecipeForNavigation(slug: string, recipe: RecipeItem,
              language: language,
              imageUrl: recipe.imageUrl?.startsWith('data:') ? undefined : recipe.imageUrl,
              imageOmitted: !!(recipe.imageUrl?.startsWith('data:')),
-             // Explicitly convert _id if present
-             _id: (recipe as any)._id instanceof ObjectId ? (recipe as any)._id.toString() : (recipe as any)._id,
+             // Ensure _id is handled by ensureSerializable if present
          };
 
          // Ensure serializable before stringifying
          const serializableRecipe = ensureSerializable(dataToStore);
          const serializedRecipe = JSON.stringify(serializableRecipe);
 
+         console.log(`Serialized data for key ${redisKey}:`, serializedRecipe.substring(0, 200) + '...'); // Log snippet of data
+
          // Expire after 300 seconds (5 minutes)
          const result = await redisClient.set(redisKey, serializedRecipe, 'EX', 300);
 
          if (result === 'OK') {
-             console.log("Recipe detail data successfully stored in Redis with key:", redisKey);
+             console.log("✅ Recipe detail data successfully stored in Redis with key:", redisKey);
              return redisKey;
          } else {
-             console.error("Redis SET command did not return OK for key:", redisKey);
+             console.error("❌ Redis SET command did not return OK for key:", redisKey);
              return null;
          }
      } catch (error) {
-         console.error(`Error storing recipe details in Redis for key "${redisKey}":`, error);
+         console.error(`❌ Error storing recipe details in Redis for key "${redisKey}":`, error);
          return null;
      }
  }
@@ -222,22 +198,24 @@ export async function storeRecipeForNavigation(slug: string, recipe: RecipeItem,
          console.warn('Redis not available for getRecipeFromNavigationStore');
          return null;
      }
+      console.log(`Attempting to retrieve recipe details from Redis with key: ${redisKey}`); // Added logging
      try {
          const storedData = await redisClient.get(redisKey);
          if (storedData) {
-             console.log("Retrieved recipe detail data from Redis for key:", redisKey);
-             const parsedData = JSON.parse(storedData) as any; // Parse as any first
-             // Ensure serializable (convert ObjectId/Date if they slipped through)
+             console.log("✅ Retrieved raw data from Redis for key:", redisKey, storedData.substring(0, 200) + '...'); // Log snippet
+             const parsedData = JSON.parse(storedData);
+              // Use ensureSerializable AFTER parsing to handle potential non-serializable fields like Dates from JSON
              const serializableData = ensureSerializable(parsedData) as (RecipeItem & { language?: LanguageCode });
+             console.log("✅ Parsed and serialized recipe data:", serializableData);
              // Optionally delete the key after retrieval if it's single-use
              // await redisClient.del(redisKey);
              return serializableData;
          } else {
-             console.warn("Recipe detail data not found or expired in Redis for key:", redisKey);
+             console.warn(`❌ Recipe detail data not found or expired in Redis for key: ${redisKey}`);
              return null;
          }
      } catch (error) {
-         console.error(`Error retrieving or parsing recipe details from Redis for key "${redisKey}":`, error);
+         console.error(`❌ Error retrieving or parsing recipe details from Redis for key "${redisKey}":`, error);
          return null;
      }
  }
