@@ -58,8 +58,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {useTheme} from 'next-themes';
-import type {SuggestRecipesInput, RecipeItem} from '@/ai/flows/suggest-recipe';
+import type {SuggestRecipesInput} from '@/ai/flows/suggest-recipe';
 import {suggestRecipes} from '@/ai/flows/suggest-recipe';
+import type { RecipeItem } from '@/types/recipe'; // Import the dedicated RecipeItem type
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,8 +81,8 @@ import {Label} from '@/components/ui/label';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
 import Link from 'next/link'; // Import Link for navigation
 import { useRouter } from 'next/navigation'; // Import useRouter
-// Updated import to use only necessary DB functions
-import { saveGeneratedRecipeDetails, saveRecipeHistory, deleteRecipeById } from '@/lib/db/recipes';
+// Import MongoDB functions including getAllSavedRecipes
+import { saveGeneratedRecipeDetails, saveRecipeHistory, deleteRecipeById, getAllSavedRecipes } from '@/lib/db/recipes';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
 import SavedRecipesDialog from '@/components/SavedRecipesDialog'; // Import SavedRecipesDialog
 // Import server actions for Redis
@@ -91,7 +92,6 @@ import { ObjectId } from 'mongodb'; // Needed for ObjectId checks if necessary, 
 
 // Constants for storage keys
 const SELECTED_LANGUAGE_KEY = 'selectedLanguage'; // localStorage key for language
-// Removed SAVED_RECIPES_KEY and MAX_STORAGE_IMAGE_SIZE as local recipe storage is removed
 
 // Define supported languages and their corresponding CSS font variables
 const supportedLanguages: { value: LanguageCode; label: string; fontVariable: string }[] = [
@@ -133,7 +133,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
   const [isClient, setIsClient] = useState(false);
-  // Removed savedRecipeNames state - will fetch from DB in dialog
   const [initialLoadComplete, setInitialLoadComplete] = useState(false); // Track if initial load from storage is done
   const [error, setError] = useState<string | null>(null); // State for holding general error messages
   const [redisError, setRedisError] = useState<string | null>(null); // State for Redis specific errors
@@ -266,6 +265,15 @@ export default function Home() {
                 }
                 if (results) {
                     setRecipes(results);
+                    // Ensure savedRecipeIds are updated based on restored results
+                     const restoredIds = new Set<string>();
+                     results.forEach(recipe => {
+                        if (recipe._id && typeof recipe._id === 'string') {
+                           restoredIds.add(recipe._id);
+                         }
+                     });
+                     // Combine with already fetched IDs (if any)
+                     setSavedRecipeIds(prev => new Set([...prev, ...restoredIds]));
                     console.log(`Restored ${results.length} recipe results from Redis.`);
                 } else {
                     setRecipes(null); // Set to null if nothing found
@@ -274,14 +282,16 @@ export default function Home() {
             } else {
                 console.warn("Redis is not available. Skipping state restoration from Redis.");
                 setRecipes(null); // Ensure recipes are null if Redis isn't available
-                form.reset(); // Reset form if no state could be loaded
+                // Don't reset form here, let localStorage values persist if any
+                // form.reset(); // Reset form if no state could be loaded - Reconsider this
             }
         } catch (err: any) {
             console.error("Error during state initialization:", err);
             setRedisError(`${t('toast.storageErrorTitle')}: ${err.message || 'Failed to connect or retrieve state'}`);
             setIsRedisAvailable(false); // Assume not available on error
             setRecipes(null);
-            form.reset();
+            // Don't reset form here either
+            // form.reset();
         } finally {
             setInitialLoadComplete(true); // Mark load complete
         }
@@ -325,13 +335,9 @@ export default function Home() {
      if (!recipe || !recipe.recipeName) return;
      setError(null); // Clear previous errors
 
-     // Determine if the recipe is currently saved (check by name or _id if available)
-     // Note: Relying solely on `savedRecipeIds` might be insufficient if the recipe was just generated and doesn't have an ID yet.
-     // We need to save it first to get an ID, then potentially unsave.
-     // Let's simplify: Save calls the save DB function, Unsave calls the delete DB function.
-
+     // Ensure ID is a string for consistency
      const recipeId = typeof recipe._id === 'string' ? recipe._id : recipe._id?.toString();
-     const isCurrentlySaved = recipeId && savedRecipeIds.has(recipeId);
+     const isCurrentlySaved = !!(recipeId && savedRecipeIds.has(recipeId));
 
      if (isCurrentlySaved && recipeId) {
          // --- Unsave (Delete from DB) ---
@@ -357,15 +363,17 @@ export default function Home() {
      } else {
          // --- Save (Save to DB) ---
          try {
-             const savedId = await saveGeneratedRecipeDetails(recipe); // This handles upsert
+            // Ensure we pass the full RecipeItem structure
+             const savedId = await saveGeneratedRecipeDetails(recipe as RecipeItem); // Cast might be needed if _id is ObjectId
              if (savedId) {
                  console.log(t('toast.recipeSavedDesc', { recipeName: recipe.recipeName }));
                   // Update local state of saved IDs
                  setSavedRecipeIds(prev => new Set(prev).add(savedId));
-                 // Update the recipe object in the current `recipes` state if possible,
-                 // otherwise, the dialog will fetch the updated data anyway.
+                 // Update the recipe object in the current `recipes` state with the new ID
                  setRecipes(prevRecipes => {
                     if (!prevRecipes) return null;
+                    // Find the recipe by name (since ID might have just been created)
+                    // and update its _id field
                     return prevRecipes.map(r =>
                         r.recipeName === recipe.recipeName ? { ...r, _id: savedId } : r
                     );
@@ -390,6 +398,7 @@ export default function Home() {
     setRedisError(null);
     console.log(`Initiating navigation for recipe: "${recipe.recipeName}"`);
 
+    // Check Redis availability locally first for a quicker feedback loop
     if (!isRedisAvailable) {
         console.error("Redis is not available. Cannot store recipe details for navigation.");
         setRedisError("Storage unavailable: Cannot view recipe details.");
@@ -404,7 +413,7 @@ export default function Home() {
             .replace(/[^\w-]+/g, '')
             .replace(/--+/g, '-')
             .replace(/^-+|-+$/g, '')
-            .substring(0, 100);
+            .substring(0, 100); // Limit slug length
 
         // Store data in Redis using server action
         const redisKey = await storeRecipeForNavigation(slug, recipe, selectedLanguage);
@@ -444,6 +453,8 @@ export default function Home() {
         } catch (err: any) {
             // Log but don't necessarily block the user
             console.warn("Could not clear Redis state before search (server action error):", err);
+            // Optionally inform the user non-blockingly
+            // setRedisError(t('toast.storageErrorDesc') + ' (Clear Failed)');
         }
     }
 
@@ -481,23 +492,24 @@ export default function Home() {
       const result = await suggestRecipes(input);
       console.log("Received recipes from AI:", result);
 
-      // Map results and check if they exist in the DB to get their IDs
-       const recipesArrayWithPotentialIds = await Promise.all(
-           (Array.isArray(result) ? result : []).map(async (recipe) => {
-             // This logic is tricky - we don't have the ID right after generation.
-             // The ID is added *after* saving. For now, just set recipes state.
-             // The check for "isSaved" will happen based on the fetched `savedRecipeIds`.
-             return recipe;
-           })
-       );
+      // Map results to ensure they fit the RecipeItem structure expected by the state
+      // Assign temporary IDs or leave _id undefined for now
+      const recipesArray: RecipeItem[] = (Array.isArray(result) ? result : []).map((recipe, index) => ({
+          ...recipe,
+          // _id: `temp-${Date.now()}-${index}` // Assign temporary unique ID if needed immediately
+          // Or just rely on the database to assign the ID upon saving
+       }));
 
-      setRecipes(recipesArrayWithPotentialIds);
+
+      setRecipes(recipesArray);
 
        // --- Store results and form state in Redis via Server Action ---
-       if (recipesArrayWithPotentialIds.length > 0 && isRedisAvailable) {
+       if (recipesArray.length > 0 && isRedisAvailable) {
            try {
-               const success = await setStoredState(values, recipesArrayWithPotentialIds, selectedLanguage);
-               if (!success) {
+               const success = await setStoredState(values, recipesArray, selectedLanguage);
+               if (success) {
+                  console.log("Stored form state and results in Redis.");
+               } else {
                    console.error("Server action reported failure storing state in Redis.");
                    setRedisError(t('toast.storageErrorDesc') + ' (Save Failed)');
                }
@@ -505,10 +517,11 @@ export default function Home() {
                console.error("Error calling setStoredState action:", err);
                setRedisError(`${t('toast.storageErrorTitle')}: ${err.message || 'Failed to save to Redis'}`);
            }
-       } else if (recipesArrayWithPotentialIds.length > 0 && !isRedisAvailable) {
+       } else if (recipesArray.length > 0 && !isRedisAvailable) {
            console.warn("Redis not available. Search results will not persist across sessions.");
-           setError("Storage unavailable: Results won't be saved."); // Inform user
-       } else if (recipesArrayWithPotentialIds.length === 0 && isRedisAvailable) {
+           // Don't set error state here, it's just a persistence warning
+           // setError("Storage unavailable: Results won't be saved."); // Inform user
+       } else if (recipesArray.length === 0 && isRedisAvailable) {
            // If no recipes found, ensure previous Redis state is cleared
            try {
               await deleteStoredState();
@@ -522,8 +535,8 @@ export default function Home() {
        try {
            await saveRecipeHistory({
                searchInput: input,
-               resultsSummary: recipesArrayWithPotentialIds.map(r => r.recipeName),
-               resultCount: recipesArrayWithPotentialIds.length,
+               resultsSummary: recipesArray.map(r => r.recipeName),
+               resultCount: recipesArray.length,
            });
            console.log("Saved search history to MongoDB.");
        } catch (dbError) {
@@ -532,36 +545,47 @@ export default function Home() {
        }
 
        // --- Save each generated recipe detail to the general 'recipes' collection ---
-      if (recipesArrayWithPotentialIds.length > 0) {
-          console.log(`Attempting to save details for ${recipesArrayWithPotentialIds.length} generated recipes to MongoDB...`);
-          const savedIds = new Set(savedRecipeIds); // Copy current saved IDs
-          await Promise.all(recipesArrayWithPotentialIds.map(async (recipe) => {
+       // This should happen *after* setting state so the user sees results quickly.
+       // We also need the IDs generated by the save operation to update the state correctly.
+      if (recipesArray.length > 0) {
+          console.log(`Attempting to save details for ${recipesArray.length} generated recipes to MongoDB...`);
+          const savedIdsMap = new Map<string, string>(); // Map recipeName to saved ID
+
+          await Promise.all(recipesArray.map(async (recipe) => {
               try {
                   // Use the specific save function which handles upsert
                   const savedId = await saveGeneratedRecipeDetails(recipe);
                   if(savedId) {
-                     savedIds.add(savedId); // Add newly saved ID to the set
-                      // Update the specific recipe object in the state with the new ID
-                     setRecipes(prev =>
-                         prev?.map(p => p.recipeName === recipe.recipeName ? { ...p, _id: savedId } : p) ?? null
-                     );
+                     savedIdsMap.set(recipe.recipeName, savedId); // Store the mapping
                   }
               } catch (saveError) {
                   console.error(`Error saving generated recipe detail "${recipe.recipeName}" to MongoDB:`, saveError);
                   // Don't necessarily show error to user for background saving failure
               }
           }));
-           setSavedRecipeIds(savedIds); // Update the state with all known saved IDs
-          console.log("Finished attempting to save generated recipe details.");
+
+          // Now update the component state with the real IDs
+          setRecipes(prevRecipes => {
+              if (!prevRecipes) return null;
+              return prevRecipes.map(p => {
+                  const savedId = savedIdsMap.get(p.recipeName);
+                  return savedId ? { ...p, _id: savedId } : p;
+              });
+          });
+
+          // Update the savedRecipeIds set as well
+          setSavedRecipeIds(prev => new Set([...prev, ...Array.from(savedIdsMap.values())]));
+
+          console.log("Finished attempting to save generated recipe details and updated state with IDs.");
       }
 
 
-      if (recipesArrayWithPotentialIds.length === 0) {
+      if (recipesArray.length === 0) {
          console.log(t('toast.noRecipesDesc'));
       } else {
          console.log(t('toast.recipesFoundDesc', {
-              count: recipesArrayWithPotentialIds.length,
-              s: recipesArrayWithPotentialIds.length > 1 ? 's' : '' // Basic pluralization
+              count: recipesArray.length,
+              s: recipesArray.length > 1 ? 's' : '' // Basic pluralization
             }));
       }
     } catch (err) {
@@ -575,9 +599,6 @@ export default function Home() {
           if (err.message.toLowerCase().includes('network') || err.message.toLowerCase().includes('failed to fetch')) {
                errorTitle = t('toast.networkErrorTitle');
                errorMessage = t('toast.networkErrorDesc');
-          } else if (err.message.includes('QuotaExceededError')) { // Catch quota errors more robustly
-              errorTitle = t('toast.storageQuotaExceededTitle');
-              errorMessage = t('toast.storageQuotaExceededDesc');
           }
            else {
                errorMessage = err.message;
@@ -1215,7 +1236,7 @@ export default function Home() {
                         const isSaved = !!(recipeId && savedRecipeIds.has(recipeId));
                        return (
                          <motion.div
-                             key={recipe.recipeName + index} // Keep using name+index for initial render before ID is set
+                             key={recipeId || `recipe-${index}`} // Use ID if available, otherwise fallback
                              variants={itemVariants}
                               whileHover={{ y: -5, transition: { duration: 0.2 } }}
                          >
@@ -1387,8 +1408,6 @@ export default function Home() {
           isOpen={isSavedRecipesDialogOpen}
           onClose={() => setIsSavedRecipesDialogOpen(false)}
           onViewRecipe={handleViewRecipe}
-          // Pass the fetchSavedIds function to update the main page's saved IDs if needed after dialog closes or internal deletion
-          // onRemoveRecipe={handleToggleSaveRecipe} // Now handled internally in dialog with DB calls
           language={selectedLanguage}
           isRedisAvailable={!!isRedisAvailable} // Pass Redis availability
         />
