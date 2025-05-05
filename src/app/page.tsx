@@ -20,17 +20,15 @@ import {
   Scale, // Example: Icon for difficulty/serving size?
   Soup, // Example: Icon for recipe type?
   Heart, // Icon for saving/favoriting? Filled Heart when saved
+  HeartCrack, // Icon for unsave
   BookOpen, // For Ingredients/Instructions titles
   AlertTriangle, // For Warnings
   ArrowRight, // Icon for navigation
   FileText, // Icon for including details
   RotateCcw, // Icon for reset button
-  // User, // User icon for profile/auth area - Removed
-  // LogIn, // Login icon - Removed
-  // LogOut, // Logout icon - Removed
-  // HeartCrack, // Icon for unsave - Removed (or repurpose if saving locally)
-  // Database, // Icon for storage status - Removed
-  CloudOff // Icon for network error
+  CloudOff, // Icon for network error
+  Save, // Icon for Saved Recipes button
+  Printer // Icon for Print button (added to recipe detail page, but maybe useful elsewhere)
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -82,17 +80,15 @@ import {Label} from '@/components/ui/label';
 import { translations, type LanguageCode } from '@/lib/translations'; // Import translations
 import Link from 'next/link'; // Import Link for navigation
 import { useRouter } from 'next/navigation'; // Import useRouter
-// AuthButton import removed
-// import AuthButton from '@/components/AuthButton';
-// useSession and signIn imports removed
-// import { useSession, signIn } from 'next-auth/react';
 // DB functions related to user accounts removed or adapted
-import { saveRecipeToMongoDB, saveRecipeHistory } from '@/lib/db/recipes'; // Keep save functions if needed for guest history/saving
+// import { saveRecipeToMongoDB, saveRecipeHistory } from '@/lib/db/recipes'; // Keep save functions if needed for guest history/saving - Removed DB interaction for now
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
+import SavedRecipesDialog from '@/components/SavedRecipesDialog'; // Import SavedRecipesDialog
 
 // Constants for sessionStorage keys
 const FORM_STATE_KEY = 'recipeSageFormState';
 const RECIPE_RESULTS_KEY = 'recipeSageResults';
+const SAVED_RECIPES_KEY = 'recipeSageSavedRecipes'; // Key for localStorage
 const MAX_STORAGE_IMAGE_SIZE = 500000; // 500KB limit for image data URIs in storage
 
 
@@ -132,20 +128,16 @@ type FormValues = z.infer<ReturnType<typeof formSchema>>;
 export default function Home() {
   const {setTheme} = useTheme();
   const router = useRouter();
-  // Session and auth status removed
-  // const { data: session, status: authStatus } = useSession();
-  // const authLoading = authStatus === 'loading';
-  // const user = session?.user;
-  // const userId = user?.id;
 
   const [recipes, setRecipes] = useState<RecipeItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
   const [isClient, setIsClient] = useState(false);
-  // Removed savedRecipeNames state as it depends on userId
-  // const [savedRecipeNames, setSavedRecipeNames] = useState<Set<string>>(new Set());
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false); // Track if initial load from sessionStorage is done
+  const [savedRecipeNames, setSavedRecipeNames] = useState<Set<string>>(new Set()); // State for saved recipes (using names as identifiers)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false); // Track if initial load from storage is done
   const [error, setError] = useState<string | null>(null); // State for holding error messages
+  const [isSavedRecipesDialogOpen, setIsSavedRecipesDialogOpen] = useState(false);
+
 
    // Translation function
    const t = useCallback(
@@ -232,7 +224,7 @@ export default function Home() {
   }, [selectedLanguage]);
 
 
-  // Load state from sessionStorage and localStorage on initial client mount
+  // Load state from storage on initial client mount
   useEffect(() => {
     setIsClient(true); // Indicate client-side rendering
 
@@ -241,6 +233,24 @@ export default function Home() {
     if (storedLanguage && supportedLanguages.some(l => l.value === storedLanguage)) {
       setSelectedLanguage(storedLanguage as LanguageCode);
     }
+
+    // Load saved recipe names from localStorage
+    try {
+       const storedSavedRecipes = localStorage.getItem(SAVED_RECIPES_KEY);
+       if (storedSavedRecipes) {
+           const parsedSavedRecipes: RecipeItem[] = JSON.parse(storedSavedRecipes);
+           setSavedRecipeNames(new Set(parsedSavedRecipes.map(r => r.recipeName)));
+           console.log(`Restored ${parsedSavedRecipes.length} saved recipe names from localStorage.`);
+       } else {
+           console.log("No saved recipes found in localStorage.");
+           setSavedRecipeNames(new Set());
+       }
+     } catch (err) {
+       console.warn("Could not restore saved recipes from localStorage:", err);
+       localStorage.removeItem(SAVED_RECIPES_KEY); // Clear potentially corrupted data
+       setSavedRecipeNames(new Set());
+     }
+
 
     // Load previous form state and results from sessionStorage
     try {
@@ -292,16 +302,7 @@ export default function Home() {
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form]); // Only run once on mount
-
-
-   // Fetch saved recipe names - REMOVED as it depends on userId
-   // useEffect(() => {
-   //   const fetchSavedStatus = async () => {
-   //     // ... removed logic dependent on userId ...
-   //   };
-   //   fetchSavedStatus();
-   // }, [userId, recipes, initialLoadComplete, t]);
+  }, []); // Only run once on mount
 
 
    // Handle form reset
@@ -327,10 +328,54 @@ export default function Home() {
     console.log(t('toast.formClearedTitle'), t('toast.formClearedDesc'));
   };
 
-  // Handle saving/unsaving a recipe - REMOVED as it depends on userId
-   // const handleToggleSaveRecipe = async (recipe: RecipeItem) => {
-     // // ... removed logic dependent on userId and signIn ...
-   // };
+  // Handle saving/unsaving a recipe using localStorage
+  const handleToggleSaveRecipe = (recipe: RecipeItem) => {
+    if (!recipe || !recipe.recipeName) return;
+
+    try {
+      const savedRecipes = localStorage.getItem(SAVED_RECIPES_KEY);
+      let currentSaved: RecipeItem[] = savedRecipes ? JSON.parse(savedRecipes) : [];
+      const recipeIndex = currentSaved.findIndex(r => r.recipeName === recipe.recipeName);
+
+      let updatedSavedRecipes: RecipeItem[];
+      let newSavedNames = new Set(savedRecipeNames);
+
+      if (recipeIndex > -1) {
+        // Recipe exists, unsave it
+        updatedSavedRecipes = currentSaved.filter((_, index) => index !== recipeIndex);
+        newSavedNames.delete(recipe.recipeName);
+        console.log(t('toast.recipeRemovedTitle'), t('toast.recipeRemovedDesc', { recipeName: recipe.recipeName }));
+      } else {
+        // Recipe doesn't exist, save it
+        // Prepare recipe for storage (omit large image)
+        const recipeToSave: RecipeItem & { imageOmitted?: boolean } = {
+          ...recipe,
+          imageUrl: (recipe.imageUrl && recipe.imageUrl.startsWith('data:') && recipe.imageUrl.length >= MAX_STORAGE_IMAGE_SIZE)
+            ? undefined // Omit large data URI
+            : recipe.imageUrl,
+          imageOmitted: !!(recipe.imageUrl && recipe.imageUrl.startsWith('data:') && recipe.imageUrl.length >= MAX_STORAGE_IMAGE_SIZE),
+          language: selectedLanguage, // Optionally store language context
+        };
+        updatedSavedRecipes = [...currentSaved, recipeToSave];
+        newSavedNames.add(recipe.recipeName);
+        console.log(t('toast.recipeSavedTitle'), t('toast.recipeSavedDesc', { recipeName: recipe.recipeName }));
+      }
+
+      // Save updated list to localStorage
+      localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(updatedSavedRecipes));
+      setSavedRecipeNames(newSavedNames); // Update the state for UI feedback
+
+    } catch (err) {
+      console.error("Error saving/unsaving recipe to localStorage:", err);
+       if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+            console.error(t('toast.storageQuotaExceededTitle'), t('toast.storageQuotaExceededDesc'));
+            setError(t('toast.storageQuotaExceededDesc'));
+       } else {
+           console.error(t('toast.saveErrorTitle'), t('toast.saveErrorDesc'));
+           setError(t('toast.saveErrorDesc'));
+       }
+    }
+  };
 
 
  // Function to navigate to recipe detail page
@@ -650,25 +695,7 @@ export default function Home() {
        }
 
        // --- Save search to history in MongoDB ---
-       // History saving is kept, but without userId, it's less useful unless you implement guest IDs or similar
-       // Consider removing history saving if no user context is available
-       // if (recipesArray.length > 0) {
-       //      try {
-       //          const historyEntry = {
-       //              // userId: undefined, // No user ID
-       //              searchInput: input,
-       //              resultsSummary: recipesArray.map(r => r.recipeName), // Only save names
-       //              resultCount: recipesArray.length,
-       //              timestamp: new Date(),
-       //          };
-       //          // Assume saveRecipeHistory is adapted or removed if userId is strictly required
-       //          await saveRecipeHistory(historyEntry);
-       //          console.log("Saved search to anonymous history.");
-       //      } catch (dbError) {
-       //           console.error("Failed to save search history to MongoDB:", dbError);
-       //           // Handle error appropriately, maybe just log for anonymous users
-       //      }
-       //  }
+       // REMOVED History saving related to DB
 
 
       if (recipesArray.length === 0) {
@@ -818,7 +845,7 @@ export default function Home() {
               </Link>
             </motion.div>
 
-             {/* Controls: Language, Theme */}
+             {/* Controls: Language, Theme, Saved Recipes */}
              <motion.div
                initial={{ y: -20, opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
@@ -902,9 +929,35 @@ export default function Home() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                 {/* Saved Recipes Button */}
+                <Tooltip>
+                   <TooltipTrigger asChild>
+                     <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                       <Button
+                         variant="ghost"
+                         size="icon"
+                         className="h-9 w-9 focus:ring-1 focus:ring-primary/50 rounded-full relative"
+                         onClick={() => setIsSavedRecipesDialogOpen(true)}
+                         aria-label={t('savedRecipes.dialogOpenButtonAriaLabel')}
+                       >
+                         <Save className="h-[1.2rem] w-[1.2rem]" />
+                         {/* Badge for saved count */}
+                          {savedRecipeNames.size > 0 && (
+                              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                {savedRecipeNames.size}
+                              </span>
+                           )}
+                         <span className="sr-only">{t('savedRecipes.dialogOpenButtonAriaLabel')}</span>
+                       </Button>
+                     </motion.div>
+                   </TooltipTrigger>
+                   <TooltipContent side="bottom">
+                     <p>{t('savedRecipes.dialogOpenButtonTooltip')}</p>
+                   </TooltipContent>
+                 </Tooltip>
+
               </TooltipProvider>
-              {/* Auth Button Removed */}
-              {/* {isClient && <AuthButton />} */}
             </motion.div>
           </div>
         </header>
@@ -1252,8 +1305,8 @@ export default function Home() {
                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8" // Use grid layout
                  >
                   {recipes.map((recipe, index) => {
-                      // Removed isSaved logic
-                      // const isSaved = savedRecipeNames.has(recipe.recipeName);
+                      // Check if recipe is saved using the state
+                      const isSaved = savedRecipeNames.has(recipe.recipeName);
                       return (
                         <motion.div
                             key={recipe.recipeName + index}
@@ -1294,8 +1347,8 @@ export default function Home() {
                                   {recipe.recipeName}
                                 </CardTitle>
                               </div>
-                               {/* Save/Unsave Button Removed */}
-                                {/* <TooltipProvider>
+                               {/* Save/Unsave Button */}
+                               <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
@@ -1306,9 +1359,11 @@ export default function Home() {
                                             "absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 text-white hover:bg-primary hover:text-primary-foreground transition-all opacity-80 group-hover:opacity-100 backdrop-blur-sm focus:ring-1 focus:ring-primary/50",
                                              isSaved && "bg-primary text-primary-foreground hover:bg-destructive hover:text-destructive-foreground" // Style when saved
                                         )}
-                                        onClick={() => handleToggleSaveRecipe(recipe)}
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent card click if clicking the button
+                                            handleToggleSaveRecipe(recipe)
+                                         }}
                                         aria-label={isSaved ? t('results.unsaveButtonAriaLabel') : t('results.saveButtonAriaLabel')}
-                                        disabled={authLoading} // Disable during auth check
                                       >
                                          {isSaved ? <HeartCrack className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
                                       </Button>
@@ -1318,7 +1373,7 @@ export default function Home() {
                                         <p>{isSaved ? t('results.unsaveButtonTooltip') : t('results.saveButtonTooltip')}</p>
                                       </TooltipContent>
                                   </Tooltip>
-                                </TooltipProvider> */}
+                                </TooltipProvider>
                             </CardHeader>
                             {/* Recipe Details Content */}
                             <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
@@ -1437,6 +1492,14 @@ export default function Home() {
           </div>
         </motion.footer>
       </div>
+      {/* Saved Recipes Dialog */}
+       <SavedRecipesDialog
+         isOpen={isSavedRecipesDialogOpen}
+         onClose={() => setIsSavedRecipesDialogOpen(false)}
+         onViewRecipe={handleViewRecipe} // Pass view function
+         onRemoveRecipe={handleToggleSaveRecipe} // Pass remove function (same as toggle)
+         language={selectedLanguage} // Pass current language
+       />
     </>
   );
 }

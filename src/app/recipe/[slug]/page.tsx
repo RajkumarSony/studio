@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   UtensilsCrossed, // Icon for Nutrition/Diet
   AlertTriangle, // Icon for error
+  Printer, // Icon for Print button
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -30,6 +31,7 @@ import { translations, type LanguageCode } from '@/lib/translations'; // Import 
 import { Loader2 } from 'lucide-react'; // Import Loader for Suspense fallback
 import { cn } from '@/lib/utils';
 import type { RecipeItem } from '@/ai/flows/suggest-recipe'; // Import RecipeItem type
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Helper function to get the translation messages object for a language
 const getTranslationMessages = (lang: LanguageCode) => translations[lang] || translations.en;
@@ -321,6 +323,13 @@ function RecipeDetailContent() {
       }).filter(Boolean); // Filter out nulls from empty lines
     };
 
+    // Handle Print Action
+     const handlePrint = () => {
+       if (typeof window !== 'undefined') {
+         window.print(); // Trigger browser's print dialog
+       }
+     };
+
    // Render loading state until client-side effect runs and data is loaded
    if (isLoading || !isClient) {
        return <RecipeDetailLoading />;
@@ -369,192 +378,213 @@ function RecipeDetailContent() {
   } = recipeData;
 
   return (
-    <div className="container mx-auto py-8 sm:py-12 px-4 md:px-6 max-w-4xl">
-      {/* Apply the dynamic font style based on the loaded language */}
-      {/* This requires setting the font variable in CSS based on `queryLang` */}
-      {/* Ideally handled in a layout or higher component, but can be forced here if needed */}
-      {/* <style>{`:root { --font-dynamic: ${getFontVariable(queryLang)}; }`}</style> */}
+   <TooltipProvider> {/* Ensure TooltipProvider wraps the component */}
+     <div className="container mx-auto py-8 sm:py-12 px-4 md:px-6 max-w-4xl print:py-4 print:px-0">
+       {/* Apply the dynamic font style based on the loaded language */}
+       {/* This requires setting the font variable in CSS based on `queryLang` */}
+       {/* Ideally handled in a layout or higher component, but can be forced here if needed */}
+       {/* <style>{`:root { --font-dynamic: ${getFontVariable(queryLang)}; }`}</style> */}
 
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-      >
-        <Button asChild variant="outline" size="sm" className="mb-6 group transition-all hover:bg-accent hover:shadow-sm">
-          <Link href="/">
-            <ArrowLeft className="mr-2 h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
-            {t('recipeDetail.backButton')}
-          </Link>
-        </Button>
+       <motion.div
+         initial={{ opacity: 0, y: -20 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ duration: 0.5, ease: 'easeOut' }}
+         className="flex justify-between items-center mb-6 print:hidden" // Hide buttons on print
+       >
+         <Button asChild variant="outline" size="sm" className="group transition-all hover:bg-accent hover:shadow-sm">
+           <Link href="/">
+             <ArrowLeft className="mr-2 h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
+             {t('recipeDetail.backButton')}
+           </Link>
+         </Button>
+          {/* Print Button */}
+          <Tooltip>
+             <TooltipTrigger asChild>
+               <Button variant="outline" size="icon" onClick={handlePrint} className="h-9 w-9">
+                 <Printer className="h-4 w-4" />
+                 <span className="sr-only">{t('recipeDetail.printButtonAriaLabel')}</span>
+               </Button>
+             </TooltipTrigger>
+             <TooltipContent side="bottom">
+                <p>{t('recipeDetail.printButtonTooltip')}</p>
+              </TooltipContent>
+            </Tooltip>
+       </motion.div>
 
-        <Card className="overflow-hidden shadow-xl border border-border/60 bg-card rounded-xl">
-          <CardHeader className="p-0 relative aspect-[16/8] sm:aspect-[16/7] overflow-hidden group">
-             {/* Conditional rendering based on image availability */}
-             {imageUrl ? (
-                 // Use next/image for optimization if URL is not a data URI
-                  imageUrl.startsWith('http') ? (
-                     <Image
-                         src={imageUrl}
+       <Card className="overflow-hidden shadow-xl border border-border/60 bg-card rounded-xl print:shadow-none print:border-none print:rounded-none">
+         <CardHeader className="p-0 relative aspect-[16/8] sm:aspect-[16/7] overflow-hidden group print:aspect-auto print:max-h-[300px]">
+            {/* Conditional rendering based on image availability */}
+            {imageUrl ? (
+                // Use next/image for optimization if URL is not a data URI
+                 imageUrl.startsWith('http') ? (
+                    <Image
+                        src={imageUrl}
+                         alt={t('results.imageAlt', { recipeName })}
+                         width={1000}
+                         height={562}
+                         className={cn(
+                           "w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 print:object-contain",
+                           "print:max-h-[300px]" // Apply print max height using Tailwind class
+                         )}
+                         priority // Load main image faster
+                         unoptimized={false} // Allow optimization for HTTP URLs
+                     />
+                 ) : (
+                     // Fallback to img tag for data URIs (no Next.js optimization)
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                          src={imageUrl}
                           alt={t('results.imageAlt', { recipeName })}
-                          width={1000}
+                          width={1000} // Set width/height for layout consistency
                           height={562}
-                          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                          priority // Load main image faster
-                          unoptimized={false} // Allow optimization for HTTP URLs
+                          className={cn(
+                            "w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 print:object-contain",
+                            "print:max-h-[300px]" // Apply print max height using Tailwind class
+                          )}
+                          loading="lazy"
                       />
-                  ) : (
-                      // Fallback to img tag for data URIs (no Next.js optimization)
-                       // eslint-disable-next-line @next/next/no-img-element
-                       <img
-                           src={imageUrl}
-                           alt={t('results.imageAlt', { recipeName })}
-                           width={1000} // Set width/height for layout consistency
-                           height={562}
-                           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                           loading="lazy"
-                       />
-                  )
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20">
-                  <ImageOff className="h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground/40" />
-                   {imageOmitted && <p className="absolute bottom-2 text-xs text-muted-foreground/60">Image omitted (too large)</p>}
-                </div>
-              )}
-            {/* Subtle gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/70 to-transparent">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.5, ease: 'easeOut' }}
-              >
-                <CardTitle className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-2 leading-tight">
-                  {recipeName}
-                </CardTitle>
-                <div className="flex flex-wrap gap-2 items-center mt-1">
-                  <Badge
-                    variant="secondary"
-                    className="flex items-center gap-1 bg-white/90 text-foreground backdrop-blur-sm py-0.5 px-2.5 text-xs sm:text-sm font-medium shadow-sm border border-black/10 rounded-full"
-                  >
-                    <Clock className="h-3.5 w-3.5 text-primary" />
-                    {estimatedTime || 'N/A'}
-                  </Badge>
-                  <Badge
-                    variant="secondary"
-                    className="flex items-center gap-1 bg-white/90 text-foreground backdrop-blur-sm py-0.5 px-2.5 text-xs sm:text-sm font-medium shadow-sm border border-black/10 rounded-full"
-                  >
-                    <BarChart className="h-3.5 w-3.5 -rotate-90 text-primary" />
-                    {difficulty || 'N/A'}
-                  </Badge>
-                </div>
-              </motion.div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-5 sm:p-6 md:p-8 space-y-6 md:space-y-8">
-            {/* Ingredients Section */}
-             <motion.section
-               aria-labelledby="ingredients-heading"
-               initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
+                 )
+             ) : (
+               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/60 to-muted/40 dark:from-background/40 dark:to-background/20 print:static print:bg-muted/20 print:py-10">
+                 <ImageOff className="h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground/40" />
+                  {imageOmitted && <p className="absolute bottom-2 text-xs text-muted-foreground/60 print:hidden">Image omitted (too large)</p>}
+               </div>
+             )}
+           {/* Subtle gradient overlay - hidden on print */}
+           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none print:hidden"></div>
+           <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/70 to-transparent print:static print:bg-none print:p-0 print:pt-4">
+             <motion.div
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: 0.2, duration: 0.5, ease: 'easeOut' }}
              >
-               <h2 id="ingredients-heading" className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 text-foreground/90 flex items-center gap-2">
-                 <BookOpen size={20} className="text-primary"/> {t('results.ingredientsTitle')}
-               </h2>
-               <Card className="bg-muted/30 dark:bg-background/20 border border-border/40 p-4 sm:p-5 rounded-lg shadow-inner">
-                 <ul className="list-disc list-outside pl-5 space-y-1 text-sm sm:text-base text-foreground/80 dark:text-foreground/75 marker:text-primary/80 marker:text-lg">
-                    {renderIngredientsList(ingredients)}
-                 </ul>
-               </Card>
-             </motion.section>
+               <CardTitle className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-2 leading-tight print:text-foreground print:text-center print:drop-shadow-none">
+                 {recipeName}
+               </CardTitle>
+               <div className="flex flex-wrap gap-2 items-center justify-center mt-1 print:justify-center">
+                 <Badge
+                   variant="secondary"
+                   className="flex items-center gap-1 bg-white/90 text-foreground backdrop-blur-sm py-0.5 px-2.5 text-xs sm:text-sm font-medium shadow-sm border border-black/10 rounded-full print:bg-secondary print:text-secondary-foreground print:shadow-none"
+                 >
+                   <Clock className="h-3.5 w-3.5 text-primary" />
+                   {estimatedTime || 'N/A'}
+                 </Badge>
+                 <Badge
+                   variant="secondary"
+                   className="flex items-center gap-1 bg-white/90 text-foreground backdrop-blur-sm py-0.5 px-2.5 text-xs sm:text-sm font-medium shadow-sm border border-black/10 rounded-full print:bg-secondary print:text-secondary-foreground print:shadow-none"
+                 >
+                   <BarChart className="h-3.5 w-3.5 -rotate-90 text-primary" />
+                   {difficulty || 'N/A'}
+                 </Badge>
+               </div>
+             </motion.div>
+           </div>
+         </CardHeader>
 
-
-            <Separator className="my-6 sm:my-8 bg-border/40" />
-
-            {/* Instructions Section */}
+         <CardContent className="p-5 sm:p-6 md:p-8 space-y-6 md:space-y-8 print:p-0 print:pt-6">
+           {/* Ingredients Section */}
             <motion.section
-                aria-labelledby="instructions-heading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
+              aria-labelledby="ingredients-heading"
+              initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <h2 id="instructions-heading" className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-foreground/90 flex items-center gap-2">
-                <ChefHat size={20} className="text-primary"/> {t('results.instructionsTitle')}
+              <h2 id="ingredients-heading" className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 text-foreground/90 flex items-center gap-2 print:text-lg">
+                <BookOpen size={20} className="text-primary"/> {t('results.ingredientsTitle')}
               </h2>
-              <div className="space-y-4 text-sm sm:text-base">
-                 {renderInstructions(instructions)}
-              </div>
+              <Card className="bg-muted/30 dark:bg-background/20 border border-border/40 p-4 sm:p-5 rounded-lg shadow-inner print:border-none print:bg-transparent print:p-0 print:shadow-none">
+                <ul className="list-disc list-outside pl-5 space-y-1 text-sm sm:text-base text-foreground/80 dark:text-foreground/75 marker:text-primary/80 marker:text-lg print:pl-0 print:list-none print:space-y-0.5 print:text-sm">
+                   {renderIngredientsList(ingredients)}
+                </ul>
+              </Card>
             </motion.section>
 
 
-             {/* Conditionally render Nutrition and Diet Plan sections */}
-             {(nutritionFacts || dietPlanSuitability) && (
-                 <>
-                     <Separator className="my-6 sm:my-8 bg-border/40" />
-                     <motion.div
-                         className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"
-                         initial="hidden"
-                         animate="visible"
-                         variants={{
-                             hidden: { opacity: 0 },
-                             visible: {
-                                 opacity: 1,
-                                 transition: { staggerChildren: 0.2, delayChildren: 0.5 }
-                             }
-                         }}
-                     >
-                         {/* Nutrition Facts Section */}
-                         {nutritionFacts && (
-                             <motion.section
-                                 aria-labelledby="nutrition-heading"
-                                 variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                             >
-                                 <h2 id="nutrition-heading" className="text-lg sm:text-xl font-semibold mb-3 text-foreground/90 flex items-center gap-2">
-                                     <UtensilsCrossed size={18} className="text-primary"/> {t('recipeDetail.nutritionTitle')}
-                                 </h2>
-                                 <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full"> {/* Ensure card takes height */}
-                                     <CardContent className="p-4 text-sm text-muted-foreground leading-relaxed">
-                                         {renderMultilineText(nutritionFacts) || <p>{t('recipeDetail.nutritionPlaceholder')}</p>}
-                                     </CardContent>
-                                 </Card>
-                             </motion.section>
-                         )}
+           <Separator className="my-6 sm:my-8 bg-border/40 print:my-4" />
 
-                         {/* Diet Plan Suitability Section */}
-                         {dietPlanSuitability && (
-                             <motion.section
-                                 aria-labelledby="diet-plan-heading"
-                                 variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                             >
-                                 <h2 id="diet-plan-heading" className="text-lg sm:text-xl font-semibold mb-3 text-foreground/90 flex items-center gap-2">
-                                     <UtensilsCrossed size={18} className="text-primary"/> {t('recipeDetail.dietPlanTitle')}
-                                 </h2>
-                                 <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full"> {/* Ensure card takes height */}
-                                     <CardContent className="p-4 text-sm text-muted-foreground leading-relaxed">
-                                         {renderMultilineText(dietPlanSuitability) || <p>{t('recipeDetail.dietPlanPlaceholder')}</p>}
-                                     </CardContent>
-                                 </Card>
-                             </motion.section>
-                         )}
-                     </motion.div>
-                 </>
-             )}
+           {/* Instructions Section */}
+           <motion.section
+               aria-labelledby="instructions-heading"
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               transition={{ delay: 0.3, duration: 0.5 }}
+           >
+             <h2 id="instructions-heading" className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-foreground/90 flex items-center gap-2 print:text-lg">
+               <ChefHat size={20} className="text-primary"/> {t('results.instructionsTitle')}
+             </h2>
+             <div className="space-y-4 text-sm sm:text-base print:text-sm">
+                {renderInstructions(instructions)}
+             </div>
+           </motion.section>
 
 
-          </CardContent>
+            {/* Conditionally render Nutrition and Diet Plan sections */}
+            {(nutritionFacts || dietPlanSuitability) && (
+                <>
+                    <Separator className="my-6 sm:my-8 bg-border/40 print:my-4" />
+                    <motion.div
+                        className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 print:grid-cols-1 print:gap-4"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                            hidden: { opacity: 0 },
+                            visible: {
+                                opacity: 1,
+                                transition: { staggerChildren: 0.2, delayChildren: 0.5 }
+                            }
+                        }}
+                    >
+                        {/* Nutrition Facts Section */}
+                        {nutritionFacts && (
+                            <motion.section
+                                aria-labelledby="nutrition-heading"
+                                variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                            >
+                                <h2 id="nutrition-heading" className="text-lg sm:text-xl font-semibold mb-3 text-foreground/90 flex items-center gap-2 print:text-base">
+                                    <UtensilsCrossed size={18} className="text-primary"/> {t('recipeDetail.nutritionTitle')}
+                                </h2>
+                                <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full print:border-none print:bg-transparent print:p-0 print:shadow-none"> {/* Ensure card takes height */}
+                                    <CardContent className="p-4 text-sm text-muted-foreground leading-relaxed print:p-0 print:text-xs">
+                                        {renderMultilineText(nutritionFacts) || <p>{t('recipeDetail.nutritionPlaceholder')}</p>}
+                                    </CardContent>
+                                </Card>
+                            </motion.section>
+                        )}
 
-          {/* Optional Footer for Image Prompt */}
-          {imagePrompt && (
-              <CardFooter className="p-4 sm:p-5 bg-muted/40 dark:bg-background/30 border-t border-border/30 mt-4 rounded-b-xl">
-                 <p className="text-xs text-muted-foreground italic text-center w-full">
-                    <strong>{t('recipeDetail.imagePromptLabel')}:</strong> "{imagePrompt}"
-                  </p>
-               </CardFooter>
-          )}
-        </Card>
-      </motion.div>
-    </div>
+                        {/* Diet Plan Suitability Section */}
+                        {dietPlanSuitability && (
+                            <motion.section
+                                aria-labelledby="diet-plan-heading"
+                                variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                            >
+                                <h2 id="diet-plan-heading" className="text-lg sm:text-xl font-semibold mb-3 text-foreground/90 flex items-center gap-2 print:text-base">
+                                    <UtensilsCrossed size={18} className="text-primary"/> {t('recipeDetail.dietPlanTitle')}
+                                </h2>
+                                <Card className="bg-muted/30 dark:bg-background/20 border border-border/50 rounded-lg shadow-inner overflow-hidden h-full print:border-none print:bg-transparent print:p-0 print:shadow-none"> {/* Ensure card takes height */}
+                                    <CardContent className="p-4 text-sm text-muted-foreground leading-relaxed print:p-0 print:text-xs">
+                                        {renderMultilineText(dietPlanSuitability) || <p>{t('recipeDetail.dietPlanPlaceholder')}</p>}
+                                    </CardContent>
+                                </Card>
+                            </motion.section>
+                        )}
+                    </motion.div>
+                </>
+            )}
+
+
+         </CardContent>
+
+         {/* Optional Footer for Image Prompt - hidden on print */}
+         {imagePrompt && (
+             <CardFooter className="p-4 sm:p-5 bg-muted/40 dark:bg-background/30 border-t border-border/30 mt-4 rounded-b-xl print:hidden">
+                <p className="text-xs text-muted-foreground italic text-center w-full">
+                   <strong>{t('recipeDetail.imagePromptLabel')}:</strong> "{imagePrompt}"
+                 </p>
+              </CardFooter>
+         )}
+       </Card>
+     </div>
+    </TooltipProvider>
   );
 }
 
@@ -571,3 +601,11 @@ export default function RecipeDetailPage() {
     </Suspense>
   );
 }
+
+// Add CSS for printing
+// Can be added to globals.css or a specific print CSS file
+// @media print {
+//   body { font-size: 10pt; }
+//   .print\:hidden { display: none; }
+//   /* Add other print-specific styles */
+// }

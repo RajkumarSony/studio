@@ -75,6 +75,19 @@ interface TranslationMessages {
     imagePromptLabel: string;
     errorLoadingTitle: string; // New error title
     errorLoadingMessage: string; // New error message
+    printButtonAriaLabel: string; // New for print
+    printButtonTooltip: string; // New for print
+  };
+  savedRecipes: { // New section for saved recipes dialog
+     dialogTitle: string;
+     dialogOpenButtonAriaLabel: string;
+     dialogOpenButtonTooltip: string;
+     noSavedRecipes: string;
+     viewButton: string;
+     removeButton: string;
+     removeButtonAriaLabel: string; // Use {recipeName}
+     removeButtonTooltip: string;
+     closeButton: string;
   };
   // Toast translations removed
   toast: {
@@ -153,13 +166,13 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       quickModeAriaLabel: 'Quick mode (under 30 minutes)',
       servingSizeLabel: 'Servings',
       servingSizePlaceholder: 'e.g., 2',
-      cuisineTypeLabel: 'Cuisine Type',
-      cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai',
-      cookingMethodLabel: 'Cooking Method',
-      cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling',
-      includeDetailsLabel: 'Include Details?',
-      includeDetailsHint: '(Nutrition/Diet)',
-      includeDetailsAriaLabel: 'Include nutrition facts and diet plan suitability',
+      cuisineTypeLabel: 'Cuisine Type', // New field
+      cuisineTypePlaceholder: 'e.g., Indian, Mexican, Thai', // New field
+      cookingMethodLabel: 'Cooking Method', // New field
+      cookingMethodPlaceholder: 'e.g., baking, stir-fry, grilling', // New field
+      includeDetailsLabel: 'Include Details?', // New field
+      includeDetailsHint: '(Nutrition/Diet)', // New field
+      includeDetailsAriaLabel: 'Include nutrition facts and diet plan suitability', // New field
       submitButton: 'Get Suggestions',
       submitButtonLoading: 'Finding Recipes...',
       resetButton: 'Clear Form',
@@ -190,6 +203,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        imagePromptLabel: 'Image Prompt',
        errorLoadingTitle: 'Error Loading Recipe',
        errorLoadingMessage: 'Could not load the details for this recipe. It might be missing or the link might be incorrect.',
+       printButtonAriaLabel: 'Print Recipe', // New
+       printButtonTooltip: 'Print Recipe', // New
+     },
+    savedRecipes: {
+        dialogTitle: 'Saved Recipes',
+        dialogOpenButtonAriaLabel: 'View saved recipes',
+        dialogOpenButtonTooltip: 'View Saved Recipes',
+        noSavedRecipes: 'You haven\'t saved any recipes yet.',
+        viewButton: 'View',
+        removeButton: 'Remove',
+        removeButtonAriaLabel: 'Remove {recipeName} from saved recipes', // Use {recipeName}
+        removeButtonTooltip: 'Remove Recipe',
+        closeButton: 'Close',
      },
     toast: { // Keep the toast structure but maybe use console.log instead
       formClearedTitle: 'Form Cleared',
@@ -205,8 +231,8 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       errorTitle: 'Error',
       genericError: 'Failed to suggest recipes. Please try again later.',
       validationError: 'Input validation failed. Please check your entries.',
-      authRequiredTitle: 'Authentication Required',
-      authRequiredDesc: 'Please sign in to save recipes.',
+      authRequiredTitle: 'Authentication Required', // Keep even if auth is removed, for consistency/future
+      authRequiredDesc: 'Please sign in to save recipes.', // Keep even if auth is removed
       saveErrorTitle: 'Save Error',
       saveErrorDesc: 'Could not save or remove the recipe. Please try again.',
       storageQuotaExceededTitle: "Storage Limit Exceeded",
@@ -303,6 +329,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       imagePromptLabel: 'छवि प्रॉम्प्ट',
       errorLoadingTitle: 'रेसिपी लोड करने में त्रुटि',
       errorLoadingMessage: 'इस रेसिपी का विवरण लोड नहीं किया जा सका। यह गुम हो सकता है या लिंक गलत हो सकता है।',
+      printButtonAriaLabel: 'रेसिपी प्रिंट करें', // New
+      printButtonTooltip: 'रेसिपी प्रिंट करें', // New
+    },
+    savedRecipes: {
+       dialogTitle: 'सहेजी गई रेसिपी',
+       dialogOpenButtonAriaLabel: 'सहेजी गई रेसिपी देखें',
+       dialogOpenButtonTooltip: 'सहेजी गई रेसिपी देखें',
+       noSavedRecipes: 'आपने अभी तक कोई रेसिपी नहीं सहेजी है।',
+       viewButton: 'देखें',
+       removeButton: 'हटाएं',
+       removeButtonAriaLabel: '{recipeName} को सहेजी गई रेसिपी से हटाएं',
+       removeButtonTooltip: 'रेसिपी हटाएं',
+       closeButton: 'बंद करें',
     },
     toast: { // Keep the toast structure but maybe use console.log instead
       formClearedTitle: 'फॉर्म साफ़ किया गया',
@@ -333,7 +372,7 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
       networkErrorTitle: "नेटवर्क त्रुटि",
       networkErrorDesc: "सर्वर से कनेक्ट नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जांचें।",
       aiServiceUnavailable: "AI सेवा वर्तमान में अनुपलब्ध है। कृपया बाद में पुनः प्रयास करें।",
-      apiKeyError: "AI सेवा के लिए अमान्य API कुंजी कॉन्फ़िगरेशन।",
+      apiKeyError: "AI सेवा के लिए अमान्य API कुंजी कॉन्फ़ਿगरेशन।",
     },
     footer: {
       builtWith: '❤️ द्वारा निर्मित ',
@@ -414,7 +453,20 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        imagePromptLabel: 'চিত্র প্রম্পট',
        errorLoadingTitle: 'রেসিপি লোড করতে ত্রুটি',
        errorLoadingMessage: 'এই রেসিপির বিবরণ লোড করা যায়নি। এটি অনুপস্থিত থাকতে পারে বা লিঙ্কটি ভুল হতে পারে।',
+       printButtonAriaLabel: 'রেসিপি প্রিন্ট করুন', // New
+       printButtonTooltip: 'রেসিপি প্রিন্ট করুন', // New
      },
+    savedRecipes: {
+        dialogTitle: 'সংরক্ষিত রেসিপি',
+        dialogOpenButtonAriaLabel: 'সংরক্ষিত রেসিপি দেখুন',
+        dialogOpenButtonTooltip: 'সংরক্ষিত রেসিপি দেখুন',
+        noSavedRecipes: 'আপনি এখনও কোনো রেসিপি সংরক্ষণ করেননি।',
+        viewButton: 'দেখুন',
+        removeButton: 'সরান',
+        removeButtonAriaLabel: '{recipeName} সংরক্ষিত রেসিপি থেকে সরান',
+        removeButtonTooltip: 'রেসিপি সরান',
+        closeButton: 'বন্ধ করুন',
+    },
     toast: { // Keep the toast structure but maybe use console.log instead
         formClearedTitle: 'ফর্ম পরিষ্কার করা হয়েছে',
         formClearedDesc: 'নতুন উপকরণের জন্য প্রস্তুত!',
@@ -525,6 +577,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          imagePromptLabel: 'प्रतिमा प्रॉम्प्ट',
          errorLoadingTitle: 'रेसिपी लोड करण्यात त्रुटी',
          errorLoadingMessage: 'या रेसिपीचा तपशील लोड होऊ शकला नाही. तो गहाळ असू शकतो किंवा लिंक चुकीची असू शकते.',
+         printButtonAriaLabel: 'रेसिपी प्रिंट करा', // New
+         printButtonTooltip: 'रेसिपी प्रिंट करा', // New
+       },
+       savedRecipes: {
+          dialogTitle: 'जतन केलेल्या रेसिपी',
+          dialogOpenButtonAriaLabel: 'जतन केलेल्या रेसिपी पहा',
+          dialogOpenButtonTooltip: 'जतन केलेल्या रेसिपी पहा',
+          noSavedRecipes: 'तुम्ही अद्याप कोणतीही रेसिपी जतन केलेली नाही.',
+          viewButton: 'पहा',
+          removeButton: 'काढा',
+          removeButtonAriaLabel: '{recipeName} जतन केलेल्या रेसिपीमधून काढा',
+          removeButtonTooltip: 'रेसिपी काढा',
+          closeButton: 'बंद करा',
        },
       toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'फॉर्म साफ केला',
@@ -636,6 +701,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          imagePromptLabel: 'பட உந்தல்',
          errorLoadingTitle: 'செய்முறையை ஏற்றுவதில் பிழை',
          errorLoadingMessage: 'இந்த செய்முறையின் விவரங்களை ஏற்ற முடியவில்லை. அது விடுபட்டிருக்கலாம் அல்லது இணைப்பு தவறாக இருக்கலாம்.',
+         printButtonAriaLabel: 'செய்முறையை அச்சிடு', // New
+         printButtonTooltip: 'செய்முறையை அச்சிடு', // New
+       },
+       savedRecipes: {
+          dialogTitle: 'சேமித்த சமையல் குறிப்புகள்',
+          dialogOpenButtonAriaLabel: 'சேமித்த சமையல் குறிப்புகளைக் காண்க',
+          dialogOpenButtonTooltip: 'சேமித்த சமையல் குறிப்புகளைக் காண்க',
+          noSavedRecipes: 'நீங்கள் இன்னும் எந்த செய்முறையையும் சேமிக்கவில்லை.',
+          viewButton: 'காண்க',
+          removeButton: 'அகற்று',
+          removeButtonAriaLabel: '{recipeName} ஐ சேமித்த செய்முறைகளிலிருந்து அகற்று',
+          removeButtonTooltip: 'செய்முறையை அகற்று',
+          closeButton: 'மூடு',
        },
       toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'படிவம் அழிக்கப்பட்டது',
@@ -747,6 +825,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          imagePromptLabel: 'చిత్ర ప్రాంప్ట్',
          errorLoadingTitle: 'వంటకాన్ని లోడ్ చేయడంలో లోపం',
          errorLoadingMessage: 'ఈ వంటకం వివరాలను లోడ్ చేయలేకపోయాము. అది అందుబాటులో లేకపోవచ్చు లేదా లింక్ తప్పుగా ఉండవచ్చు.',
+         printButtonAriaLabel: 'వంటకాన్ని ప్రింట్ చేయండి', // New
+         printButtonTooltip: 'వంటకాన్ని ప్రింట్ చేయండి', // New
+       },
+       savedRecipes: {
+          dialogTitle: 'సేవ్ చేసిన వంటకాలు',
+          dialogOpenButtonAriaLabel: 'సేవ్ చేసిన వంటకాలను చూడండి',
+          dialogOpenButtonTooltip: 'సేవ్ చేసిన వంటకాలను చూడండి',
+          noSavedRecipes: 'మీరు ఇంకా ఏ వంటకాన్ని సేవ్ చేయలేదు.',
+          viewButton: 'చూడండి',
+          removeButton: 'తీసివేయండి',
+          removeButtonAriaLabel: '{recipeName} ని సేవ్ చేసిన వంటకాల నుండి తీసివేయండి',
+          removeButtonTooltip: 'వంటకాన్ని తీసివేయండి',
+          closeButton: 'మూసివేయండి',
        },
       toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'ఫారమ్ క్లియర్ చేయబడింది',
@@ -858,6 +949,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          imagePromptLabel: 'ଚିତ୍ର ପ୍ରମ୍ପ୍ଟ',
          errorLoadingTitle: 'ରେସିପି ଲୋଡ୍ କରିବାରେ ତ୍ରୁଟି',
          errorLoadingMessage: 'ଏହି ରେସିପିର ବିବରଣୀ ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। ଏହା ହଜିଯାଇଥାଇପାରେ କିମ୍ବା ଲିଙ୍କ୍ ଭୁଲ୍ ହୋଇପାରେ।',
+         printButtonAriaLabel: 'ରେସିପି ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ', // New
+         printButtonTooltip: 'ରେସିପି ପ୍ରିଣ୍ଟ୍ କରନ୍ତୁ', // New
+       },
+       savedRecipes: {
+          dialogTitle: 'ସଂରକ୍ଷିତ ରେସିପି',
+          dialogOpenButtonAriaLabel: 'ସଂରକ୍ଷିତ ରେସିପି ଦେଖନ୍ତୁ',
+          dialogOpenButtonTooltip: 'ସଂରକ୍ଷିତ ରେସିପି ଦେଖନ୍ତୁ',
+          noSavedRecipes: 'ଆପଣ ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ରେସିପି ସଂରକ୍ଷଣ କରିନାହାଁନ୍ତି।',
+          viewButton: 'ଦେଖନ୍ତୁ',
+          removeButton: 'ଅପସାରଣ କରନ୍ତୁ',
+          removeButtonAriaLabel: '{recipeName} କୁ ସଂରକ୍ଷିତ ରେସିପିରୁ ଅପସାରଣ କରନ୍ତୁ',
+          removeButtonTooltip: 'ରେସିପି ଅପସାରଣ କରନ୍ତୁ',
+          closeButton: 'ବନ୍ଦ କରନ୍ତୁ',
        },
       toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'ଫର୍ମ ସଫା କରାଗଲା',
@@ -969,6 +1073,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          imagePromptLabel: 'ਚਿੱਤਰ ਪ੍ਰੋਂਪਟ',
          errorLoadingTitle: 'ਵਿਅੰਜਨ ਲੋਡ ਕਰਨ ਵਿੱਚ ਗਲਤੀ',
          errorLoadingMessage: 'ਇਸ ਵਿਅੰਜਨ ਦੇ ਵੇਰਵੇ ਲੋਡ ਨਹੀਂ ਕੀਤੇ ਜਾ ਸਕੇ। ਇਹ ਗੁੰਮ ਹੋ ਸਕਦਾ ਹੈ ਜਾਂ ਲਿੰਕ ਗਲਤ ਹੋ ਸਕਦਾ ਹੈ।',
+         printButtonAriaLabel: 'ਵਿਅੰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ', // New
+         printButtonTooltip: 'ਵਿਅੰਜਨ ਪ੍ਰਿੰਟ ਕਰੋ', // New
+       },
+       savedRecipes: {
+          dialogTitle: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ',
+          dialogOpenButtonAriaLabel: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਵੇਖੋ',
+          dialogOpenButtonTooltip: 'ਸੁਰੱਖਿਅਤ ਵਿਅੰਜਨ ਵੇਖੋ',
+          noSavedRecipes: 'ਤੁਸੀਂ ਅਜੇ ਤੱਕ ਕੋਈ ਵਿਅੰਜਨ ਸੁਰੱਖਿਅਤ ਨਹੀਂ ਕੀਤਾ ਹੈ।',
+          viewButton: 'ਵੇਖੋ',
+          removeButton: 'ਹਟਾਓ',
+          removeButtonAriaLabel: '{recipeName} ਨੂੰ ਸੁਰੱਖਿਅਤ ਕੀਤੇ ਵਿਅੰਜਨਾਂ ਵਿੱਚੋਂ ਹਟਾਓ',
+          removeButtonTooltip: 'ਵਿਅੰਜਨ ਹਟਾਓ',
+          closeButton: 'ਬੰਦ ਕਰੋ',
        },
       toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'ਫਾਰਮ ਸਾਫ਼ ਕੀਤਾ ਗਿਆ',
@@ -1080,6 +1197,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
          imagePromptLabel: '画像プロンプト',
          errorLoadingTitle: 'レシピの読み込みエラー',
          errorLoadingMessage: 'このレシピの詳細を読み込めませんでした。見つからないか、リンクが間違っている可能性があります。',
+         printButtonAriaLabel: 'レシピを印刷', // New
+         printButtonTooltip: 'レシピを印刷', // New
+       },
+       savedRecipes: {
+          dialogTitle: '保存したレシピ',
+          dialogOpenButtonAriaLabel: '保存したレシピを表示',
+          dialogOpenButtonTooltip: '保存したレシピを表示',
+          noSavedRecipes: 'まだレシピを保存していません。',
+          viewButton: '表示',
+          removeButton: '削除',
+          removeButtonAriaLabel: '{recipeName} を保存したレシピから削除',
+          removeButtonTooltip: 'レシピを削除',
+          closeButton: '閉じる',
        },
       toast: { // Keep the toast structure but maybe use console.log instead
           formClearedTitle: 'フォームがクリアされました',
@@ -1191,7 +1321,20 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        imagePromptLabel: 'Prompt de Imagen',
        errorLoadingTitle: 'Error al Cargar la Receta',
        errorLoadingMessage: 'No se pudieron cargar los detalles de esta receta. Puede que falte o que el enlace sea incorrecto.',
+       printButtonAriaLabel: 'Imprimir Receta', // New
+       printButtonTooltip: 'Imprimir Receta', // New
      },
+    savedRecipes: {
+       dialogTitle: 'Recetas Guardadas',
+       dialogOpenButtonAriaLabel: 'Ver recetas guardadas',
+       dialogOpenButtonTooltip: 'Ver Recetas Guardadas',
+       noSavedRecipes: 'Aún no has guardado ninguna receta.',
+       viewButton: 'Ver',
+       removeButton: 'Eliminar',
+       removeButtonAriaLabel: 'Eliminar {recipeName} de las recetas guardadas',
+       removeButtonTooltip: 'Eliminar Receta',
+       closeButton: 'Cerrar',
+    },
     toast: { // Keep the toast structure but maybe use console.log instead
       formClearedTitle: 'Formulario Limpiado',
       formClearedDesc: '¡Listo para nuevos ingredientes!',
@@ -1302,6 +1445,19 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
        imagePromptLabel: 'Prompt d\'Image',
        errorLoadingTitle: 'Erreur de Chargement de la Recette',
        errorLoadingMessage: 'Impossible de charger les détails de cette recette. Elle est peut-être manquante ou le lien est incorrect.',
+       printButtonAriaLabel: 'Imprimer la recette', // New
+       printButtonTooltip: 'Imprimer la recette', // New
+     },
+    savedRecipes: {
+        dialogTitle: 'Recettes Enregistrées',
+        dialogOpenButtonAriaLabel: 'Voir les recettes enregistrées',
+        dialogOpenButtonTooltip: 'Voir les Recettes Enregistrées',
+        noSavedRecipes: 'Vous n\'avez encore enregistré aucune recette.',
+        viewButton: 'Voir',
+        removeButton: 'Supprimer',
+        removeButtonAriaLabel: 'Supprimer {recipeName} des recettes enregistrées',
+        removeButtonTooltip: 'Supprimer la Recette',
+        closeButton: 'Fermer',
      },
     toast: { // Keep the toast structure but maybe use console.log instead
       formClearedTitle: 'Formulaire Effacé',
@@ -1341,3 +1497,4 @@ export const translations: Record<LanguageCode, TranslationMessages> = {
     },
   },
 };
+
